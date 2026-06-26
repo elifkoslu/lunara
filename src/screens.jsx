@@ -2,7 +2,7 @@ import React from 'react';
 import { I18N, t, useLang } from './i18n';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
-import { Card, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, getTodayKey, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
+import { Card, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, getTodayKey, labCurrent, labHistory, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
 
@@ -329,37 +329,79 @@ function SymptomsScreen({ lunara, api }) {
 }
 
 /* ════════════════ LABS ════════════════ */
-function LabsScreen() {
-  const [sel, setSel] = React.useState(LABS[0].key);
-  const lab = LABS.find(l => l.key === sel);
-  const months = ['Dec','Jan','Feb','Mar','Apr','May','Now'];
+const X_ICON = 'M18 6 6 18M6 6l12 12';
+// Short date label: 'YYYY-MM-DD' -> '4 Haz' / '4 Jun'
+function fmtLabDate(iso) {
+  const M_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const M_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const p = String(iso || '').split('-');
+  if (p.length !== 3) return iso || '';
+  const d = parseInt(p[2], 10), mi = parseInt(p[1], 10) - 1;
+  return d + ' ' + (I18N.lang === 'tr' ? M_TR : M_EN)[mi] || iso;
+}
+
+function LabsScreen({ lunara, api }) {
+  const panels = (lunara && lunara.labPanels) || [];
+  const hasData = panels.length > 0;
+  const [adding, setAdding] = React.useState(false);
+
+  // When the user has entered values, show only analytes with data; otherwise
+  // fall back to the sample LABS so the screen has something to look at.
+  const withData = LABS.filter(l => labHistory(panels, l.key).length > 0);
+  const shown = hasData ? withData : LABS;
+  const [sel, setSel] = React.useState(shown[0] ? shown[0].key : LABS[0].key);
+  React.useEffect(() => {
+    if (shown.length && !shown.find(l => l.key === sel)) setSel(shown[0].key);
+  }, [hasData, shown.length]); // eslint-disable-line
+
+  const lab = LABS.find(l => l.key === sel) || LABS[0];
+  const value = hasData ? labCurrent(panels, lab.key) : lab.value;
+  const history = hasData ? labHistory(panels, lab.key) : lab.history;
+  const dates = hasData ? labReadingsDates(panels, lab.key) : ['Dec','Jan','Feb','Mar','Apr','May','Now'];
+  const inRange = value != null && value >= lab.range[0] && value <= lab.range[1];
+
+  const name = (l) => t(l.name, l.nameTr || l.name);
+
   return (
     <div style={wrap}>
-      <ScreenHead eyebrow={t('PANEL · DRAWN 4 JUN', 'PANEL · 4 HAZ ALINDI')} title={t('Lab results', 'Tahlil sonuçları')}
-        right={<Btn><Icon d={ICONS.plus} size={13} sw={2}/> {t('Upload results', 'Sonuç yükle')}</Btn>} />
+      <ScreenHead
+        eyebrow={hasData
+          ? t(`${panels.length} panel · last ${fmtLabDate(panels[0].date)}`, `${panels.length} panel · son ${fmtLabDate(panels[0].date)}`)
+          : t('SAMPLE DATA', 'ÖRNEK VERİ')}
+        title={t('Lab results', 'Tahlil sonuçları')}
+        right={<Btn onClick={() => setAdding(true)}><Icon d={ICONS.plus} size={13} sw={2}/> {t('Add results', 'Sonuç ekle')}</Btn>} />
+
+      {!hasData && (
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '-6px 0 16px', fontStyle: 'italic' }}>
+          {t('These are sample values. Tap “Add results” to enter your own.',
+             'Bunlar örnek değerlerdir. Kendi değerlerini girmek için “Sonuç ekle”ye dokun.')}
+        </p>
+      )}
+
       <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 20 }}>
         {/* List */}
         <Card pad={0} style={{ overflow: 'hidden' }}>
-          {LABS.map((l, i) => {
+          {shown.map((l, i) => {
             const on = l.key === sel;
+            const v = hasData ? labCurrent(panels, l.key) : l.value;
             return (
               <button key={l.key} onClick={() => setSel(l.key)}
                 style={{
                   width: '100%', textAlign: 'left', cursor: 'pointer',
                   display: 'grid', gridTemplateColumns: '1fr auto 120px', gap: 14, alignItems: 'center',
                   padding: '16px 22px', background: on ? 'var(--bone)' : 'transparent',
-                  borderBottom: i < LABS.length - 1 ? '1px solid var(--line-soft)' : 'none',
+                  borderBottom: i < shown.length - 1 ? '1px solid var(--line-soft)' : 'none',
                   borderLeft: `3px solid ${on ? 'var(--accent)' : 'transparent'}`,
                   transition: 'background 140ms ease',
                 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{l.name}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{name(l)}</span>
                   <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{t('ref', 'ref')} {l.range[0]}–{l.range[1]} {l.unit}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-                  <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{l.value}</span>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{v != null ? v : '—'}</span>
                 </div>
-                <div style={{ width: 120 }}><RangeBar value={l.value} range={l.range} target={l.target}/></div>
+                <div style={{ width: 120 }}>{v != null && <RangeBar value={v} range={l.range} target={l.target}/>}</div>
               </button>
             );
           })}
@@ -368,27 +410,156 @@ function LabsScreen() {
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
             <div>
-              <div className="eyebrow" style={{ marginBottom: 4 }}>{lab.name}</div>
+              <div className="eyebrow" style={{ marginBottom: 4 }}>{name(lab)}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontFamily: 'var(--serif)', fontSize: 40, letterSpacing: '-0.02em' }}>{lab.value}</span>
+                <span style={{ fontFamily: 'var(--serif)', fontSize: 40, letterSpacing: '-0.02em' }}>{value != null ? value : '—'}</span>
                 <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lab.unit}</span>
               </div>
             </div>
-            <span style={{
-              fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: '0.06em',
-              padding: '6px 12px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--ink-2)',
-            }}>{t('IN RANGE', 'ARALIKTA')}</span>
+            {value != null && (
+              <span style={{
+                fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: '0.06em',
+                padding: '6px 12px', borderRadius: 999,
+                background: inRange ? 'var(--accent-soft)' : 'var(--signal-warn)',
+                color: inRange ? 'var(--ink-2)' : 'var(--ivory)',
+              }}>{inRange ? t('IN RANGE', 'ARALIKTA') : t('OUT OF RANGE', 'ARALIK DIŞI')}</span>
+            )}
           </div>
-          <div style={{ margin: '20px 0 8px' }}>
-            <Sparkline data={lab.history} color="var(--accent)" width={420} height={90}/>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>
-            {months.map(m => <span key={m}>{(I18N.lang==='tr' ? ({Dec:'Ara',Jan:'Oca',Feb:'Şub',Mar:'Mar',Apr:'Nis',May:'May',Now:'Şimdi'}[m]||m) : m).toUpperCase()}</span>)}
-          </div>
+          {history.length > 0 && (
+            <>
+              <div style={{ margin: '20px 0 8px' }}>
+                <Sparkline data={history.length === 1 ? [history[0], history[0]] : history} color="var(--accent)" width={420} height={90}/>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>
+                {(hasData ? dates : dates.map(m => (I18N.lang === 'tr'
+                  ? ({Dec:'Ara',Jan:'Oca',Feb:'Şub',Mar:'Mar',Apr:'Nis',May:'May',Now:'Şimdi'}[m] || m) : m).toUpperCase()))
+                  .map((d, i) => <span key={i}>{d}</span>)}
+              </div>
+            </>
+          )}
           <p style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 15, lineHeight: 1.5, color: 'var(--ink-2)', marginTop: 22, borderTop: '1px solid var(--line-soft)', paddingTop: 18 }}>
             {labNote(lab.key)}
           </p>
         </Card>
+      </div>
+
+      {/* Entered panels */}
+      {hasData && (
+        <Card style={{ marginTop: 20 }}>
+          <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Entered results', 'Girilen sonuçlar')}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {panels.map(p => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                padding: '10px 14px', borderRadius: 'var(--r-md)', background: 'var(--bone)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{fmtLabDate(p.date)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.readings.map(r => `${t(r.name, r.nameTr || r.name)} ${r.value}`).join(' · ')}
+                  </span>
+                </div>
+                <button onClick={() => api.removeLabPanel(p.id)} title={t('Remove', 'Sil')}
+                  style={{ flexShrink: 0, padding: 6, borderRadius: 8, color: 'var(--muted)', cursor: 'pointer' }}>
+                  <Icon d={X_ICON} size={15} sw={1.8}/>
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {adding && <AddLabForm onClose={() => setAdding(false)} onSave={(panel) => api.addLabPanel(panel)} />}
+    </div>
+  );
+}
+
+// Reading dates for an analyte (short labels), oldest -> newest
+function labReadingsDates(panels, key) {
+  return (panels || [])
+    .filter(p => (p.readings || []).some(r => r.key === key))
+    .map(p => p.date)
+    .sort()
+    .map(fmtLabDate);
+}
+
+/* Simple manual lab-entry form (modal). Fill any subset of analytes. */
+function AddLabForm({ onClose, onSave }) {
+  const [date, setDate] = React.useState(getTodayKey());
+  const [vals, setVals] = React.useState({});
+  const set = (key, v) => setVals(o => ({ ...o, [key]: v }));
+
+  const readings = LABS
+    .map(l => {
+      const raw = vals[l.key];
+      if (raw == null || String(raw).trim() === '') return null;
+      const num = parseFloat(String(raw).replace(',', '.'));
+      if (isNaN(num)) return null;
+      return { key: l.key, name: l.name, nameTr: l.nameTr, unit: l.unit, value: num };
+    })
+    .filter(Boolean);
+
+  const submit = () => { if (readings.length) { onSave({ date, readings }); onClose(); } };
+
+  const labelStyle = { fontSize: 10.5, fontFamily: 'var(--mono)', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' };
+  const fieldStyle = {
+    width: '100%', padding: '10px 12px', borderRadius: 'var(--r-sm)',
+    border: '1px solid var(--line)', background: 'var(--ivory)', color: 'var(--ink)',
+    fontFamily: 'var(--sans)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(20,14,10,0.5)', backdropFilter: 'blur(3px)', padding: 18,
+    }}>
+      <div onClick={e => e.stopPropagation()} className="sheet-up" style={{
+        width: '100%', maxWidth: 460, maxHeight: '88vh', overflow: 'auto',
+        background: 'var(--card)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-card)',
+        padding: 24,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 4 }}>{t('New results', 'Yeni sonuç')}</div>
+            <h2 className="serif-display" style={{ margin: 0, fontSize: 24 }}>{t('Add lab values', 'Tahlil değeri ekle')}</h2>
+          </div>
+          <button onClick={onClose} style={{ padding: 6, color: 'var(--muted)', cursor: 'pointer' }}>
+            <Icon d={X_ICON} size={18} sw={2}/>
+          </button>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ ...labelStyle, display: 'block', marginBottom: 6 }}>{t('DATE', 'TARİH')}</label>
+          <input type="date" value={date} max={getTodayKey()} onChange={e => setDate(e.target.value)} style={fieldStyle}/>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {LABS.map(l => (
+            <div key={l.key} style={{ display: 'grid', gridTemplateColumns: '1fr 130px', gap: 12, alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 13.5, fontWeight: 600 }}>{t(l.name, l.nameTr || l.name)}</span>
+                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{t('ref', 'ref')} {l.range[0]}–{l.range[1]} {l.unit}</span>
+              </div>
+              <input
+                type="text" inputMode="decimal" placeholder={l.unit}
+                value={vals[l.key] || ''} onChange={e => set(l.key, e.target.value)}
+                style={{ ...fieldStyle, textAlign: 'right' }}/>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+          <button onClick={onClose} style={{
+            flex: 1, padding: '12px 0', borderRadius: 999, cursor: 'pointer',
+            border: '1px solid var(--line)', background: 'transparent', color: 'var(--ink-2)',
+            fontFamily: 'var(--sans)', fontSize: 14, fontWeight: 600,
+          }}>{t('Cancel', 'İptal')}</button>
+          <button onClick={submit} disabled={!readings.length} style={{
+            flex: 2, padding: '12px 0', borderRadius: 999,
+            cursor: readings.length ? 'pointer' : 'not-allowed',
+            border: 'none', background: 'var(--ink)', color: 'var(--ivory)',
+            fontFamily: 'var(--sans)', fontSize: 14, fontWeight: 600,
+            opacity: readings.length ? 1 : 0.45,
+          }}>{t('Save', 'Kaydet')}{readings.length ? ` · ${readings.length}` : ''}</button>
+        </div>
       </div>
     </div>
   );

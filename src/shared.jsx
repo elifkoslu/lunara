@@ -76,19 +76,30 @@ const SYMPTOMS = [
 
 // Latest labs (with reference ranges + trend)
 const LABS = [
-  { key: 'e2',   name: 'Estradiol',      value: 87,   unit: 'pg/mL',  range: [50, 200],   status: 'in',     drawn: '2 weeks ago',
+  { key: 'e2',   name: 'Estradiol',      nameTr: 'Estradiol',           value: 87,   unit: 'pg/mL',  range: [50, 200],   status: 'in',     drawn: '2 weeks ago',
     history: [22, 28, 35, 51, 64, 78, 87], target: 80 },
-  { key: 'p4',   name: 'Progesterone',   value: 11.4, unit: 'ng/mL',  range: [10, 25],    status: 'in',     drawn: '2 weeks ago',
+  { key: 'p4',   name: 'Progesterone',   nameTr: 'Progesteron',         value: 11.4, unit: 'ng/mL',  range: [10, 25],    status: 'in',     drawn: '2 weeks ago',
     history: [0.4, 0.6, 1.2, 4.1, 8.0, 9.6, 11.4], target: 15 },
-  { key: 't',    name: 'Total Testos.',  value: 42,   unit: 'ng/dL',  range: [30, 70],    status: 'in',     drawn: '2 weeks ago',
+  { key: 't',    name: 'Total Testos.',  nameTr: 'Total Testosteron',   value: 42,   unit: 'ng/dL',  range: [30, 70],    status: 'in',     drawn: '2 weeks ago',
     history: [12, 18, 22, 28, 34, 38, 42], target: 50 },
-  { key: 'ft',   name: 'Free T',         value: 3.6,  unit: 'pg/mL',  range: [1.5, 6.5],  status: 'in',     drawn: '2 weeks ago',
+  { key: 'ft',   name: 'Free T',         nameTr: 'Serbest Testosteron', value: 3.6,  unit: 'pg/mL',  range: [1.5, 6.5],  status: 'in',     drawn: '2 weeks ago',
     history: [0.9, 1.4, 1.8, 2.4, 2.9, 3.2, 3.6], target: 4.0 },
-  { key: 'shbg', name: 'SHBG',           value: 64,   unit: 'nmol/L', range: [25, 90],    status: 'in',     drawn: '2 weeks ago',
+  { key: 'shbg', name: 'SHBG',           nameTr: 'SHBG',                value: 64,   unit: 'nmol/L', range: [25, 90],    status: 'in',     drawn: '2 weeks ago',
     history: [98, 92, 86, 78, 71, 67, 64], target: 55 },
-  { key: 'fsh',  name: 'FSH',            value: 5.8,  unit: 'mIU/mL', range: [3, 12],     status: 'in',     drawn: '2 weeks ago',
+  { key: 'fsh',  name: 'FSH',            nameTr: 'FSH',                 value: 5.8,  unit: 'mIU/mL', range: [3, 12],     status: 'in',     drawn: '2 weeks ago',
     history: [4.9, 5.1, 5.6, 6.0, 5.7, 5.9, 5.8], target: 6 },
 ];
+
+// ── User-entered lab panels: helpers ──────────────────────────────
+// A panel = { id, date:'YYYY-MM-DD', readings:[{ key, name, nameTr, unit, value }] }
+function labReadings(panels, key) {
+  return (panels || [])
+    .map(p => { const r = (p.readings || []).find(x => x.key === key); return r ? { date: p.date, value: r.value } : null; })
+    .filter(Boolean)
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+function labHistory(panels, key) { return labReadings(panels, key).map(r => r.value); }
+function labCurrent(panels, key) { const h = labReadings(panels, key); return h.length ? h[h.length - 1].value : null; }
 
 const PROVIDER = {
   name: 'Dr. Sera Halevi, MD',
@@ -362,6 +373,8 @@ function useLunara() {
       },
       // Menopause (menopoz): son regl tarihi
       menopause: saved.menopause || { lastPeriod: '2024-03-01' },
+      // User-entered lab panels: [{ id, date, readings:[{key,name,nameTr,unit,value}] }]
+      labPanels: saved.labPanels || [],
     };
   });
   React.useEffect(() => {
@@ -450,6 +463,13 @@ function useLunara() {
       if (day[id]) delete day[id]; else day[id] = time || nowHM();
       return { ...s, doseLog: { ...s.doseLog, [dateKey]: day } };
     }),
+    // ── lab panels ──
+    addLabPanel: (panel) => setState(s => ({
+      ...s, labPanels: [{ id: 'lab-' + Date.now(), ...panel }, ...(s.labPanels || [])],
+    })),
+    removeLabPanel: (id) => setState(s => ({
+      ...s, labPanels: (s.labPanels || []).filter(p => p.id !== id),
+    })),
   }), []);
   return [state, api];
 }
@@ -637,4 +657,4 @@ function SymptomTrack({ series, color = 'var(--accent)', dotSize = 6, gap = 3 })
   );
 }
 
-export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, todaysDoses, medTaken, ProgramBar, TopBar, pillBtn, Card, Sparkline, RangeBar, SymptomTrack };
+export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, todaysDoses, medTaken, ProgramBar, TopBar, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };
