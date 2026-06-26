@@ -234,6 +234,107 @@ function realSeries(symptomLog, key, fallback) {
   return hasReal ? out : (fallback || out);
 }
 
+/* Monthly symptom heatmap — calendar grid tinted by intensity (0–3). */
+const HEAT_NAV_BTN = { width: 26, height: 26, borderRadius: 8, background: 'var(--bone)', color: 'var(--ink-2)', fontSize: 15, lineHeight: 1, boxShadow: 'inset 0 0 0 1px var(--line-soft)' };
+const HEAT_MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const HEAT_MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const HEAT_WD_EN = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+const HEAT_WD_TR = ['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
+function heatTint(v) {
+  return v == null ? 'var(--ivory)'
+    : v === 0 ? 'var(--bone)'
+    : v === 1 ? 'color-mix(in oklch, var(--accent) 30%, var(--card))'
+    : v === 2 ? 'color-mix(in oklch, var(--accent) 62%, var(--card))'
+    : 'var(--accent)';
+}
+function SymptomHeatmap({ symptomLog, syms }) {
+  const today = new Date(TODAY_DATE);
+  const [symKey, setSymKey] = React.useState((syms[0] && syms[0].key) || null);
+  const [view, setView] = React.useState({ y: today.getFullYear(), m: today.getMonth() });
+
+  const dk = (y, m, d) => y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  const todayKey = dk(today.getFullYear(), today.getMonth(), today.getDate());
+  const first = new Date(view.y, view.m, 1);
+  const lead = (first.getDay() + 6) % 7; // Monday-first leading blanks
+  const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
+  const isCurrentMonth = view.y === today.getFullYear() && view.m === today.getMonth();
+  const go = (delta) => setView(v => { const d = new Date(v.y, v.m + delta, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
+  const fg = (v) => (v != null && v >= 2) ? 'var(--ivory)' : 'var(--muted)';
+
+  let logged = 0;
+  for (let d = 1; d <= daysInMonth; d++) { const day = symptomLog[dk(view.y, view.m, d)]; if (day && day[symKey] != null) logged++; }
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div className="eyebrow">{t('Symptom calendar', 'Belirti takvimi')}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={() => go(-1)} style={{ ...HEAT_NAV_BTN, cursor: 'pointer' }}>‹</button>
+          <span style={{ fontSize: 12.5, fontWeight: 600, minWidth: 108, textAlign: 'center' }}>
+            {(I18N.lang === 'tr' ? HEAT_MONTHS_TR : HEAT_MONTHS_EN)[view.m]} {view.y}
+          </span>
+          <button onClick={() => go(1)} disabled={isCurrentMonth}
+            style={{ ...HEAT_NAV_BTN, opacity: isCurrentMonth ? 0.3 : 1, cursor: isCurrentMonth ? 'default' : 'pointer' }}>›</button>
+        </div>
+      </div>
+
+      {/* symptom selector */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+        {syms.map(s => {
+          const on = s.key === symKey;
+          return (
+            <button key={s.key} onClick={() => setSymKey(s.key)} style={{
+              padding: '5px 11px', borderRadius: 999, fontSize: 11.5, cursor: 'pointer', fontWeight: on ? 600 : 500,
+              background: on ? 'var(--ink)' : 'var(--bone)', color: on ? 'var(--ivory)' : 'var(--muted)',
+              boxShadow: on ? 'none' : 'inset 0 0 0 1px var(--line-soft)',
+            }}>{t(s.label, s.labelTr)}</button>
+          );
+        })}
+      </div>
+
+      {/* weekday header */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 5, marginBottom: 5 }}>
+        {(I18N.lang === 'tr' ? HEAT_WD_TR : HEAT_WD_EN).map((w, i) => (
+          <div key={i} style={{ textAlign: 'center', fontSize: 9.5, fontFamily: 'var(--mono)', color: 'var(--muted-2)', letterSpacing: '0.04em' }}>{w}</div>
+        ))}
+      </div>
+
+      {/* day grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 5 }}>
+        {Array.from({ length: lead }).map((_, i) => <div key={'b' + i} />)}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const key = dk(view.y, view.m, day);
+          const cell = symptomLog[key];
+          const v = (cell && cell[symKey] != null) ? cell[symKey] : null;
+          const future = key > todayKey;
+          const isToday = key === todayKey;
+          return (
+            <div key={key} title={`${day} · ${v == null ? t('no entry', 'kayıt yok') : rateLabel(v)}`} style={{
+              aspectRatio: '1 / 1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontFamily: 'var(--mono)',
+              background: future ? 'transparent' : heatTint(v),
+              color: future ? 'var(--muted-2)' : fg(v),
+              opacity: future ? 0.4 : 1,
+              boxShadow: isToday ? 'inset 0 0 0 2px var(--ink)' : (v == null && !future ? 'inset 0 0 0 1px var(--line-soft)' : 'none'),
+            }}>{day}</div>
+          );
+        })}
+      </div>
+
+      {/* legend */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{logged} {t('days logged', 'gün kayıtlı')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, color: 'var(--muted-2)' }}>{t('None', 'Yok')}</span>
+          {[0, 1, 2, 3].map(v => <span key={v} style={{ width: 14, height: 14, borderRadius: 4, background: heatTint(v), boxShadow: v === 0 ? 'inset 0 0 0 1px var(--line-soft)' : 'none' }} />)}
+          <span style={{ fontSize: 10, color: 'var(--muted-2)' }}>{t('Strong', 'Güçlü')}</span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function SymptomsScreen({ lunara, api }) {
   const todayLog = lunara.symptomLog[TODAY_KEY] || {};
   const syms = symptomsFor(lunara.stage);
@@ -281,20 +382,7 @@ function SymptomsScreen({ lunara, api }) {
         </Card>
         {/* History + note */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-              <div className="eyebrow">{t('Last 14 days', 'Son 14 gün')}</div>
-              <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{t('today →', 'bugün →')}</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-              {syms.slice(0, 6).map(s => (
-                <div key={s.key} style={{ display: 'grid', gridTemplateColumns: '92px 1fr', gap: 12, alignItems: 'center' }}>
-                  <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{t(s.label, s.labelTr)}</span>
-                  <SymptomTrack series={realSeries(lunara.symptomLog, s.key, s.series)} color="var(--accent)"/>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <SymptomHeatmap symptomLog={lunara.symptomLog} syms={syms} />
           <Card>
             <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Add a note', 'Not ekle')}</div>
             <textarea value={note} onChange={e => setNote(e.target.value)}
