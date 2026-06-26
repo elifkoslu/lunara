@@ -9,34 +9,84 @@ import { StageBadge } from './stages';
    screens.jsx (Btn), shared.jsx, stages.jsx (StageBadge), i18n sonrası yüklenir. */
 /* eslint-disable */
 
-// Hafta kilometre taşları — meyve karşılaştırması + gelişim + anne notu
+// Hafta hafta kilometre taşları (2 haftada bir) — boyut karşılaştırması +
+// gelişim + "neler gelişiyor" vurguları (hiEn/hiTr) + anne notu
 const WEEK_MILESTONES = [
-  { w: 8,  fEn: 'a raspberry', fTr: 'bir ahududu',     len: 1.6,  wt: 1,
+  { w: 4,  fEn: 'a poppy seed', fTr: 'bir haşhaş tohumu', len: 0.4, wt: 1,
+    devEn: 'The neural tube and a tiny heart begin to form.', devTr: 'Sinir tüpü ve minik bir kalp oluşmaya başlıyor.',
+    hiEn: ['Neural tube closing', 'Placenta starting to form'], hiTr: ['Nöral tüp kapanıyor', 'Plasenta oluşmaya başlıyor'],
+    youEn: 'You might just be noticing a missed period.', youTr: 'Belki de yeni adet gecikmesini fark ediyorsun.' },
+  { w: 6,  fEn: 'a lentil', fTr: 'bir mercimek', len: 0.6, wt: 1,
+    devEn: 'The heart starts beating and basic features appear.', devTr: 'Kalp atmaya başlıyor, temel hatlar beliriyor.',
+    hiEn: ['Heartbeat begins', 'Arm & leg buds appear'], hiTr: ['Kalp atışı başlıyor', 'Kol ve bacak tomurcukları beliriyor'],
+    youEn: 'Morning sickness may begin.', youTr: 'Sabah bulantısı başlayabilir.' },
+  { w: 8,  fEn: 'a raspberry', fTr: 'bir ahududu', len: 1.6, wt: 1,
     devEn: 'Tiny limbs are forming and the heart is beating fast.', devTr: 'Minik kollar bacaklar oluşuyor, kalp hızla atıyor.',
+    hiEn: ['Fingers & toes forming', 'Brain growing rapidly'], hiTr: ['Parmaklar oluşuyor', 'Beyin hızla büyüyor'],
     youEn: 'Nausea and tiredness are common now.', youTr: 'Bulantı ve yorgunluk bu dönemde sık.' },
-  { w: 12, fEn: 'a lime', fTr: 'bir misket limonu',    len: 5.4,  wt: 14,
+  { w: 10, fEn: 'a strawberry', fTr: 'bir çilek', len: 3.1, wt: 4,
+    devEn: 'Vital organs are in place and starting to function.', devTr: 'Hayati organlar yerleşti ve çalışmaya başlıyor.',
+    hiEn: ['Nails & hair forming', 'Joints can bend'], hiTr: ['Tırnak ve saç oluşuyor', 'Eklemler bükülebiliyor'],
+    youEn: 'Your waistband may start feeling snug.', youTr: 'Beline giysiler dar gelmeye başlayabilir.' },
+  { w: 12, fEn: 'a lime', fTr: 'bir misket limonu', len: 5.4, wt: 14,
     devEn: 'Reflexes develop; fingers can open and close.', devTr: 'Refleksler gelişiyor; parmaklar açılıp kapanabiliyor.',
+    hiEn: ['Reflexes developing', 'Kidneys make urine'], hiTr: ['Refleksler gelişiyor', 'Böbrekler idrar üretiyor'],
     youEn: 'The first trimester is ending — energy often returns.', youTr: 'İlk trimester bitiyor — enerji çoğu zaman geri gelir.' },
-  { w: 16, fEn: 'an avocado', fTr: 'bir avokado',       len: 11.6, wt: 100,
-    devEn: 'Baby can make facial expressions and hear muffled sounds.', devTr: 'Bebek yüz ifadeleri yapabiliyor, boğuk sesleri duyabiliyor.',
+  { w: 14, fEn: 'a lemon', fTr: 'bir limon', len: 8.7, wt: 43,
+    devEn: 'Baby can squint, frown and make expressions.', devTr: 'Bebek gözlerini kısabiliyor, yüz ifadeleri yapabiliyor.',
+    hiEn: ['Facial muscles working', 'Fine hair (lanugo) appears'], hiTr: ['Yüz kasları çalışıyor', 'İnce tüyler (lanugo) beliriyor'],
+    youEn: 'You may feel more like yourself again.', youTr: 'Kendini yeniden daha iyi hissedebilirsin.' },
+  { w: 16, fEn: 'an avocado', fTr: 'bir avokado', len: 11.6, wt: 100,
+    devEn: 'Baby can make expressions and hear muffled sounds.', devTr: 'Bebek yüz ifadeleri yapabiliyor, boğuk sesleri duyabiliyor.',
+    hiEn: ['Can hear muffled sounds', 'Eyes & ears in place'], hiTr: ['Boğuk sesleri duyabiliyor', 'Göz ve kulaklar yerleşti'],
     youEn: 'You may start to feel flutters soon.', youTr: 'Yakında ilk kıpırtıları hissedebilirsin.' },
-  { w: 20, fEn: 'a banana', fTr: 'bir muz',             len: 16.4, wt: 300,
+  { w: 18, fEn: 'a bell pepper', fTr: 'bir biber', len: 14.2, wt: 190,
+    devEn: 'Baby is moving, yawning and even hiccuping.', devTr: 'Bebek hareket ediyor, esniyor, hatta hıçkırıyor.',
+    hiEn: ['Ears stand out', 'Nerves gaining myelin'], hiTr: ['Kulaklar belirginleşiyor', 'Sinirler miyelinle kaplanıyor'],
+    youEn: 'You may feel the first kicks.', youTr: 'İlk tekmeleri hissedebilirsin.' },
+  { w: 20, fEn: 'a banana', fTr: 'bir muz', len: 16.4, wt: 300,
     devEn: 'Halfway there — baby is swallowing and growing hair.', devTr: 'Yolun yarısı — bebek yutkunuyor ve saçları çıkıyor.',
+    hiEn: ['Halfway point', 'Taste buds forming'], hiTr: ['Yolun yarısı', 'Tat tomurcukları oluşuyor'],
     youEn: 'The anatomy scan usually happens around now.', youTr: 'Ayrıntılı ultrason genelde bu sıralarda yapılır.' },
+  { w: 22, fEn: 'a papaya', fTr: 'bir papaya', len: 27.8, wt: 430,
+    devEn: 'Senses sharpen — baby can feel touch and hear better.', devTr: 'Duyular keskinleşiyor — bebek dokunuşu hissedip daha iyi duyuyor.',
+    hiEn: ['Sense of touch developing', 'Eyebrows forming'], hiTr: ['Dokunma duyusu gelişiyor', 'Kaşlar oluşuyor'],
+    youEn: 'Your bump is now clearly showing.', youTr: 'Karnın artık belirgin şekilde görünüyor.' },
   { w: 24, fEn: 'an ear of corn', fTr: 'bir mısır koçanı', len: 30, wt: 600,
     devEn: 'Lungs are developing and baby responds to your voice.', devTr: 'Akciğerler gelişiyor; bebek sesine tepki veriyor.',
+    hiEn: ['Lungs developing', 'Responds to sound'], hiTr: ['Akciğerler gelişiyor', 'Sese tepki veriyor'],
     youEn: 'Kicks are stronger and more regular now.', youTr: 'Tekmeler artık daha güçlü ve düzenli.' },
-  { w: 28, fEn: 'an eggplant', fTr: 'bir patlıcan',     len: 37.6, wt: 1000,
+  { w: 26, fEn: 'a head of lettuce', fTr: 'bir marul', len: 35.6, wt: 760,
+    devEn: 'Eyes begin to open and baby takes practice breaths.', devTr: 'Gözler açılmaya başlıyor; bebek nefes provası yapıyor.',
+    hiEn: ['Eyes opening', 'Brain activity increases'], hiTr: ['Gözler açılıyor', 'Beyin etkinliği artıyor'],
+    youEn: 'You might notice Braxton Hicks tightenings.', youTr: 'Braxton Hicks kasılmalarını fark edebilirsin.' },
+  { w: 28, fEn: 'an eggplant', fTr: 'bir patlıcan', len: 37.6, wt: 1000,
     devEn: 'Eyes can open; baby has sleep–wake rhythms.', devTr: 'Gözler açılabiliyor; bebeğin uyku–uyanıklık ritmi var.',
+    hiEn: ['Sleep–wake cycles', 'Can blink'], hiTr: ['Uyku–uyanıklık döngüsü', 'Göz kırpabiliyor'],
     youEn: 'Third trimester — count kicks daily from now.', youTr: 'Üçüncü trimester — artık her gün tekme say.' },
-  { w: 32, fEn: 'a squash', fTr: 'bir kabak',           len: 42.4, wt: 1700,
+  { w: 30, fEn: 'a cabbage', fTr: 'bir lahana', len: 39.9, wt: 1300,
+    devEn: "Baby's brain and eyesight keep maturing fast.", devTr: 'Bebeğin beyni ve görüşü hızla olgunlaşıyor.',
+    hiEn: ['Rapid brain growth', 'Bone marrow makes blood'], hiTr: ['Hızlı beyin gelişimi', 'Kemik iliği kan üretiyor'],
+    youEn: 'Heartburn and shortness of breath are common.', youTr: 'Mide yanması ve nefes darlığı yaygın.' },
+  { w: 32, fEn: 'a squash', fTr: 'bir kabak', len: 42.4, wt: 1700,
     devEn: 'Baby is practising breathing and gaining fat.', devTr: 'Bebek nefes provası yapıyor ve yağ depoluyor.',
+    hiEn: ['Practising breathing', 'Toenails fully formed'], hiTr: ['Nefes provası yapıyor', 'Ayak tırnakları tamam'],
     youEn: 'You may feel more breathless and tired.', youTr: 'Daha çok nefes darlığı ve yorgunluk hissedebilirsin.' },
-  { w: 36, fEn: 'a honeydew melon', fTr: 'bir kavun',   len: 47.4, wt: 2600,
+  { w: 34, fEn: 'a cantaloupe', fTr: 'bir kavun', len: 45, wt: 2100,
+    devEn: 'The central nervous system and lungs keep maturing.', devTr: 'Merkezi sinir sistemi ve akciğerler olgunlaşmayı sürdürüyor.',
+    hiEn: ['Lungs nearly ready', 'Protective vernix thickens'], hiTr: ['Akciğerler neredeyse hazır', 'Koruyucu verniks kalınlaşıyor'],
+    youEn: 'Watch for swelling; rest your legs often.', youTr: 'Ödeme dikkat; bacaklarını sık dinlendir.' },
+  { w: 36, fEn: 'a honeydew melon', fTr: 'bir bal kavunu', len: 47.4, wt: 2600,
     devEn: 'Baby is settling head-down, getting ready.', devTr: 'Bebek baş aşağı yerleşiyor, hazırlanıyor.',
+    hiEn: ['Often turns head-down', 'Skin smoothing out'], hiTr: ['Genelde baş aşağı dönüyor', 'Cilt pürüzsüzleşiyor'],
     youEn: 'Weekly check-ups usually begin around now.', youTr: 'Haftalık kontroller genelde bu sıralarda başlar.' },
-  { w: 40, fEn: 'a watermelon', fTr: 'bir karpuz',      len: 51.2, wt: 3400,
+  { w: 38, fEn: 'a pumpkin', fTr: 'bir bal kabağı', len: 49.8, wt: 3100,
+    devEn: 'Organs are ready; baby is mostly adding weight.', devTr: 'Organlar hazır; bebek artık çoğunlukla kilo alıyor.',
+    hiEn: ['Full-term soon', 'Firm grasp reflex'], hiTr: ['Miada az kaldı', 'Güçlü kavrama refleksi'],
+    youEn: 'Pack your hospital bag if you haven’t.', youTr: 'Hastane çantanı henüz hazırlamadıysan hazırla.' },
+  { w: 40, fEn: 'a watermelon', fTr: 'bir karpuz', len: 51.2, wt: 3400,
     devEn: 'Full term — baby is ready to meet you.', devTr: 'Miadında — bebek seninle tanışmaya hazır.',
+    hiEn: ['Ready to be born', 'Lungs fully mature'], hiTr: ['Doğmaya hazır', 'Akciğerler tam olgun'],
     youEn: 'Any day now. Watch for labour signs.', youTr: 'Artık her an olabilir. Doğum belirtilerine dikkat.' },
 ];
 function milestoneFor(week) {
@@ -98,23 +148,8 @@ function PregnancyHome({ lunara, api, onNav }) {
         </div>
       </Card>
 
-      {/* Baby + You */}
-      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}><Icon d={ICONS.spark} size={16}/></span>
-            <div className="eyebrow">{t('Baby this week', 'Bu hafta bebek')}</div>
-          </div>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: 16, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>{t(ms.devEn, ms.devTr)}</p>
-        </Card>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}><Icon d={ICONS.heart} size={16}/></span>
-            <div className="eyebrow">{t('You this week', 'Bu hafta sen')}</div>
-          </div>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: 16, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>{t(ms.youEn, ms.youTr)}</p>
-        </Card>
-      </div>
+      {/* Week-by-week explorer */}
+      <WeekExplorer currentWeek={week}/>
 
       {/* Quick logs: kicks + weight */}
       <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
@@ -198,6 +233,72 @@ function PregnancyHome({ lunara, api, onNav }) {
         </span>
       </div>
     </div>
+  );
+}
+
+// Browse baby development week by week. Defaults to the current week.
+function WeekExplorer({ currentWeek }) {
+  const lang = useLang();
+  const cur = milestoneFor(currentWeek).w;
+  const [sel, setSel] = React.useState(cur);
+  React.useEffect(() => { setSel(milestoneFor(currentWeek).w); }, [currentWeek]);
+  const m = WEEK_MILESTONES.find(x => x.w === sel) || WEEK_MILESTONES[0];
+  const wt = m.wt >= 1000 ? (m.wt / 1000).toFixed(1) + ' kg' : m.wt + ' g';
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+        <div className="eyebrow">{t('Week by week', 'Hafta hafta gelişim')}</div>
+        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{t('This week', 'Bu hafta')} · {currentWeek}</span>
+      </div>
+
+      {/* week selector */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '2px 0 12px' }}>
+        {WEEK_MILESTONES.map(x => {
+          const on = x.w === sel;
+          const here = x.w === cur;
+          return (
+            <button key={x.w} onClick={() => setSel(x.w)} style={{
+              flex: '0 0 auto', minWidth: 46, padding: '8px 0', borderRadius: 10, cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              background: on ? 'var(--accent)' : 'var(--bone)', color: on ? 'var(--ivory)' : 'var(--muted)',
+              boxShadow: on ? 'none' : (here ? 'inset 0 0 0 1.5px var(--accent)' : 'inset 0 0 0 1px var(--line-soft)'),
+            }}>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 16, lineHeight: 1 }}>{x.w}</span>
+              <span style={{ fontSize: 8.5, fontFamily: 'var(--mono)', letterSpacing: '0.04em', opacity: 0.85 }}>{here ? t('NOW', 'ŞİMDİ') : t('WK', 'HF')}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* selected week detail */}
+      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: 20, alignItems: 'start', marginTop: 6 }}>
+        <div style={{ background: 'linear-gradient(155deg, var(--accent-soft) 0%, var(--card) 80%)', borderRadius: 'var(--r-md)', padding: '20px 14px', textAlign: 'center' }}>
+          <span className="eyebrow" style={{ fontSize: 9 }}>{t('WEEK', 'HAFTA')}</span>
+          <div style={{ fontFamily: 'var(--serif)', fontSize: 44, lineHeight: 1, margin: '2px 0 8px' }}>{m.w}</div>
+          <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 14, color: 'var(--accent)', lineHeight: 1.3 }}>{t(m.fEn, m.fTr)}</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 8 }}>{m.len} cm · {wt}</div>
+        </div>
+        <div>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: 16, lineHeight: 1.55, color: 'var(--ink-2)', margin: '0 0 14px' }}>{t(m.devEn, m.devTr)}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+            {(lang === 'tr' ? m.hiTr : m.hiEn).map((h, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }}/>
+                <span style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>{h}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'var(--bone)' }}>
+            <span style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }}><Icon d={ICONS.heart} size={15}/></span>
+            <div>
+              <div className="eyebrow" style={{ fontSize: 9, marginBottom: 3 }}>{t('You this week', 'Bu hafta sen')}</div>
+              <p style={{ fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: 0 }}>{t(m.youEn, m.youTr)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 
