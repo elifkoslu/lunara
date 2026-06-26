@@ -370,6 +370,7 @@ function useLunara() {
         birthDate: '2026-06-04', // ~2. hafta
         feeds: {},               // 'YYYY-MM-DD' -> count
         mood: {},                // 'YYYY-MM-DD' -> 1..5
+        epds: [],                // EPDS results [{ id, date, score, q10, answers }]
       },
       // Menopause (menopoz): son regl tarihi
       menopause: saved.menopause || { lastPeriod: '2024-03-01' },
@@ -439,6 +440,8 @@ function useLunara() {
       return { ...s, postpartum: { ...s.postpartum, feeds: f } };
     }),
     setMood: (dateKey, level) => setState(s => ({ ...s, postpartum: { ...s.postpartum, mood: { ...s.postpartum.mood, [dateKey]: level } } })),
+    addEpds: (entry) => setState(s => ({ ...s, postpartum: { ...s.postpartum, epds: [{ id: 'epds-' + Date.now(), ...entry }, ...(s.postpartum.epds || [])] } })),
+    removeEpds: (id) => setState(s => ({ ...s, postpartum: { ...s.postpartum, epds: (s.postpartum.epds || []).filter(e => e.id !== id) } })),
     // ── cyclic regimen ──
     addMed: (med) => setState(s => ({
       ...s, regimen: { ...s.regimen, meds: [...s.regimen.meds, {

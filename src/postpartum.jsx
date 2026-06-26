@@ -40,6 +40,58 @@ const MOODS = [
   { v: 5, en: 'Great', tr: 'Harika' },
 ];
 
+// ── EPDS — Edinburgh Postnatal Depression Scale (validated 10-item screen) ──
+// Each option carries its score (0–3); options are listed in display order.
+const EPDS = [
+  { qEn: 'I have been able to laugh and see the funny side of things', qTr: 'Gülebiliyor ve olayların komik yanını görebiliyordum',
+    opts: [{ en: 'As much as I always could', tr: 'Her zamanki kadar', s: 0 }, { en: 'Not quite so much now', tr: 'Artık pek o kadar değil', s: 1 }, { en: 'Definitely not so much now', tr: 'Kesinlikle eskisi kadar değil', s: 2 }, { en: 'Not at all', tr: 'Hiç', s: 3 }] },
+  { qEn: 'I have looked forward with enjoyment to things', qTr: 'Geleceğe keyifle bakabiliyordum',
+    opts: [{ en: 'As much as I ever did', tr: 'Her zamanki kadar', s: 0 }, { en: 'Rather less than I used to', tr: 'Eskisinden biraz daha az', s: 1 }, { en: 'Definitely less than I used to', tr: 'Eskisinden kesinlikle daha az', s: 2 }, { en: 'Hardly at all', tr: 'Neredeyse hiç', s: 3 }] },
+  { qEn: 'I have blamed myself unnecessarily when things went wrong', qTr: 'Bir şeyler ters gittiğinde gereksiz yere kendimi suçladım',
+    opts: [{ en: 'Yes, most of the time', tr: 'Evet, çoğu zaman', s: 3 }, { en: 'Yes, some of the time', tr: 'Evet, bazen', s: 2 }, { en: 'Not very often', tr: 'Çok sık değil', s: 1 }, { en: 'No, never', tr: 'Hayır, hiçbir zaman', s: 0 }] },
+  { qEn: 'I have been anxious or worried for no good reason', qTr: 'Belirgin bir neden yokken kaygılandım ya da endişelendim',
+    opts: [{ en: 'No, not at all', tr: 'Hayır, hiç', s: 0 }, { en: 'Hardly ever', tr: 'Çok nadiren', s: 1 }, { en: 'Yes, sometimes', tr: 'Evet, bazen', s: 2 }, { en: 'Yes, very often', tr: 'Evet, çok sık', s: 3 }] },
+  { qEn: 'I have felt scared or panicky for no very good reason', qTr: 'İyi bir neden yokken korktum ya da paniğe kapıldım',
+    opts: [{ en: 'Yes, quite a lot', tr: 'Evet, oldukça sık', s: 3 }, { en: 'Yes, sometimes', tr: 'Evet, bazen', s: 2 }, { en: 'No, not much', tr: 'Hayır, pek değil', s: 1 }, { en: 'No, not at all', tr: 'Hayır, hiç', s: 0 }] },
+  { qEn: 'Things have been getting on top of me', qTr: 'İşler üstüme üstüme geldi',
+    opts: [{ en: "Yes, most of the time I haven't coped at all", tr: 'Evet, çoğu zaman hiç baş edemedim', s: 3 }, { en: "Yes, sometimes I haven't coped as usual", tr: 'Evet, bazen her zamanki gibi baş edemedim', s: 2 }, { en: 'No, most of the time I have coped well', tr: 'Hayır, çoğu zaman oldukça iyi baş ettim', s: 1 }, { en: 'No, I have been coping as well as ever', tr: 'Hayır, her zamanki gibi baş ettim', s: 0 }] },
+  { qEn: 'I have been so unhappy that I have had difficulty sleeping', qTr: 'O kadar mutsuzdum ki uyumakta zorlandım',
+    opts: [{ en: 'Yes, most of the time', tr: 'Evet, çoğu zaman', s: 3 }, { en: 'Yes, sometimes', tr: 'Evet, bazen', s: 2 }, { en: 'Not very often', tr: 'Çok sık değil', s: 1 }, { en: 'No, not at all', tr: 'Hayır, hiç', s: 0 }] },
+  { qEn: 'I have felt sad or miserable', qTr: 'Üzgün ya da mutsuz hissettim',
+    opts: [{ en: 'Yes, most of the time', tr: 'Evet, çoğu zaman', s: 3 }, { en: 'Yes, quite often', tr: 'Evet, oldukça sık', s: 2 }, { en: 'Not very often', tr: 'Çok sık değil', s: 1 }, { en: 'No, not at all', tr: 'Hayır, hiç', s: 0 }] },
+  { qEn: 'I have been so unhappy that I have been crying', qTr: 'O kadar mutsuzdum ki ağladım',
+    opts: [{ en: 'Yes, most of the time', tr: 'Evet, çoğu zaman', s: 3 }, { en: 'Yes, quite often', tr: 'Evet, oldukça sık', s: 2 }, { en: 'Only occasionally', tr: 'Yalnızca ara sıra', s: 1 }, { en: 'No, never', tr: 'Hayır, hiçbir zaman', s: 0 }] },
+  { qEn: 'The thought of harming myself has occurred to me', qTr: 'Kendime zarar verme düşüncesi aklıma geldi',
+    opts: [{ en: 'Yes, quite often', tr: 'Evet, oldukça sık', s: 3 }, { en: 'Sometimes', tr: 'Bazen', s: 2 }, { en: 'Hardly ever', tr: 'Neredeyse hiç', s: 1 }, { en: 'Never', tr: 'Hiçbir zaman', s: 0 }] },
+];
+
+// Score band. q10 = answer to the self-harm item (any positive => urgent).
+function epdsBand(score, q10) {
+  if (q10 > 0) return {
+    key: 'urgent', color: 'oklch(0.55 0.16 25)',
+    en: 'Needs attention now', tr: 'Şimdi destek gerekli',
+    bEn: 'You answered that thoughts of harming yourself have occurred. Please reach out right now — to a doctor, someone you trust, or emergency services (112). You deserve support and you are not alone.',
+    bTr: 'Kendine zarar verme düşüncelerinin olduğunu belirttin. Lütfen hemen ulaş — bir doktora, güvendiğin birine ya da acil durumda 112’ye. Desteği hak ediyorsun ve yalnız değilsin.' };
+  if (score >= 13) return {
+    key: 'likely', color: 'var(--signal-warn)',
+    en: 'Possible depression — talk to someone', tr: 'Olası depresyon — biriyle konuş',
+    bEn: 'Your answers suggest you may be experiencing postnatal depression. This is common and treatable. Please talk to your doctor or midwife — asking for support is a strong step.',
+    bTr: 'Yanıtların doğum sonrası depresyon yaşıyor olabileceğine işaret ediyor. Bu yaygın ve tedavi edilebilir. Lütfen doktorunla ya da ebenle konuş — destek istemek güçlü bir adımdır.' };
+  if (score >= 10) return {
+    key: 'possible', color: 'var(--signal-warn)',
+    en: 'Some symptoms — keep an eye on it', tr: 'Bazı belirtiler — takip et',
+    bEn: 'You have some symptoms worth watching. Re-take this in two weeks; if things stay the same or get worse, talk to your care team.',
+    bTr: 'İzlemeye değer bazı belirtilerin var. Bunu iki hafta sonra tekrar yap; aynı kalır veya kötüleşirse destek ekibinle konuş.' };
+  return {
+    key: 'low', color: 'var(--signal-good)',
+    en: 'Low likelihood right now', tr: 'Şu an düşük olasılık',
+    bEn: 'Your score is low right now. Keep checking in with yourself — if you start to feel worse, share it with your care team.',
+    bTr: 'Skorun şu an düşük. Kendini izlemeyi sürdür — kötüleşmeye başlarsan destek ekibinle paylaş.' };
+}
+function epdsDate(iso, lang) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr' : 'en', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 function PostpartumHome({ lunara, api, onNav }) {
   useLang();
   const pp = lunara.postpartum;
@@ -128,6 +180,9 @@ function PostpartumHome({ lunara, api, onNav }) {
         </Card>
       </div>
 
+      {/* EPDS screening */}
+      <EpdsScreener lunara={lunara} api={api} onNav={onNav}/>
+
       {/* Feeding + sleep */}
       <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
         <Card>
@@ -183,6 +238,158 @@ function PostpartumHome({ lunara, api, onNav }) {
         </span>
       </div>
     </div>
+  );
+}
+
+const X_PATH = 'M18 6 6 18M6 6l12 12';
+
+// EPDS card: shows the latest result and opens the screening flow.
+function EpdsScreener({ lunara, api, onNav }) {
+  const lang = useLang();
+  const list = lunara.postpartum.epds || [];
+  const last = list[0];
+  const [open, setOpen] = React.useState(false);
+  const band = last ? epdsBand(last.score, last.q10) : null;
+  const flagged = band && (band.key === 'likely' || band.key === 'urgent');
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        <div>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>{t('EMOTIONAL HEALTH', 'DUYGUSAL SAĞLIK')}</div>
+          <div style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{t('Mood screening', 'Ruh hali taraması')}</div>
+        </div>
+        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>EPDS · {t('10 questions', '10 soru')}</span>
+      </div>
+
+      {last ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 16px', borderRadius: 'var(--r-md)', background: 'var(--bone)', marginBottom: 14 }}>
+          <div style={{ textAlign: 'center', minWidth: 64 }}>
+            <span style={{ fontFamily: 'var(--serif)', fontSize: 34, lineHeight: 1, color: band.color }}>{last.score}</span>
+            <div style={{ fontSize: 10, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>/ 30</div>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <span style={{ display: 'inline-block', fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: '0.04em', padding: '4px 10px', borderRadius: 999, background: band.color, color: 'var(--ivory)', marginBottom: 6 }}>
+              {t(band.en, band.tr)}
+            </span>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{t('Last taken', 'Son yapılan')}: {epdsDate(last.date, lang)}</div>
+          </div>
+        </div>
+      ) : (
+        <p style={{ fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.55, margin: '0 0 14px' }}>
+          {t('A short, validated questionnaire that screens for signs of postnatal depression. It takes about two minutes.',
+             'Doğum sonrası depresyon belirtilerini tarayan kısa, doğrulanmış bir anket. Yaklaşık iki dakika sürer.')}
+        </p>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <Btn primary onClick={() => setOpen(true)}>{last ? t('Take again', 'Yeniden değerlendir') : t('Start screening', 'Taramaya başla')}</Btn>
+        {flagged && (
+          <button onClick={() => onNav && onNav('care')} style={{ fontSize: 12.5, color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            {t('Message your care team', 'Destek ekibine yaz')} <Icon d={ICONS.arrow} size={13} stroke="var(--accent)"/>
+          </button>
+        )}
+      </div>
+
+      <p style={{ fontSize: 11.5, color: 'var(--muted-2)', lineHeight: 1.5, margin: '12px 0 0', fontStyle: 'italic' }}>
+        {t('A screening tool, not a diagnosis. Always discuss results with your doctor or midwife.',
+           'Bir tarama aracıdır, tanı değildir. Sonuçları her zaman doktorun veya ebenle değerlendir.')}
+      </p>
+
+      {open && <EpdsModal onClose={() => setOpen(false)} onSave={(r) => api.addEpds(r)} />}
+    </Card>
+  );
+}
+
+// 10-step screening flow, then a result view.
+function EpdsModal({ onClose, onSave }) {
+  const lang = useLang();
+  const [answers, setAnswers] = React.useState(Array(10).fill(null));
+  const [step, setStep] = React.useState(0);
+  const [done, setDone] = React.useState(false);
+
+  const total = answers.reduce((a, b) => a + (b || 0), 0);
+  const q10 = answers[9] || 0;
+
+  const choose = (s) => {
+    const next = [...answers]; next[step] = s; setAnswers(next);
+    if (step < 9) setTimeout(() => setStep(step + 1), 150);
+    else setTimeout(() => setDone(true), 150);
+  };
+
+  const overlay = (children) => (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(20,14,10,0.5)', backdropFilter: 'blur(3px)', padding: 18,
+    }}>
+      <div onClick={e => e.stopPropagation()} className="sheet-up" style={{
+        width: '100%', maxWidth: 480, maxHeight: '88vh', overflow: 'auto',
+        background: 'var(--card)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-card)', padding: 24,
+      }}>{children}</div>
+    </div>
+  );
+
+  if (done) {
+    const band = epdsBand(total, q10);
+    return overlay(
+      <>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <div className="eyebrow">{t('Your result', 'Sonucun')}</div>
+          <button onClick={onClose} style={{ padding: 6, color: 'var(--muted)', cursor: 'pointer' }}><Icon d={X_PATH} size={18} sw={2}/></button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+          <span style={{ fontFamily: 'var(--serif)', fontSize: 48, lineHeight: 1, color: band.color }}>{total}</span>
+          <span style={{ fontSize: 14, color: 'var(--muted)' }}>/ 30</span>
+        </div>
+        <span style={{ display: 'inline-block', fontSize: 12, fontFamily: 'var(--mono)', letterSpacing: '0.04em', padding: '5px 12px', borderRadius: 999, background: band.color, color: 'var(--ivory)', marginBottom: 14 }}>
+          {t(band.en, band.tr)}
+        </span>
+        <p style={{ fontFamily: 'var(--serif)', fontSize: 15.5, lineHeight: 1.6, color: 'var(--ink-2)', margin: '0 0 16px' }}>{t(band.bEn, band.bTr)}</p>
+        <p style={{ fontSize: 11.5, color: 'var(--muted-2)', lineHeight: 1.5, margin: '0 0 20px', fontStyle: 'italic' }}>
+          {t('The EPDS is a screening tool, not a diagnosis.', 'EPDS bir tarama aracıdır, tanı koymaz.')}
+        </p>
+        <button onClick={() => { onSave({ date: TODAY_KEY, score: total, q10, answers }); onClose(); }} style={{
+          width: '100%', padding: '13px 0', borderRadius: 999, border: 'none',
+          background: 'var(--ink)', color: 'var(--ivory)', fontFamily: 'var(--sans)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        }}>{t('Save result', 'Sonucu kaydet')}</button>
+      </>
+    );
+  }
+
+  const q = EPDS[step];
+  return overlay(
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <span style={{ fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: '0.06em', color: 'var(--muted)' }}>{t('QUESTION', 'SORU')} {step + 1} / 10</span>
+        <button onClick={onClose} style={{ padding: 6, color: 'var(--muted)', cursor: 'pointer' }}><Icon d={X_PATH} size={18} sw={2}/></button>
+      </div>
+      {/* progress */}
+      <div style={{ height: 4, borderRadius: 999, background: 'var(--line-soft)', marginBottom: 18, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${((step + 1) / 10) * 100}%`, background: 'var(--accent)', transition: 'width 200ms ease' }}/>
+      </div>
+      <p style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.4, color: 'var(--ink)', margin: '0 0 18px' }}>
+        {t('In the past 7 days…', 'Son 7 gün içinde…')}<br/>
+        <span style={{ color: 'var(--ink-2)' }}>{t(q.qEn, q.qTr)}</span>
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {q.opts.map((o, i) => {
+          const on = answers[step] === o.s;
+          return (
+            <button key={i} onClick={() => choose(o.s)} style={{
+              textAlign: 'left', padding: '13px 16px', borderRadius: 'var(--r-md)', cursor: 'pointer',
+              background: on ? 'var(--accent)' : 'var(--bone)', color: on ? 'var(--ivory)' : 'var(--ink-2)',
+              boxShadow: on ? 'none' : 'inset 0 0 0 1px var(--line-soft)',
+              fontFamily: 'var(--sans)', fontSize: 14, transition: 'all 120ms ease',
+            }}>{t(o.en, o.tr)}</button>
+          );
+        })}
+      </div>
+      {step > 0 && (
+        <button onClick={() => setStep(step - 1)} style={{ marginTop: 16, fontSize: 13, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+          ‹ {t('Back', 'Geri')}
+        </button>
+      )}
+    </>
   );
 }
 
