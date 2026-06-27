@@ -100,7 +100,7 @@ function TtcHome({ lunara, api, onNav }) {
               {bbtToday ? `${bbtToday.toFixed(2)}°C` : '—'}
             </span>
           </div>
-          <BBTChart series={BBT_BASE} todayTemp={bbtToday}/>
+          <BBTChart lunara={lunara}/>
           <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, margin: '14px 0 14px' }}>
             {t('A sustained rise of ~0.3°C confirms ovulation has happened — expected around day 18.',
                'Sürekli ~0,3°C’lik bir yükseliş ovülasyonun gerçekleştiğini doğrular — 18. gün civarında beklenir.')}
@@ -271,26 +271,92 @@ function isoKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// BBT line chart
-function BBTChart({ series, todayTemp }) {
-  const data = todayTemp ? [...series.slice(1), todayTemp] : series;
-  const W = 440, H = 150, padL = 30, padR = 10, padT = 12, padB = 22;
-  const lo = 36.1, hi = 36.8;
-  const x = i => padL + (i / (data.length - 1)) * (W - padL - padR);
-  const y = v => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
-  const path = data.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+// BBT line chart — data-driven over the last 14 days, with a coverline,
+// an ovulation-shift marker and LH high/peak markers.
+function BBTChart({ lunara }) {
+  useLang();
+  // Build a 14-day window ending today from real logged data.
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(TODAY_DATE); d.setDate(TODAY_DATE.getDate() - i);
+    const key = isoKey(d);
+    days.push({
+      key, cd: cycleDayFrom(lunara.periodStart, d), isToday: i === 0,
+      temp: lunara.ttc.bbt[key] != null ? lunara.ttc.bbt[key] : null,
+      lh: lunara.ttc.lh[key] || null,
+    });
+  }
+  const realCount = days.filter(d => d.temp != null).length;
+  const usingDemo = realCount < 3;
+  const series = usingDemo ? days.map((d, i) => ({ ...d, temp: BBT_BASE[i] })) : days;
+
+  // Coverline ≈ average of the lower ~60% of temps + 0.1°C (a sustained rise
+  // above it confirms ovulation has happened).
+  const temps = series.filter(d => d.temp != null).map(d => d.temp);
+  const sorted = [...temps].sort((a, b) => a - b);
+  const lowN = Math.max(1, Math.round(sorted.length * 0.6));
+  const coverline = temps.length ? +((sorted.slice(0, lowN).reduce((a, b) => a + b, 0) / lowN) + 0.1).toFixed(2) : null;
+
+  // Detect the thermal shift: first day that rises above the coverline.
+  let shiftIdx = -1;
+  if (coverline != null) {
+    for (let i = 3; i < series.length; i++) {
+      if (series[i].temp != null && series[i].temp >= coverline && series[i - 1].temp != null && series[i - 1].temp < coverline) { shiftIdx = i; break; }
+    }
+  }
+
+  const W = 460, H = 176, padL = 32, padR = 12, padT = 16, padB = 32;
+  const lo = 36.1, hi = 36.9;
+  const xs = i => padL + (i / (series.length - 1)) * (W - padL - padR);
+  const ys = v => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+
+  // Line, breaking on missing days.
+  const segs = []; let cur = [];
+  series.forEach((d, i) => {
+    if (d.temp != null) cur.push(`${cur.length ? 'L' : 'M'}${xs(i).toFixed(1)},${ys(d.temp).toFixed(1)}`);
+    else { if (cur.length) segs.push(cur.join(' ')); cur = []; }
+  });
+  if (cur.length) segs.push(cur.join(' '));
+
+  const lhColor = k => k === 'peak' ? 'var(--accent)' : k === 'high' ? 'var(--accent-soft)' : null;
+  let ovi = shiftIdx; if (ovi < 0) ovi = series.findIndex(d => d.cd === TTC_OV);
+
   return (
-    <svg className="chart" viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }}>
-      {[36.2, 36.4, 36.6].map(g => (
-        <g key={g}>
-          <line x1={padL} x2={W - padR} y1={y(g)} y2={y(g)} stroke="var(--line-soft)" strokeWidth="1"/>
-          <text x={4} y={y(g) + 3} fill="var(--muted-2)" fontFamily="var(--mono)" fontSize="9">{g.toFixed(1)}</text>
-        </g>
-      ))}
-      {/* expected ovulation marker (day 18 ≈ near right edge of 14-day window) */}
-      <path d={path} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      {data.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={i === data.length - 1 ? 3.6 : 2.2} fill="var(--accent)"/>)}
-    </svg>
+    <div>
+      <svg className="chart" viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }}>
+        {[36.2, 36.4, 36.6, 36.8].map(g => (
+          <g key={g}>
+            <line x1={padL} x2={W - padR} y1={ys(g)} y2={ys(g)} stroke="var(--line-soft)" strokeWidth="1"/>
+            <text x={4} y={ys(g) + 3} fill="var(--muted-2)" fontFamily="var(--mono)" fontSize="9">{g.toFixed(1)}</text>
+          </g>
+        ))}
+        {/* coverline */}
+        {coverline != null && (
+          <line x1={padL} x2={W - padR} y1={ys(coverline)} y2={ys(coverline)} stroke="var(--ink)" strokeWidth="1" strokeDasharray="4 4" opacity="0.45"/>
+        )}
+        {/* ovulation / thermal-shift marker */}
+        {ovi >= 0 && (
+          <g>
+            <line x1={xs(ovi)} x2={xs(ovi)} y1={padT} y2={H - padB} stroke="var(--accent)" strokeWidth="1.4" strokeDasharray="3 3" opacity="0.6"/>
+            <text x={xs(ovi)} y={padT - 4} textAnchor="middle" fill="var(--accent)" fontFamily="var(--mono)" fontSize="8.5">{shiftIdx >= 0 ? t('shift', 'yükseliş') : t('est. ov.', 'tah. ov.')}</text>
+          </g>
+        )}
+        {segs.map((d, i) => <path key={i} d={d} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>)}
+        {series.map((d, i) => d.temp != null && (
+          <circle key={i} cx={xs(i)} cy={ys(d.temp)} r={d.isToday ? 3.8 : 2.2} fill="var(--accent)" stroke={d.isToday ? 'var(--card)' : 'none'} strokeWidth={d.isToday ? 1.5 : 0}/>
+        ))}
+        {/* LH markers */}
+        {series.map((d, i) => { const c = lhColor(d.lh); return c ? <circle key={'lh' + i} cx={xs(i)} cy={H - padB + 13} r="3.5" fill={c}/> : null; })}
+        {/* cycle-day axis */}
+        {series.map((d, i) => (i % 3 === 0 || d.isToday) ? <text key={'x' + i} x={xs(i)} y={H - 5} textAnchor="middle" fill="var(--muted-2)" fontFamily="var(--mono)" fontSize="8">{d.cd}</text> : null)}
+      </svg>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8, fontSize: 10.5, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 14, height: 0, borderTop: '1px dashed var(--ink)', opacity: 0.5 }}/>{t('coverline', 'eşik çizgisi')}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-soft)' }}/>{t('LH high', 'LH yüksek')}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }}/>{t('LH peak', 'LH zirve')}</span>
+        {usingDemo && <span style={{ fontStyle: 'italic' }}>{t('example data', 'örnek veri')}</span>}
+      </div>
+    </div>
   );
 }
 
