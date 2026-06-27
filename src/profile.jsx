@@ -99,22 +99,8 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
             </div>
           </Card>
 
-          {/* Notifications */}
-          <Card>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>{t('Notifications', 'Bildirimler')}</div>
-            <Toggle label={t('Dose reminders', 'Doz hatırlatıcıları')}
-              sub={t('Nudge me when a dose is due', 'Doz zamanı geldiğinde uyar')}
-              on={p.reminders} onToggle={() => toggleNotifications('reminders', !p.reminders, api)}/>
-            <Toggle label={t('Cycle & phase alerts', 'Döngü & faz uyarıları')}
-              sub={t('Period, fertile window, phase shifts', 'Regl, doğurgan pencere, faz geçişleri')}
-              on={p.cycleAlerts} onToggle={() => api.updateProfile({ cycleAlerts: !p.cycleAlerts })}/>
-            <Toggle label={t('Lab reminders', 'Tahlil hatırlatıcıları')}
-              sub={t('Upcoming blood draws', 'Yaklaşan kan tahlilleri')}
-              on={p.labReminders} onToggle={() => api.updateProfile({ labReminders: !p.labReminders })}/>
-            <Toggle label={t('Email updates', 'E-posta güncellemeleri')}
-              sub={t('Weekly summary from your care team', 'Destek ekibinden haftalık özet')}
-              on={p.emailUpdates} onToggle={() => api.updateProfile({ emailUpdates: !p.emailUpdates })} last/>
-          </Card>
+          {/* Notifications & reminders */}
+          <NotificationSettings lunara={lunara} api={api}/>
 
           {/* Data & account */}
           <Card>
@@ -133,6 +119,103 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
 
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)}/>}
     </div>
+  );
+}
+
+// Notifications & reminders — permission status, enable/test, toggles, daily time.
+function NotificationSettings({ lunara, api }) {
+  const lang = useLang();
+  const p = lunara.profile;
+  const supported = typeof window !== 'undefined' && 'Notification' in window;
+  const [perm, setPerm] = React.useState(supported ? Notification.permission : 'unsupported');
+  const granted = perm === 'granted';
+  const reminderTime = p.reminderTime || '09:00';
+
+  const enable = async () => {
+    if (!supported) return;
+    try {
+      const r = await Notification.requestPermission();
+      setPerm(r);
+      if (r === 'granted') {
+        api.updateProfile({ reminders: true });
+        new Notification('Lunara', { body: lang === 'tr' ? 'Hatırlatıcılar açıldı 🌙' : 'Reminders are on 🌙', icon: '/icon-192.png' });
+      }
+    } catch (e) {}
+  };
+  const test = () => {
+    if (granted) try { new Notification('Lunara', { body: lang === 'tr' ? 'Bu bir test bildirimidir 🔔' : 'This is a test notification 🔔', icon: '/icon-192.png' }); } catch (e) {}
+  };
+
+  const status = !supported
+    ? { color: 'var(--muted)', label: t('Not supported on this browser', 'Bu tarayıcıda desteklenmiyor') }
+    : granted
+      ? { color: 'var(--signal-good)', label: t('Notifications on', 'Bildirimler açık') }
+      : perm === 'denied'
+        ? { color: 'var(--signal-low)', label: t('Blocked in browser settings', 'Tarayıcı ayarlarında engelli') }
+        : { color: 'var(--muted)', label: t('Not enabled yet', 'Henüz etkin değil') };
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div className="eyebrow">{t('Notifications & reminders', 'Bildirimler & hatırlatıcılar')}</div>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: status.color, fontFamily: 'var(--mono)' }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: status.color }}/>{status.label}
+        </span>
+      </div>
+
+      {/* Permission action */}
+      {supported && !granted && perm !== 'denied' && (
+        <button onClick={enable} style={{
+          width: '100%', padding: '12px 0', borderRadius: 12, marginBottom: 14, border: 'none', cursor: 'pointer',
+          background: 'var(--ink)', color: 'var(--ivory)', fontFamily: 'var(--sans)', fontSize: 13.5, fontWeight: 600,
+        }}>{t('Enable notifications', 'Bildirimleri etkinleştir')}</button>
+      )}
+      {perm === 'denied' && (
+        <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 14px' }}>
+          {t('Notifications are blocked. Allow them for Lunara in your browser or phone settings, then reload.',
+             'Bildirimler engelli. Tarayıcı veya telefon ayarlarından Lunara’ya izin verip sayfayı yenile.')}
+        </p>
+      )}
+      {granted && (
+        <button onClick={test} style={{
+          fontSize: 12.5, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12,
+        }}>
+          <Icon d={ICONS.bell} size={13} stroke="var(--accent)"/> {t('Send a test notification', 'Test bildirimi gönder')}
+        </button>
+      )}
+
+      {/* Reminder preferences */}
+      <div style={{ opacity: granted ? 1 : 0.5, pointerEvents: granted ? 'auto' : 'none' }}>
+        <Toggle label={t('Dose reminders', 'Doz hatırlatıcıları')}
+          sub={t('Nudge me when a dose is due', 'Doz zamanı geldiğinde uyar')}
+          on={p.reminders} onToggle={() => api.updateProfile({ reminders: !p.reminders })}/>
+        <Toggle label={t('Daily check-in', 'Günlük check-in')}
+          sub={t('A gentle daily reminder to log how you feel', 'Nasıl hissettiğini kaydetmen için nazik günlük hatırlatma')}
+          on={p.cycleAlerts} onToggle={() => api.updateProfile({ cycleAlerts: !p.cycleAlerts })}/>
+        <Toggle label={t('Lab reminders', 'Tahlil hatırlatıcıları')}
+          sub={t('Upcoming blood draws', 'Yaklaşan kan tahlilleri')}
+          on={p.labReminders} onToggle={() => api.updateProfile({ labReminders: !p.labReminders })}/>
+
+        {/* Daily reminder time */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 0' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>{t('Daily reminder time', 'Günlük hatırlatma saati')}</div>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 1 }}>{t('When the daily check-in fires', 'Günlük check-in’in tetiklendiği saat')}</div>
+          </div>
+          <input type="time" value={reminderTime} onChange={e => api.updateProfile({ reminderTime: e.target.value })}
+            style={{
+              border: '1px solid var(--line)', borderRadius: 10, padding: '9px 11px',
+              fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', background: 'var(--ivory)', outline: 'none',
+            }}/>
+        </div>
+      </div>
+
+      <p style={{ fontSize: 11, color: 'var(--muted-2)', lineHeight: 1.5, margin: '8px 0 0', fontStyle: 'italic' }}>
+        {t('Reminders fire while Lunara is open. Background push needs an account and is coming later.',
+           'Hatırlatıcılar Lunara açıkken çalışır. Arka plan bildirimi için hesap gerekir; ileride eklenecek.')}
+      </p>
+    </Card>
   );
 }
 

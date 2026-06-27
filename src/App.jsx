@@ -66,6 +66,31 @@ export default function App() {
     return () => clearInterval(iv);
   }, [lunara.profile && lunara.profile.reminders, lunara.regimen, lunara.doseLog]);
 
+  // Daily check-in reminder at the user's chosen time (while the app is open).
+  React.useEffect(() => {
+    if (!lunara.profile || !lunara.profile.cycleAlerts) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const time = lunara.profile.reminderTime || '09:00';
+    let firedDay = null;
+    const check = () => {
+      const now = new Date();
+      const hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      const dayKey = getTodayKey();
+      if (hm === time && firedDay !== dayKey) {
+        firedDay = dayKey;
+        try {
+          new Notification('Lunara', {
+            body: I18N.lang === 'tr' ? 'Günlük check-in zamanı — nasıl hissediyorsun? 🌙' : 'Time for your daily check-in — how do you feel? 🌙',
+            icon: '/icon-192.png', tag: 'daily-checkin',
+          });
+        } catch (e) {}
+      }
+    };
+    const iv = setInterval(check, 30000);
+    check();
+    return () => clearInterval(iv);
+  }, [lunara.profile && lunara.profile.cycleAlerts, lunara.profile && lunara.profile.reminderTime]);
+
   const showOnboarding = !lunara.onboarded || active === 'onboarding';
 
   const screenEl = (() => {
