@@ -179,6 +179,7 @@ function PregnancyHome({ lunara, api, onNav }) {
                  '28. haftadan itibaren 2 saat içinde ~10 hareket hissetmek güven vericidir. Her tekmede dokun.')}
             </p>
           </div>
+          <KickHistory kicks={p.kicks}/>
         </Card>
 
         {/* Weight */}
@@ -299,6 +300,41 @@ function WeekExplorer({ currentWeek }) {
         </div>
       </div>
     </Card>
+  );
+}
+
+// Last 14 days of daily kick counts as small bars.
+function KickHistory({ kicks }) {
+  const lang = useLang();
+  const today = new Date(TODAY_DATE);
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    days.push({ key, count: kicks[key] || 0, isToday: i === 0, dom: d.getDate() });
+  }
+  const max = Math.max(1, ...days.map(d => d.count));
+  const activeDays = days.filter(d => d.count > 0).length;
+
+  return (
+    <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line-soft)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+        <span className="eyebrow">{t('Last 14 days', 'Son 14 gün')}</span>
+        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{activeDays} {t('days logged', 'gün kayıtlı')}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 62 }}>
+        {days.map(d => {
+          const h = d.count === 0 ? 3 : Math.max(7, Math.round((d.count / max) * 58));
+          return (
+            <div key={d.key} title={`${d.dom} · ${d.count} ${t('kicks', 'tekme')}`}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
+              <div style={{ width: '100%', height: h, borderRadius: 4, background: d.count ? (d.isToday ? 'var(--accent)' : 'var(--accent-soft)') : 'var(--line-soft)' }}/>
+              {d.isToday && <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--accent)' }}/>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

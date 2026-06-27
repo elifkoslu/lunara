@@ -118,6 +118,9 @@ function MenopauseHome({ lunara, api, onNav }) {
         </Card>
       </div>
 
+      {/* Symptom history */}
+      <MenoSymptomHistory symptomLog={lunara.symptomLog}/>
+
       {/* Long-term health */}
       <Card>
         <div className="eyebrow" style={{ marginBottom: 14 }}>{t('Protecting your long-term health', 'Uzun vadeli sağlığını korumak')}</div>
@@ -144,6 +147,49 @@ function MenopauseHome({ lunara, api, onNav }) {
         </span>
       </div>
     </div>
+  );
+}
+
+// Per-symptom 14-day occurrence history (filled when logged > 0 that day).
+function MenoSymptomHistory({ symptomLog }) {
+  useLang();
+  const today = new Date(TODAY_DATE);
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    days.push({ key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), isToday: i === 0 });
+  }
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+        <div className="eyebrow">{t('Symptom history', 'Belirti geçmişi')}</div>
+        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{t('last 14 days · today →', 'son 14 gün · bugün →')}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+        {MENO_SYMPTOMS.map(s => {
+          let count = 0;
+          const cells = days.map(d => { const v = (symptomLog[d.key] && symptomLog[d.key][s.key]) || 0; if (v > 0) count++; return { on: v > 0, isToday: d.isToday }; });
+          return (
+            <div key={s.key} style={{ display: 'grid', gridTemplateColumns: '136px 1fr 40px', gap: 12, alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <Icon d={s.icon} size={14} stroke="var(--muted)"/>
+                <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{t(s.en, s.tr)}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 3 }}>
+                {cells.map((c, i) => (
+                  <div key={i} style={{
+                    flex: 1, height: 18, borderRadius: 3,
+                    background: c.on ? 'var(--accent)' : 'var(--bone)',
+                    boxShadow: c.isToday ? 'inset 0 0 0 1.5px var(--ink)' : (c.on ? 'none' : 'inset 0 0 0 1px var(--line-soft)'),
+                  }}/>
+                ))}
+              </div>
+              <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', textAlign: 'right' }}>{count}/14</span>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 
