@@ -12,6 +12,7 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
     <div style={{ padding: '18px 36px 40px', display: 'flex', flexDirection: 'column', gap: 22 }}>
       <EdHero lunara={lunara} hasDoses={hasDoses} onNav={onNav}/>
       <EdMoonToday/>
+      {lunara && <WeeklySummary lunara={lunara} hasDoses={hasDoses}/>}
       {hasDoses ? (
         <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 22 }}>
           <EdToday lunara={lunara} api={api}/>
@@ -27,6 +28,61 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
         {hasDoses ? <EdLibraryRead/> : <EdCareNote/>}
       </div>
     </div>
+  );
+}
+
+// ─── Weekly summary ────────────────────────────────────────────
+function WeeklySummary({ lunara, hasDoses = true }) {
+  const lang = useLang();
+  const today = new Date(TODAY_DATE);
+  const keys = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+  }
+  const symLog = lunara.symptomLog || {};
+  const doseLog = lunara.doseLog || {};
+  const tracked = keys.filter(k => symLog[k] && Object.keys(symLog[k]).length > 0).length;
+  const entries = keys.reduce((s, k) => s + (symLog[k] ? Object.values(symLog[k]).filter(v => v > 0).length : 0), 0);
+  const doses = keys.reduce((s, k) => s + (doseLog[k] ? Object.keys(doseLog[k]).length : 0), 0);
+  const weekAgo = today.getTime() - 7 * 86400000;
+  const notes = (lunara.notes || []).filter(n => typeof n.id === 'number' && n.id >= weekAgo).length;
+
+  const day = cycleDayFrom(lunara.periodStart, today);
+  const phaseWord = phaseLabel(phaseOf(day)).toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en');
+
+  const tiles = [
+    { value: tracked, label: t('days tracked', 'gün takip'), icon: ICONS.check },
+    ...(hasDoses ? [{ value: doses, label: t('doses taken', 'doz alındı'), icon: ICONS.pill }] : []),
+    { value: entries, label: t('symptoms logged', 'belirti kaydı'), icon: ICONS.pulse },
+    { value: notes, label: t('notes', 'not'), icon: ICONS.book },
+  ];
+
+  const narrative = tracked === 0
+    ? t('No check-ins yet this week — a quick daily note builds your picture.',
+        'Bu hafta henüz kayıt yok — kısa bir günlük not resmini oluşturur.')
+    : t(`You logged ${tracked} of the last 7 days — you’re in your ${phaseWord} phase.`,
+        `Son 7 günün ${tracked}’ini kaydettin — ${phaseWord} fazındasın.`);
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+        <div className="eyebrow">{t('This week', 'Bu hafta')}</div>
+        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{t('last 7 days', 'son 7 gün')}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+        {tiles.map((tile, i) => (
+          <div key={i} style={{ flex: '1 1 92px', display: 'flex', flexDirection: 'column', gap: 7, padding: '15px 16px', borderRadius: 'var(--r-md)', background: 'var(--bone)' }}>
+            <span style={{ color: 'var(--accent)' }}><Icon d={tile.icon} size={16}/></span>
+            <span style={{ fontFamily: 'var(--serif)', fontSize: 28, lineHeight: 1, letterSpacing: '-0.01em' }}>{tile.value}</span>
+            <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', letterSpacing: '0.02em' }}>{tile.label}</span>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 15, lineHeight: 1.5, color: 'var(--ink-2)', margin: 0 }}>
+        {narrative}
+      </p>
+    </Card>
   );
 }
 
