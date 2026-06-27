@@ -162,11 +162,23 @@ function OnboardingScreen({ lunara, api, onDone }) {
   const [picked, setPicked] = React.useState(lunara.stage || null);
   const [name, setName] = React.useState((lunara.profile && lunara.profile.name) || '');
   const [age, setAge] = React.useState((lunara.profile && lunara.profile.age) || '');
+  const [periodStart, setPeriodStart] = React.useState('');
+  const [cycleLen, setCycleLen] = React.useState(28);
   const lang = I18N.lang;
+
+  // Stages whose experience is driven by the menstrual cycle.
+  const CYCLE_STAGES = ['menarche', 'cycle', 'ttc', 'perimeno'];
+  const isCycle = CYCLE_STAGES.includes(picked);
+  const todayMax = new Date().toISOString().slice(0, 10);
 
   const finish = () => {
     if (!picked) return;
     if (api.updateProfile) api.updateProfile({ name: name.trim(), age: age });
+    if (CYCLE_STAGES.includes(picked)) {
+      if (periodStart && api.setPeriodStart) api.setPeriodStart(periodStart);
+      if (periodStart && api.setRegimenAnchor) api.setRegimenAnchor(periodStart);
+      if (cycleLen && api.setRegimenCycle) api.setRegimenCycle(parseInt(cycleLen, 10) || 28);
+    }
     api.setStage(picked);
     onDone && onDone();
   };
@@ -279,6 +291,38 @@ function OnboardingScreen({ lunara, api, onDone }) {
               }}/>
           </label>
         </div>
+
+        {/* Döngü bilgisi — yalnızca döngü-temelli evrelerde */}
+        {isCycle && (
+          <div className="fade-up" style={{ margin: '0 0 24px' }}>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>{t('Cycle details (optional)', 'Döngü bilgisi (isteğe bağlı)')}</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <label style={{ flex: '2 1 220px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span className="eyebrow">{t('Last period start', 'Son adet başlangıcı')}</span>
+                <input type="date" max={todayMax} value={periodStart} onChange={e => setPeriodStart(e.target.value)}
+                  style={{
+                    border: '1px solid var(--line)', borderRadius: 12, padding: '13px 15px',
+                    fontFamily: 'var(--sans)', fontSize: 15, color: 'var(--ink)',
+                    background: 'var(--card)', outline: 'none', width: '100%', boxSizing: 'border-box',
+                  }}/>
+              </label>
+              <label style={{ flex: '1 1 150px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span className="eyebrow">{t('Cycle length (days)', 'Döngü uzunluğu (gün)')}</span>
+                <input value={cycleLen} onChange={e => setCycleLen(e.target.value.replace(/\D/g, '').slice(0, 2))} inputMode="numeric"
+                  placeholder="28"
+                  style={{
+                    border: '1px solid var(--line)', borderRadius: 12, padding: '13px 15px',
+                    fontFamily: 'var(--sans)', fontSize: 15, color: 'var(--ink)',
+                    background: 'var(--card)', outline: 'none', width: '100%', boxSizing: 'border-box',
+                  }}/>
+              </label>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '8px 0 0', fontStyle: 'italic' }}>
+              {t('Helps Lunara personalise your cycle phases and reminders. You can change this anytime.',
+                 'Lunara’nın döngü fazlarını ve hatırlatıcılarını kişiselleştirmesine yardımcı olur. İstediğin zaman değiştirebilirsin.')}
+            </p>
+          </div>
+        )}
 
         {/* Continue */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
