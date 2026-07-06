@@ -113,12 +113,13 @@ const HERO_MOON_CLAUSE = [
 function EdHero({ lunara, hasDoses = true, onNav }) {
   const lang = useLang();
   const today = TODAY_DATE;
-  const day = lunara ? cycleDayFrom(lunara.periodStart, today) : PATIENT.cycleDay;
+  const day = lunara ? cycleDayFrom(lunara.periodStart, today) : 1;
   const ph = phaseOf(day);
-  const remaining = lunara
-    ? DOSES_TODAY.filter(d => !lunara.doses[d.id]).length
-    : DOSES_TODAY.filter(d => !d.taken).length;
-  const moon = moonPhase(new Date('2026-06-18T21:00:00'));
+  // Real regimen: meds active today, not yet taken
+  const { meds } = lunara ? todaysDoses(lunara) : { meds: [] };
+  const remaining = meds.filter(m => !medTaken(lunara, m.id)).length;
+  const showDoses = hasDoses && meds.length > 0;
+  const moon = moonPhase(today);
   const moonIdx = moonPhaseIndex(moon.frac);
   const phaseWord = phaseLabel(ph).toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en');
 
@@ -126,7 +127,7 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
   const doseLine = remaining === 0
     ? t('All doses done for today.', 'Bugün tüm dozlar tamam.')
     : t(`${remaining} dose${remaining > 1 ? 's' : ''} left today.`, `Bugün ${remaining} doz kaldı.`);
-  const headline = hasDoses ? t(
+  const headline = showDoses ? t(
     <>{doseLine} You’re in your <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{phaseWord}</em> phase.</>,
     <>{doseLine} <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{phaseWord}</em> fazındasın.</>
   ) : t(
@@ -153,22 +154,20 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
           position: 'absolute', top: 22, left: 22, pointerEvents: 'none',
           fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
           color: 'rgba(251,246,235,0.85)',
-        }}>{hasDoses ? t('Cycle portrait · stabilization', 'Döngü portresi · stabilizasyon') : t('Cycle portrait', 'Döngü portresi') + ' · ' + phaseWord}</div>
+        }}>{t('Cycle portrait', 'Döngü portresi') + ' · ' + phaseWord}</div>
         <div style={{
           position: 'absolute', bottom: 22, left: 22, right: 22, pointerEvents: 'none',
           color: 'oklch(0.96 0.02 70)',
         }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', opacity: 0.7 }}>
-            {t('DAY', 'GÜN')} {day} · {t('CYCLE', 'DÖNGÜ')} {PATIENT.cycleLength}
+            {t('DAY', 'GÜN')} {day} · {t('CYCLE', 'DÖNGÜ')} {(lunara && lunara.regimen && lunara.regimen.cycleLength) || 28}
           </div>
         </div>
       </div>
       {/* Editorial copy */}
       <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>{hasDoses
-            ? <>{t('WEEK', 'HAFTA')} {PATIENT.programWeek} · {t(PROGRAM.phase, PROGRAM.phaseTr)}</>
-            : <>{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {phaseWord}</>}</div>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {phaseWord}</div>
           <h2 className="serif-display" style={{ fontSize: 28, lineHeight: 1.15, margin: 0, color: 'var(--ink)', textWrap: 'pretty' }}>
             {headline}
           </h2>
@@ -460,7 +459,7 @@ function moonPhaseIndex(frac) {
 
 function EdMoonToday() {
   const lang = useLang();
-  const today = new Date('2026-06-18T21:00:00');
+  const today = TODAY_DATE;
   const moon = moonPhase(today);
   const fx = MOON_FX[moonPhaseIndex(moon.frac)];
   const illum = Math.round(moon.illum * 100);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { I18N, LangToggle, t } from './i18n';
-import { wrap } from './screens';
+import { cycleDayFrom, wrap } from './screens';
 import { STAGES, StageChip } from './stages';
 
 /* shared.jsx — BHRT app primitives, data, nav */
@@ -197,22 +197,7 @@ function SideRail({ active = 'home', onNav, profile, stage = 'cycle' }) {
       </div>
 
       {/* Stage chip — current life stage + note */}
-      {typeof StageChip !== 'undefined'
-        ? <StageChip stage={stage} onNav={onNav}/>
-        : (
-      <div style={{
-        padding: '12px 12px',
-        background: 'var(--card)',
-        borderRadius: 12,
-        boxShadow: 'inset 0 0 0 1px var(--line-soft)',
-        display: 'flex', flexDirection: 'column', gap: 7,
-      }}>
-        <span className="eyebrow-mono" style={{ fontSize: 9.5 }}>{t('PROGRAM', 'PROGRAM')} · {t('WEEK', 'HAFTA')} {PATIENT.programWeek}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{t(PROGRAM.name, PROGRAM.nameTr)}</span>
-        <ProgramBar idx={PROGRAM.phaseIdx} total={PROGRAM.phaseTotal}/>
-        <span style={{ fontSize: 11, color: 'var(--muted)' }}>{t(PROGRAM.phase, PROGRAM.phaseTr)}</span>
-      </div>
-        )}
+      <StageChip stage={stage} onNav={onNav}/>
 
       {/* Nav */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -267,7 +252,7 @@ function SideRail({ active = 'home', onNav, profile, stage = 'cycle' }) {
         }}>{((profile && profile.name) ? profile.name : '·').charAt(0).toLocaleLowerCase(I18N.lang === 'tr' ? 'tr' : 'en')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>{(profile && profile.name) ? profile.name : t('Your profile', 'Profilin')}</span>
-          <span style={{ fontSize: 10.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile ? t(profile.condition, profile.conditionTr || profile.condition) : t(PATIENT.condition, PATIENT.conditionTr)}</span>
+          <span style={{ fontSize: 10.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile ? t(profile.condition, profile.conditionTr || profile.condition) : ''}</span>
         </div>
         <Icon d={ICONS.cog} size={15} stroke="var(--muted-2)"/>
       </button>
@@ -533,19 +518,29 @@ function ProgramBar({ idx, total }) {
 }
 
 // ─── Top bar ───────────────────────────────────────────────────
-function TopBar({ greeting }) {
+function TopBar({ greeting, lunara }) {
+  const locale = I18N.lang === 'tr' ? 'tr' : 'en';
+  const dateStr = TODAY_DATE
+    .toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })
+    .toLocaleUpperCase(locale);
+  const day = lunara && lunara.periodStart ? cycleDayFrom(lunara.periodStart, TODAY_DATE) : null;
+  const name = lunara && lunara.profile && lunara.profile.name;
+  const h = TODAY_DATE.getHours();
+  const greet = h < 12 ? t('Good morning', 'Günaydın') : h < 18 ? t('Good afternoon', 'İyi günler') : t('Good evening', 'İyi akşamlar');
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '22px 36px 6px',
     }}>
       <div>
-        <div className="eyebrow" style={{ marginBottom: 6 }}>{t('FRIDAY · 22 MAY · CYCLE DAY', 'CUMA · 22 MAYIS · DÖNGÜ GÜNÜ')} {PATIENT.cycleDay}</div>
+        <div className="eyebrow" style={{ marginBottom: 6 }}>
+          {dateStr}{day != null ? <> · {t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day}</> : null}
+        </div>
         <h1 className="serif-display" style={{
           fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 30,
           margin: 0, color: 'var(--ink)',
         }}>
-          {greeting || t(`Good morning, ${PATIENT.name}.`, `Günaydın, ${PATIENT.name}.`)}
+          {greeting || `${greet}${name ? `, ${name}` : ''}.`}
         </h1>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

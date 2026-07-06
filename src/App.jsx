@@ -156,7 +156,7 @@ export default function App() {
       }}>
         <SideRail active={active} onNav={setActive} profile={lunara.profile} stage={lunara.stage} />
         <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
-          {active === 'home' && <TopBar />}
+          {active === 'home' && <TopBar lunara={lunara} />}
           <div key={active + lunara.stage} className="fade-up">
             {screenEl}
           </div>
