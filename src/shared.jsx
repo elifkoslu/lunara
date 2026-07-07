@@ -297,33 +297,28 @@ function useLunara() {
   const [state, setState] = React.useState(() => {
     const saved = loadState();
     return {
-      // dose id -> ISO time taken (or false)
-      doses: saved.doses || { 'e2-am': '07:42', 'test-am': '07:42', 'prog-pm': false },
+      // dose id -> ISO time taken (or false) — legacy, regimen/doseLog is canonical
+      doses: saved.doses || {},
       // 'YYYY-MM-DD' -> { symptomKey: 0..3 }
       symptomLog: saved.symptomLog || {},
-      // ISO date string of last period start
-      periodStart: saved.periodStart || '2026-06-02',
+      // ISO date string of last period start (defaults to today = cycle day 1
+      // until the user sets it in onboarding or on the cycle screen)
+      periodStart: saved.periodStart || getTodayKey(),
       // journal notes [{ id, at, text }]
       notes: saved.notes || [],
       // 'YYYY-MM-DD' -> { stepIdx: true }  (workout step completion)
       workoutLog: saved.workoutLog || {},
-      // user's supplements [{ id, name, dose, when }]
-      supplements: saved.supplements || [
-        { id: 'inositol', name: 'Myo-inositol', dose: '2 g', when: 'morning' },
-        { id: 'vitd', name: 'Vitamin D3', dose: '2000 IU', when: 'morning' },
-        { id: 'omega', name: 'Omega-3', dose: '1000 mg', when: 'evening' },
-      ],
+      // user's supplements [{ id, name, dose, when }] — starts empty
+      supplements: saved.supplements || [],
       // 'YYYY-MM-DD' -> { suppId: time }  (supplement taken log)
       suppLog: saved.suppLog || {},
-      // cyclic medication regimen — each med active on cycle days [startDay..endDay]
+      // cyclic medication regimen — each med active on cycle days [startDay..endDay].
+      // Starts EMPTY: medication must be entered by the user (or their clinician),
+      // never pre-seeded in a health app.
       regimen: saved.regimen || {
         cycleLength: 28,
-        anchor: saved.periodStart || '2026-06-02',  // date that counts as day 1
-        meds: [
-          { id: 'e2',   name: 'Estradiol',    nameTr: 'Estradiol',    detail: 'Bi-est 80/20 transdermal', detailTr: 'Bi-est 80/20 transdermal', dose: '0.5 mg', route: 'topical', when: 'morning', time: '07:30', startDay: 1,  endDay: 25 },
-          { id: 'test', name: 'Testosterone', nameTr: 'Testosteron',  detail: 'Cream, inner thigh',        detailTr: 'Krem, iç uyluk',          dose: '1.5 mg', route: 'topical', when: 'morning', time: '07:30', startDay: 1,  endDay: 25 },
-          { id: 'prog', name: 'Progesterone', nameTr: 'Progesteron',  detail: 'Oral micronized',           detailTr: 'Ağızdan mikronize',       dose: '100 mg', route: 'oral',    when: 'bedtime', time: '22:00', startDay: 13, endDay: 25 },
-        ],
+        anchor: saved.periodStart || getTodayKey(),  // date that counts as day 1
+        meds: [],
       },
       // 'YYYY-MM-DD' -> { medId: time }  (dose taken log, date-scoped)
       doseLog: saved.doseLog || {},
@@ -481,7 +476,7 @@ const TODAY_DATE = new Date();
 // Which regimen cycle day is `today` (1..cycleLength)
 function regimenDay(regimen, today = TODAY_DATE) {
   const L = (regimen && regimen.cycleLength) || 28;
-  const anchor = new Date(((regimen && regimen.anchor) || '2026-06-02') + 'T00:00:00');
+  const anchor = new Date(((regimen && regimen.anchor) || getTodayKey()) + 'T00:00:00');
   const d = Math.floor((today - anchor) / 86400000);
   return ((d % L) + L) % L + 1;
 }
@@ -495,7 +490,7 @@ function activeMeds(regimen, day) {
 }
 // Today's active doses + current cycle day
 function todaysDoses(lunara) {
-  if (!lunara || !lunara.regimen) return { meds: DOSES_TODAY, day: null };
+  if (!lunara || !lunara.regimen) return { meds: [], day: null };
   const day = regimenDay(lunara.regimen, TODAY_DATE);
   return { meds: activeMeds(lunara.regimen, day), day };
 }

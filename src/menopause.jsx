@@ -104,16 +104,25 @@ function MenopauseHome({ lunara, api, onNav }) {
 
         <Card>
           <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Hormone therapy', 'Hormon tedavisi')}</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontFamily: 'var(--serif)', fontSize: 34, letterSpacing: '-0.02em' }}>{takenCount}/{meds.length}</span>
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{t('taken today', 'bugün alındı')}</span>
-          </div>
-          <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '6px 0 14px' }}>
-            {t('Your menopausal hormone therapy eases symptoms and supports bone health.',
-               'Menopoz hormon tedavin belirtileri hafifletir ve kemik sağlığını destekler.')}
-          </p>
+          {meds.length === 0 ? (
+            <p style={{ fontFamily: 'var(--serif)', fontSize: 15, fontStyle: 'italic', color: 'var(--muted)', lineHeight: 1.55, margin: '2px 0 14px' }}>
+              {t('If you use hormone therapy, add your plan under Doses to track it here.',
+                 'Hormon tedavisi kullanıyorsan programını Dozlar bölümüne ekle, burada takip edelim.')}
+            </p>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                <span style={{ fontFamily: 'var(--serif)', fontSize: 34, letterSpacing: '-0.02em' }}>{takenCount}/{meds.length}</span>
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>{t('taken today', 'bugün alındı')}</span>
+              </div>
+              <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '6px 0 14px' }}>
+                {t('Your menopausal hormone therapy eases symptoms and supports bone health.',
+                   'Menopoz hormon tedavin belirtileri hafifletir ve kemik sağlığını destekler.')}
+              </p>
+            </>
+          )}
           <Btn primary onClick={() => onNav && onNav('doses')}>
-            <Icon d={ICONS.pill} size={14}/> {t('Open doses', 'Dozları aç')}
+            <Icon d={ICONS.pill} size={14}/> {meds.length === 0 ? t('Add medication', 'İlaç ekle') : t('Open doses', 'Dozları aç')}
           </Btn>
         </Card>
       </div>

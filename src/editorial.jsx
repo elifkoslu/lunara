@@ -15,7 +15,7 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
       {lunara && <WeeklySummary lunara={lunara} hasDoses={hasDoses}/>}
       {hasDoses ? (
         <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 22 }}>
-          <EdToday lunara={lunara} api={api}/>
+          <EdToday lunara={lunara} api={api} onNav={onNav}/>
           <EdSymptomFeeling/>
         </div>
       ) : (
@@ -202,28 +202,52 @@ function PillButton({ children, primary, onClick }) {
 }
 
 // ─── Today's regimen ───────────────────────────────────────────
-function EdToday({ lunara, api }) {
+// Consecutive days (ending today or yesterday) with at least one dose logged
+function doseStreak(doseLog) {
+  const key = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const d = new Date(TODAY_DATE);
+  if (!doseLog[key(d)] || Object.keys(doseLog[key(d)]).length === 0) d.setDate(d.getDate() - 1);
+  let streak = 0;
+  while (doseLog[key(d)] && Object.keys(doseLog[key(d)]).length > 0) { streak++; d.setDate(d.getDate() - 1); }
+  return streak;
+}
+
+function EdToday({ lunara, api, onNav }) {
   const { meds } = todaysDoses(lunara);
   const taken = meds.filter(d => medTaken(lunara, d.id)).length;
+  const noRegimen = !lunara.regimen || (lunara.regimen.meds || []).length === 0;
+  const streak = doseStreak(lunara.doseLog || {});
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
         <div>
           <div className="eyebrow" style={{ marginBottom: 4 }}>{t("Today's regimen", 'Bugünün rejimi')}</div>
           <div style={{ fontFamily: 'var(--serif)', fontSize: 22, letterSpacing: '-0.01em' }}>
-            {taken} / {meds.length} {t('taken', 'alındı')}
+            {noRegimen ? t('No plan yet', 'Henüz program yok') : <>{taken} / {meds.length} {t('taken', 'alındı')}</>}
           </div>
         </div>
-        <span style={{
-          fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: '0.06em',
-          color: 'var(--accent)', padding: '6px 10px', borderRadius: 999,
-          background: 'var(--accent-soft)', opacity: 0.6,
-        }}>
-          {t('STREAK · 14 DAYS', 'SERİ · 14 GÜN')}
-        </span>
+        {streak >= 2 && (
+          <span style={{
+            fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: '0.06em',
+            color: 'var(--accent)', padding: '6px 10px', borderRadius: 999,
+            background: 'var(--accent-soft)', opacity: 0.6,
+          }}>
+            {t(`STREAK · ${streak} DAYS`, `SERİ · ${streak} GÜN`)}
+          </span>
+        )}
       </div>
 
-      {meds.length === 0 ? (
+      {noRegimen ? (
+        <div style={{ padding: '6px 0 10px' }}>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: 15, fontStyle: 'italic', color: 'var(--muted)', margin: '0 0 14px', lineHeight: 1.5 }}>
+            {t('Add the medication plan your clinician prescribed to track doses here.',
+               'Dozlarını burada takip etmek için hekiminin verdiği ilaç programını ekle.')}
+          </p>
+          <PillButton onClick={() => onNav && onNav('doses')}>
+            {t('Add medication', 'İlaç ekle')} <Icon d={ICONS.arrow} size={13}/>
+          </PillButton>
+        </div>
+      ) : meds.length === 0 ? (
         <div style={{ padding: '14px 0', fontFamily: 'var(--serif)', fontSize: 16, fontStyle: 'italic', color: 'var(--muted)' }}>
           {t('A rest day — no doses scheduled.', 'Bir ara günü — planlı doz yok.')}
         </div>

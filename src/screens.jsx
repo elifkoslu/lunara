@@ -2,7 +2,7 @@ import React from 'react';
 import { I18N, t, useLang } from './i18n';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
-import { Card, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, getTodayKey, labCurrent, labHistory, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
+import { Card, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
 
@@ -114,14 +114,34 @@ function DosesScreen({ lunara, api }) {
   const { meds, day } = todaysDoses(lunara);
   const takenCount = meds.filter(d => medTaken(lunara, d.id)).length;
   const cycLen = lunara.regimen ? lunara.regimen.cycleLength : 28;
-  // simple 7-day adherence model
-  const week = I18N.lang === 'tr' ? ['Pe','Cu','Ct','Pz','Pt','Sa','Ça'] : ['Th','Fr','Sa','Su','Mo','Tu','We'];
-  const adherence = [3, 3, 2, 3, meds.length || 3, 3, takenCount];
+  const noRegimen = !lunara.regimen || (lunara.regimen.meds || []).length === 0;
+
+  // Real last-7-days adherence from doseLog + regimen schedule
+  const locale = I18N.lang === 'tr' ? 'tr' : 'en';
+  const days7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(TODAY_DATE); d.setDate(d.getDate() - i);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const scheduled = lunara.regimen ? activeMeds(lunara.regimen, regimenDay(lunara.regimen, d)).length : 0;
+    const takenN = lunara.doseLog[key] ? Object.keys(lunara.doseLog[key]).length : 0;
+    days7.push({ label: d.toLocaleDateString(locale, { weekday: 'short' }), taken: takenN, scheduled, isToday: i === 0 });
+  }
+  const wkMax = Math.max(1, ...days7.map(x => Math.max(x.taken, x.scheduled)));
+  // 30-day adherence: taken / scheduled (— when nothing was scheduled)
+  let sch30 = 0, tak30 = 0;
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(TODAY_DATE); d.setDate(d.getDate() - i);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const scheduled = lunara.regimen ? activeMeds(lunara.regimen, regimenDay(lunara.regimen, d)).length : 0;
+    const takenN = lunara.doseLog[key] ? Object.keys(lunara.doseLog[key]).length : 0;
+    sch30 += scheduled; tak30 += Math.min(takenN, scheduled);
+  }
+  const adh30 = sch30 > 0 ? Math.round((tak30 / sch30) * 100) : null;
   return (
     <div style={wrap}>
       <ScreenHead eyebrow={t(`REGIMEN · DAY ${day} OF ${cycLen}`, `REJİM · ${cycLen} GÜNÜN ${day}. GÜNÜ`)} title={t("Today's doses", 'Bugünün dozları')}
-        right={<Btn primary={editing} onClick={() => setEditing(e => !e)}>
-          <Icon d={editing ? ICONS.check : ICONS.cog} size={14} sw={editing ? 2 : 1.4}/> {editing ? t('Done', 'Bitti') : t('Edit schedule', 'Programı düzenle')}
+        right={<Btn primary={editing || noRegimen} onClick={() => setEditing(e => !e)}>
+          <Icon d={editing ? ICONS.check : (noRegimen ? ICONS.plus : ICONS.cog)} size={14} sw={editing ? 2 : 1.6}/> {editing ? t('Done', 'Bitti') : (noRegimen ? t('Add medication', 'İlaç ekle') : t('Edit schedule', 'Programı düzenle'))}
         </Btn>} />
 
       {editing && <RegimenEditor lunara={lunara} api={api} onClose={() => setEditing(false)}/>}
@@ -132,7 +152,16 @@ function DosesScreen({ lunara, api }) {
             <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{takenCount} / {meds.length} {t('taken', 'alındı')}</span>
             <span className="eyebrow-mono" style={{ color: 'var(--accent)' }}>{t('TAP TO LOG', 'KAYDETMEK İÇİN DOKUN')}</span>
           </div>
-          {meds.length === 0 ? (
+          {noRegimen ? (
+            <div style={{ padding: '28px 0', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--serif)', fontSize: 20, fontStyle: 'italic', color: 'var(--ink)', marginBottom: 6 }}>{t('No medication added yet', 'Henüz ilaç eklenmedi')}</div>
+              <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px', lineHeight: 1.5 }}>
+                {t('Add the plan your clinician prescribed — Lunara will remind you and track your cycle days.',
+                   'Hekiminin verdiği programı ekle — Lunara sana hatırlatır ve döngü günlerini takip eder.')}
+              </p>
+              <Btn primary onClick={() => setEditing(true)}><Icon d={ICONS.plus} size={13} sw={2}/> {t('Add medication', 'İlaç ekle')}</Btn>
+            </div>
+          ) : meds.length === 0 ? (
             <div style={{ padding: '28px 0', textAlign: 'center' }}>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 20, fontStyle: 'italic', color: 'var(--ink)', marginBottom: 6 }}>{t('A rest day', 'Bir ara günü')}</div>
               <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>{t('No medications scheduled for today in your cycle.', 'Bugün döngünde planlı ilaç yok.')}</p>
@@ -177,32 +206,30 @@ function DosesScreen({ lunara, api }) {
           </div>
           )}
         </Card>
+        {!noRegimen && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <Card>
             <div className="eyebrow" style={{ marginBottom: 14 }}>{t('This week', 'Bu hafta')}</div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 90 }}>
-              {adherence.map((v, i) => (
+              {days7.map((x, i) => (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: 64 }}>
-                    <div style={{ width: '100%', height: `${(v/3)*100}%`, background: i === 6 ? 'var(--accent)' : 'var(--accent-soft)',
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: 64 }}
+                    title={`${x.taken}/${x.scheduled}`}>
+                    <div style={{ width: '100%', height: `${(x.taken / wkMax) * 100}%`, minHeight: x.scheduled > 0 ? 3 : 0,
+                      background: x.isToday ? 'var(--accent)' : 'var(--accent-soft)',
                       borderRadius: 6, transition: 'height 200ms ease' }}/>
                   </div>
-                  <span style={{ fontSize: 10.5, color: i === 6 ? 'var(--ink)' : 'var(--muted)', fontWeight: i === 6 ? 700 : 400, fontFamily: 'var(--mono)' }}>{week[i]}</span>
+                  <span style={{ fontSize: 10.5, color: x.isToday ? 'var(--ink)' : 'var(--muted)', fontWeight: x.isToday ? 700 : 400, fontFamily: 'var(--mono)' }}>{x.label}</span>
                 </div>
               ))}
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line-soft)', display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('30-day adherence', '30 günlük uyum')}</span>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 16 }}>94%</span>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 16 }}>{adh30 == null ? '—' : `${adh30}%`}</span>
             </div>
           </Card>
-          <Card style={{ background: 'linear-gradient(160deg, var(--accent-soft), var(--card))' }}>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>{t('Refill soon', 'Yakında yenileme')}</div>
-            <div style={{ fontFamily: 'var(--serif)', fontSize: 18, marginBottom: 4 }}>{t('Estradiol cream · 12 days left', 'Estradiol krem · 12 gün kaldı')}</div>
-            <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '0 0 14px', lineHeight: 1.5 }}>{t('Auto-refill is on. Ships from your compounding pharmacy.', 'Otomatik yenileme açık. Kompound eczanenden gönderilir.')}</p>
-            <Btn primary>{t('Manage refills', 'Yenilemeleri yönet')}</Btn>
-          </Card>
         </div>
+        )}
       </div>
 
       {/* Supplements + phase recommendations */}
