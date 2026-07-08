@@ -1,7 +1,7 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
 import { Btn, ScreenHead, wrap } from './screens';
-import { Card, ICONS, Icon, PROGRAM } from './shared';
+import { Card, ICONS, Icon, LS_KEY } from './shared';
 import { STAGES, stageName } from './stages';
 
 /* profile.jsx — Lunara profil & ayarlar ekranı */
@@ -12,6 +12,7 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
   const [draft, setDraft] = React.useState(p);
   const [editing, setEditing] = React.useState(false);
   const [showPrivacy, setShowPrivacy] = React.useState(false);
+  const [confirmWipe, setConfirmWipe] = React.useState(false);
   const lang = useLang();
   const openPrivacy = onOpenPrivacy || (() => setShowPrivacy(true));
 
@@ -70,8 +71,7 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
               <InfoRow label={t('Life stage', 'Yaşam evresi')}
                 value={`${STAGES[lunara.stage] ? STAGES[lunara.stage].note + ' · ' : ''}${stageName(lunara.stage)}`}
                 action={t('Change', 'Değiştir')}
-                onAction={() => { api.setOnboarded(false); onNav('onboarding'); }} />
-              <InfoRow label={t('Program', 'Program')} value={t(PROGRAM.name, PROGRAM.nameTr)} last/>
+                onAction={() => { api.setOnboarded(false); onNav('onboarding'); }} last/>
             </div>
           )}
         </Card>
@@ -108,7 +108,26 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
             <ActionRow icon={ICONS.vial} label={t('Export my data', 'Verilerimi dışa aktar')}
               onClick={() => exportData(lunara)}/>
             <ActionRow icon={ICONS.book} label={t('Privacy & terms', 'Gizlilik & koşullar')} onClick={openPrivacy}/>
-            <ActionRow icon={ICONS.arrow} label={t('Sign out', 'Çıkış yap')} danger onClick={() => {}} last/>
+            <ActionRow icon={TRASH_ICON} label={t('Delete all my data', 'Tüm verilerimi sil')} danger
+              onClick={() => setConfirmWipe(true)} last/>
+            {confirmWipe && (
+              <div className="fade-up" style={{ marginTop: 4, padding: '14px 16px', borderRadius: 12, background: 'oklch(0.94 0.03 25)', border: '1px solid oklch(0.85 0.05 25)' }}>
+                <p style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.5, margin: '0 0 12px', fontWeight: 500 }}>
+                  {t('This permanently deletes everything on this device — cycles, symptoms, doses, notes. It cannot be undone. Export first if you want a copy.',
+                     'Bu, bu cihazdaki her şeyi kalıcı olarak siler — döngüler, belirtiler, dozlar, notlar. Geri alınamaz. Kopya istiyorsan önce dışa aktar.')}
+                </p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={wipeAllData} style={{
+                    flex: 1, padding: '11px 0', borderRadius: 999, border: 'none', cursor: 'pointer',
+                    background: 'var(--signal-low)', color: 'var(--ivory)', fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600,
+                  }}>{t('Yes, delete everything', 'Evet, her şeyi sil')}</button>
+                  <button onClick={() => setConfirmWipe(false)} style={{
+                    flex: 1, padding: '11px 0', borderRadius: 999, cursor: 'pointer',
+                    border: '1px solid var(--line)', background: 'transparent', color: 'var(--ink-2)', fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600,
+                  }}>{t('Cancel', 'Vazgeç')}</button>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -318,6 +337,14 @@ async function toggleNotifications(key, value, api) {
     } catch (e) {}
   }
   api.updateProfile({ [key]: value });
+}
+
+const TRASH_ICON = 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z';
+
+// KVKK erasure right: wipe everything stored on this device, then restart.
+function wipeAllData() {
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  window.location.reload();
 }
 
 // Download the user's logged data as JSON
