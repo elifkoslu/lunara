@@ -2,7 +2,7 @@ import React from 'react';
 import { t, useLang } from './i18n';
 import { TodayWorkoutCard } from './nourish';
 import { MoonDisc, cycleDayFrom, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
-import { Card, DOSES_TODAY, ICONS, Icon, LABS, PATIENT, PROGRAM, PROVIDER, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, TODAY_KEY, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
+import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
 /* eslint-disable */
@@ -22,11 +22,8 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
         <EdSymptomFeeling/>
       )}
       {lunara && api && <TodayWorkoutCard lunara={lunara} api={api} onNav={onNav}/>}
-      {hasDoses && <EdLabsStrip/>}
-      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 22 }}>
-        {hasDoses ? <EdCareNote/> : <EdLibraryRead/>}
-        {hasDoses ? <EdLibraryRead/> : <EdCareNote/>}
-      </div>
+      {hasDoses && lunara && (lunara.labPanels || []).length > 0 && <EdLabsStrip lunara={lunara}/>}
+      <EdLibraryRead/>
     </div>
   );
 }
@@ -345,65 +342,48 @@ function Trend({ up }) {
 }
 
 // ─── Labs strip ────────────────────────────────────────────────
-function EdLabsStrip() {
-  const picks = ['e2', 'p4', 't', 'ft', 'shbg'].map(k => LABS.find(l => l.key === k));
+// Latest real lab values on the dashboard — rendered only when the user
+// has entered panels on the Labs screen.
+function EdLabsStrip({ lunara }) {
+  const lang = useLang();
+  const panels = (lunara && lunara.labPanels) || [];
+  const picks = LABS.filter(l => labCurrent(panels, l.key) != null).slice(0, 5);
+  if (picks.length === 0) return null;
+  const last = [...panels].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  const lastStr = last ? new Date(last.date + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr' : 'en', { day: 'numeric', month: 'long' }) : '';
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
         <div>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>{t('Latest panel · 2 weeks ago', 'Son panel · 2 hafta önce')}</div>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>{t('Latest panel', 'Son panel')}{lastStr ? ` · ${lastStr}` : ''}</div>
           <div style={{ fontFamily: 'var(--serif)', fontSize: 22, letterSpacing: '-0.01em' }}>
-            {t(<>Hormones, <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>settling</em></>,
-               <>Hormonlar, <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>dengeleniyor</em></>)}
+            {t('Your hormones', 'Hormonların')}
           </div>
         </div>
-        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('Next draw — Fri 5 Jun', 'Sonraki tahlil — 5 Haz Cum')}</span>
       </div>
-      <div className="mb-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 22 }}>
-        {picks.map(l => (
-          <div key={l.key} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 11.5, color: 'var(--muted)', fontWeight: 500 }}>{l.name}</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 28, letterSpacing: '-0.02em', lineHeight: 1 }}>{l.value}</span>
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>{l.unit}</span>
+      <div className="mb-2" style={{ display: 'grid', gridTemplateColumns: `repeat(${picks.length}, 1fr)`, gap: 22 }}>
+        {picks.map(l => {
+          const v = labCurrent(panels, l.key);
+          return (
+            <div key={l.key} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <span style={{ fontSize: 11.5, color: 'var(--muted)', fontWeight: 500 }}>{t(l.name, l.nameTr || l.name)}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                <span style={{ fontFamily: 'var(--serif)', fontSize: 28, letterSpacing: '-0.02em', lineHeight: 1 }}>{v}</span>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>{l.unit}</span>
+              </div>
+              <RangeBar value={v} range={l.range} target={l.target}/>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>
+                <span>{l.range[0]}</span><span>{l.range[1]}</span>
+              </div>
             </div>
-            <RangeBar value={l.value} range={l.range} target={l.target}/>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>
-              <span>{l.range[0]}</span><span>{l.range[1]}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
 }
 
 // ─── Care note ─────────────────────────────────────────────────
-function EdCareNote() {
-  return (
-    <Card style={{ background: 'linear-gradient(160deg, oklch(0.92 0.03 60), var(--card))' }}>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: '50%',
-          background: 'var(--accent)',
-          color: 'var(--ivory)', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 18,
-        }}>{PROVIDER.initials}</div>
-        <div style={{ flex: 1 }}>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>{t(PROVIDER.lastMsgAt, PROVIDER.lastMsgAtTr)} · {t('from', '—')} {PROVIDER.name}</div>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.45, margin: 0, color: 'var(--ink)', textWrap: 'pretty' }}>
-            &ldquo;{t(PROVIDER.lastMsg, PROVIDER.lastMsgTr)}&rdquo;
-          </p>
-          <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center' }}>
-            <PillButton>{t('Reply', 'Yanıtla')}</PillButton>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>· {t('next consult', 'sonraki görüşme')} <strong style={{ color: 'var(--ink)', fontWeight: 600 }}>{PROVIDER.nextConsult}</strong></span>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
 
 function EdLibraryRead() {
   return (
@@ -544,4 +524,4 @@ function FxBlock({ icon, label, text }) {
   );
 }
 
-export { DashboardEditorial, HERO_PHASE_TIP, HERO_MOON_CLAUSE, EdHero, PillButton, EdToday, DoseRow, EdSymptomFeeling, Trend, EdLabsStrip, EdCareNote, EdLibraryRead, MOON_FX, moonPhaseIndex, EdMoonToday, FxBlock };
+export { DashboardEditorial, HERO_PHASE_TIP, HERO_MOON_CLAUSE, EdHero, PillButton, EdToday, DoseRow, EdSymptomFeeling, Trend, EdLabsStrip, EdLibraryRead, MOON_FX, moonPhaseIndex, EdMoonToday, FxBlock };

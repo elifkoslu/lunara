@@ -833,53 +833,15 @@ function CareScreen({ lunara, onNav }) {
   const stageInfo = (typeof STAGES !== 'undefined' && STAGES[stage]) || {};
   const cycleDay = lunara ? cycleDayFrom(lunara.periodStart, TODAY_DATE) : 14;
   const ph = phaseOf(cycleDay);
-  const todayLog = (lunara && lunara.symptomLog && lunara.symptomLog[TODAY_KEY]) || {};
-  const profileName = (lunara && lunara.profile && lunara.profile.name) || 'there';
+  const profileName = (lunara && lunara.profile && lunara.profile.name) || '';
   useLang();
 
-  const systemPrompt = `You are Lunara's AI wellness companion — warm, knowledgeable and supportive, like a trusted friend who happens to know a lot about women's health. Respond in the same language the user writes in (Turkish if they write Turkish, English if English).
-
-User context:
-- Name: ${profileName}
-- Life stage: ${t(stageInfo.en || stage, stageInfo.tr || stage)} (${stageInfo.note || ''})
-- Cycle day: ${cycleDay} (${t(ph.label, ph.labelTr || ph.label)} phase)
-- Logged symptoms today: ${Object.keys(todayLog).length > 0 ? Object.entries(todayLog).map(([k,v]) => k+': '+v+'/3').join(', ') : 'none'}
-
-Guidelines:
-- Warm, concise, empowering — never clinical or scary
-- Acknowledge feelings before information
-- End with 1 gentle actionable suggestion
-- Never diagnose. For serious concerns say: "This is worth discussing with your doctor."
-- Append: "💙 This is general wellness support, not medical advice."`;
-
-  const INITIAL_MSG = { who: 'ai', text: t(
-    `Hi ${profileName} 👋 I'm your Lunara companion. You're on cycle day ${cycleDay} — ${ph.label.toLowerCase()} phase. Ask me anything about your cycle, symptoms or how you're feeling.`,
-    `Merhaba ${profileName} 👋 Ben Lunara yoldaşınım. Döngünün ${cycleDay}. günündesin — ${ph.labelTr || ph.label.toLowerCase()} fazındasın. Döngün, belirtilerin veya nasıl hissettiğin hakkında her şeyi sorabilirsin.`
-  ), at: t('Just now', 'Az önce') };
-
-  const [msgs, setMsgs] = React.useState([INITIAL_MSG]);
-  const [draft, setDraft] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
-  const bottomRef = React.useRef(null);
-  const inputRef = React.useRef(null);
-
-  React.useEffect(() => { if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
-
-  const send = async () => {
-    const text = draft.trim();
-    if (!text || loading) return;
-    setDraft('');
-    setMsgs(prev => [...prev, { who: 'me', text, at: nowHM() }]);
-    setLoading(true);
-    try {
-      const history = msgs.map(m => ({ role: m.who === 'me' ? 'user' : 'assistant', content: m.text }));
-      history.push({ role: 'user', content: text });
-      const reply = await window.claude.complete({ system: systemPrompt, messages: history, max_tokens: 400 });
-      setMsgs(prev => [...prev, { who: 'ai', text: reply, at: nowHM() }]);
-    } catch (e) {
-      setMsgs(prev => [...prev, { who: 'ai', text: t('Having trouble connecting — please try again. 🌙', 'Bağlantı sorunu — lütfen tekrar dene. 🌙'), at: nowHM() }]);
-    } finally { setLoading(false); }
-  };
+  // AI chat needs a backend (Anthropic API proxy) and ships in a later
+  // release — until then this screen is an honest preview, not a broken chat.
+  const intro = t(
+    `Hi${profileName ? ` ${profileName}` : ''} 👋 I'm your Lunara companion. You're on cycle day ${cycleDay} — ${ph.label.toLowerCase()} phase. Soon you'll be able to ask me anything about your cycle, symptoms or how you're feeling.`,
+    `Merhaba${profileName ? ` ${profileName}` : ''} 👋 Ben Lunara yoldaşın. Döngünün ${cycleDay}. günündesin — ${ph.labelTr || ph.label} fazındasın. Yakında döngün, belirtilerin veya nasıl hissettiğin hakkında bana her şeyi sorabileceksin.`
+  );
 
   return (
     <div style={wrap}>
@@ -895,8 +857,8 @@ Guidelines:
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>Lunara AI</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--muted)' }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--signal-good)', display: 'inline-block' }}/>
-                {t('Online · responds instantly', 'Çevrimiçi · anında yanıtlar')}
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--signal-warn)', display: 'inline-block' }}/>
+                {t('Coming soon', 'Yakında')}
               </div>
             </div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--muted-2)', textAlign: 'right', lineHeight: 1.4 }}>
@@ -904,47 +866,37 @@ Guidelines:
               <span style={{ fontStyle: 'italic', fontFamily: 'var(--serif)', fontSize: 12 }}>{t(ph.label, ph.labelTr || ph.label)}</span>
             </div>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, padding: '18px 0', maxHeight: 360, minHeight: 240 }}>
-            {msgs.map((m, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: m.who === 'me' ? 'flex-end' : 'flex-start' }}>
-                {m.who === 'ai' && (
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent-soft)', flexShrink: 0, marginRight: 8, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Logo size={16}/></div>
-                )}
-                <div style={{ maxWidth: '78%' }}>
-                  <div style={{ padding: '12px 15px', borderRadius: 18, background: m.who === 'me' ? 'var(--accent)' : 'var(--bone)', color: m.who === 'me' ? 'var(--ivory)' : 'var(--ink)', fontSize: 14, lineHeight: 1.55, whiteSpace: 'pre-wrap', borderBottomRightRadius: m.who === 'me' ? 4 : 18, borderBottomLeftRadius: m.who === 'me' ? 18 : 4 }}>{m.text}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted-2)', fontFamily: 'var(--mono)', marginTop: 4, textAlign: m.who === 'me' ? 'right' : 'left' }}>{m.at}</div>
-                </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, padding: '18px 0' }}>
+            <div style={{ display: 'flex' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent-soft)', flexShrink: 0, marginRight: 8, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Logo size={16}/></div>
+              <div style={{ maxWidth: '78%' }}>
+                <div style={{ padding: '12px 15px', borderRadius: 18, borderBottomLeftRadius: 4, background: 'var(--bone)', color: 'var(--ink)', fontSize: 14, lineHeight: 1.55 }}>{intro}</div>
               </div>
-            ))}
-            {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Logo size={16}/></div>
-                <div style={{ padding: '12px 16px', borderRadius: 18, borderBottomLeftRadius: 4, background: 'var(--bone)', display: 'flex', gap: 5, alignItems: 'center' }}>
-                  {[0,1,2].map(i => <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--muted-2)', display: 'inline-block', animation: 'pulseSoft 1.2s ease-in-out '+(i*0.18)+'s infinite' }}/>)}
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef}/>
+            </div>
+            <div style={{ margin: '4px 0 0 36px', padding: '14px 16px', borderRadius: 'var(--r-md)', background: 'linear-gradient(160deg, var(--accent-soft), var(--card))' }}>
+              <div className="eyebrow" style={{ marginBottom: 6 }}>{t('COMING SOON', 'YAKINDA')}</div>
+              <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.55, margin: 0 }}>
+                {t('The AI companion is being prepared and will arrive in an upcoming update. Until then, your daily logs and the Nourish & move plan are here for you.',
+                   'AI yoldaş hazırlanıyor; yakındaki bir güncellemeyle gelecek. O zamana dek günlük kayıtların ve Beslenme & hareket planın yanında.')}
+              </p>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 14, borderTop: '1px solid var(--line-soft)' }}>
-            <input ref={inputRef} value={draft} onChange={e => setDraft(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder={t('Ask anything about your cycle, symptoms…', 'Döngün, belirtilerin hakkında her şeyi sor…')}
-              disabled={loading}
-              style={{ flex: 1, border: '1px solid var(--line)', borderRadius: 999, padding: '11px 18px', fontFamily: 'var(--sans)', fontSize: 14, background: 'var(--ivory)', outline: 'none', color: 'var(--ink)', opacity: loading ? 0.6 : 1 }}/>
-            <button onClick={send} disabled={loading || !draft.trim()}
-              style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: draft.trim() && !loading ? 'var(--accent)' : 'var(--line)', color: draft.trim() && !loading ? 'var(--ivory)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: draft.trim() && !loading ? 'pointer' : 'default', transition: 'all 160ms ease', border: 'none' }}>
+            <input disabled
+              placeholder={t('Chat opens with an upcoming update…', 'Sohbet yakındaki bir güncellemeyle açılıyor…')}
+              style={{ flex: 1, border: '1px solid var(--line)', borderRadius: 999, padding: '11px 18px', fontFamily: 'var(--sans)', fontSize: 14, background: 'var(--ivory)', outline: 'none', color: 'var(--ink)', opacity: 0.55, cursor: 'not-allowed' }}/>
+            <span style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: 'var(--line)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
-            </button>
+            </span>
           </div>
         </Card>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <Card>
-            <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Quick questions', 'Hızlı sorular')}</div>
+            <div className="eyebrow" style={{ marginBottom: 12 }}>{t("Things you'll be able to ask", 'Yakında sorabileceklerin')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {careQuickPrompts(stage, ph.key).map((q, i) => (
-                <button key={i} onClick={() => { setDraft(q); inputRef.current && inputRef.current.focus(); }}
-                  style={{ padding: '10px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer', background: 'var(--bone)', color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.4, boxShadow: 'inset 0 0 0 1px var(--line-soft)', border: 'none' }}>{q}</button>
+                <div key={i}
+                  style={{ padding: '10px 14px', borderRadius: 12, textAlign: 'left', background: 'var(--bone)', color: 'var(--muted)', fontSize: 13, lineHeight: 1.4, boxShadow: 'inset 0 0 0 1px var(--line-soft)', fontStyle: 'italic' }}>{q}</div>
               ))}
             </div>
           </Card>

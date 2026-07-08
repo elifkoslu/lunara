@@ -200,30 +200,25 @@ function PregnancyHome({ lunara, api, onNav }) {
         </Card>
       </div>
 
-      {/* Appointments */}
+      {/* Check-up rhythm — general guidance (appointment tracking ships later) */}
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
-          <div className="eyebrow">{t('Upcoming appointments', 'Yaklaşan randevular')}</div>
-          <button onClick={() => onNav && onNav('care')} style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', gap: 4, alignItems: 'center', cursor: 'pointer' }}>
-            {t('Care team', 'Destek ekibi')} <Icon d={ICONS.arrow} size={11}/>
-          </button>
-        </div>
+        <div className="eyebrow" style={{ marginBottom: 14 }}>{t('Check-up rhythm', 'Kontrol düzeni')}</div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {[
-            { tag: 'SCAN', d: t('Fri 26 Jun · 10:00', '26 Haz Cum · 10:00'), en: 'Growth ultrasound', tr: 'Gelişim ultrasonu' },
-            { tag: 'TEST', d: t('Wed 8 Jul · AM', '8 Tem Çar · Sabah'), en: 'Glucose screening', tr: 'Şeker yükleme testi' },
-            { tag: 'VISIT', d: t('Thu 23 Jul · 14:30', '23 Tem Per · 14:30'), en: 'Routine check-up', tr: 'Rutin kontrol' },
+            { tag: t('TO W28', 'H28’E DEK'), en: 'A check-up about every 4 weeks', tr: 'Yaklaşık 4 haftada bir kontrol' },
+            { tag: t('W28–36', 'H28–36'), en: 'Every 2 weeks as you approach the third trimester’s end', tr: 'Üçüncü trimester ilerledikçe 2 haftada bir' },
+            { tag: t('FROM W36', 'H36’DAN'), en: 'Weekly visits until birth', tr: 'Doğuma dek haftalık kontroller' },
           ].map((a, i, arr) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px 1fr auto', gap: 12, alignItems: 'center', padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '84px 1fr', gap: 12, alignItems: 'center', padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.04em', color: 'var(--accent)' }}>{a.tag}</span>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>{t(a.en, a.tr)}</span>
-                <span style={{ fontSize: 11, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{a.d}</span>
-              </div>
-              <Icon d={ICONS.arrow} size={13} stroke="var(--muted-2)"/>
+              <span style={{ fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>{t(a.en, a.tr)}</span>
             </div>
           ))}
         </div>
+        <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, margin: '12px 0 0', fontStyle: 'italic' }}>
+          {t('A general rhythm — your clinician sets your actual schedule.',
+             'Genel bir düzendir — gerçek programını hekimin belirler.')}
+        </p>
       </Card>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', color: 'var(--muted-2)', fontSize: 12 }}>
