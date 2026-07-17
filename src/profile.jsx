@@ -13,6 +13,33 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
   const [editing, setEditing] = React.useState(false);
   const [showPrivacy, setShowPrivacy] = React.useState(false);
   const [confirmWipe, setConfirmWipe] = React.useState(false);
+  const [importReq, setImportReq] = React.useState(null); // {data,name,days,panels,notes} | {error:true}
+  const importRef = React.useRef(null);
+
+  // Yedek JSON'u oku, Lunara verisi olduğunu doğrula, onaya sun
+  const pickImport = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const known = ['profile', 'stage', 'symptomLog', 'regimen', 'onboarded', 'labPanels'];
+      if (!data || typeof data !== 'object' || Array.isArray(data) || !known.some(k => k in data)) throw new Error('not-lunara');
+      setImportReq({
+        data,
+        name: (data.profile && data.profile.name) || '',
+        days: Object.keys(data.symptomLog || {}).length,
+        panels: (data.labPanels || []).length,
+        notes: (data.notes || []).length,
+      });
+    } catch (err) {
+      setImportReq({ error: true });
+    }
+  };
+  const applyImport = () => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(importReq.data)); } catch (e) {}
+    window.location.reload();
+  };
   const lang = useLang();
   const openPrivacy = onOpenPrivacy || (() => setShowPrivacy(true));
 
@@ -107,6 +134,40 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
             <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Data & account', 'Veri & hesap')}</div>
             <ActionRow icon={ICONS.vial} label={t('Export my data', 'Verilerimi dışa aktar')}
               onClick={() => exportData(lunara)}/>
+            <ActionRow icon={ICONS.arrowDown} label={t('Import data file', 'Veri dosyasını içe aktar')}
+              onClick={() => importRef.current && importRef.current.click()}/>
+            <input ref={importRef} type="file" accept="application/json,.json" onChange={pickImport} style={{ display: 'none' }}/>
+            {importReq && importReq.error && (
+              <div className="fade-up" style={{ margin: '4px 0 10px', padding: '12px 14px', borderRadius: 12, background: 'oklch(0.94 0.03 25)', border: '1px solid oklch(0.85 0.05 25)' }}>
+                <p style={{ fontSize: 12.5, color: 'var(--ink)', margin: '0 0 10px', lineHeight: 1.5 }}>
+                  {t('This doesn’t look like a Lunara backup file. Choose the JSON you downloaded with “Export my data”.',
+                     'Bu bir Lunara yedek dosyasına benzemiyor. “Verilerimi dışa aktar” ile indirdiğin JSON’u seç.')}
+                </p>
+                <button onClick={() => setImportReq(null)} style={{ fontSize: 12.5, color: 'var(--ink-2)', fontWeight: 600, cursor: 'pointer' }}>{t('OK', 'Tamam')}</button>
+              </div>
+            )}
+            {importReq && !importReq.error && (
+              <div className="fade-up" style={{ margin: '4px 0 10px', padding: '14px 16px', borderRadius: 12, background: 'var(--bone)', border: '1px solid var(--line)' }}>
+                <p style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.55, margin: '0 0 6px', fontWeight: 500 }}>
+                  {t('Backup found', 'Yedek bulundu')}{importReq.name ? ` — ${importReq.name}` : ''}:
+                  {' '}{importReq.days} {t('symptom days', 'belirti günü')} · {importReq.panels} {t('lab panels', 'tahlil paneli')} · {importReq.notes} {t('notes', 'not')}
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 12px' }}>
+                  {t('Importing REPLACES everything currently on this device. Export first if you want to keep the current data.',
+                     'İçe aktarma, bu cihazdaki mevcut verilerin YERİNE geçer. Mevcut veriyi saklamak istiyorsan önce dışa aktar.')}
+                </p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={applyImport} style={{
+                    flex: 1, padding: '11px 0', borderRadius: 999, border: 'none', cursor: 'pointer',
+                    background: 'var(--ink)', color: 'var(--ivory)', fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600,
+                  }}>{t('Import & replace', 'İçe aktar, değiştir')}</button>
+                  <button onClick={() => setImportReq(null)} style={{
+                    flex: 1, padding: '11px 0', borderRadius: 999, cursor: 'pointer',
+                    border: '1px solid var(--line)', background: 'transparent', color: 'var(--ink-2)', fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600,
+                  }}>{t('Cancel', 'Vazgeç')}</button>
+                </div>
+              </div>
+            )}
             <ActionRow icon={ICONS.book} label={t('Privacy & terms', 'Gizlilik & koşullar')} onClick={openPrivacy}/>
             <ActionRow icon={TRASH_ICON} label={t('Delete all my data', 'Tüm verilerimi sil')} danger
               onClick={() => setConfirmWipe(true)} last/>
