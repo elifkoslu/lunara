@@ -1,5 +1,6 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
+import { ImportLabModal } from './lab-import';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
 import { Card, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
@@ -455,25 +456,39 @@ function fmtLabDate(iso) {
   return d + ' ' + (I18N.lang === 'tr' ? M_TR : M_EN)[mi] || iso;
 }
 
+// PDF'ten gelen, kayıtlı hormon listesinde olmayan analitlerin meta bilgisi
+function importedMetas(panels) {
+  const metas = new Map();
+  for (const p of panels) {
+    for (const r of (p.readings || [])) {
+      if (LABS.some(l => l.key === r.key) || metas.has(r.key)) continue;
+      metas.set(r.key, { key: r.key, name: r.name, nameTr: r.nameTr || r.name, unit: r.unit || '', range: r.range || null, imported: true });
+    }
+  }
+  return [...metas.values()];
+}
+
 function LabsScreen({ lunara, api }) {
   const panels = (lunara && lunara.labPanels) || [];
   const hasData = panels.length > 0;
   const [adding, setAdding] = React.useState(false);
+  const [importing, setImporting] = React.useState(false);
 
-  // When the user has entered values, show only analytes with data; otherwise
-  // fall back to the sample LABS so the screen has something to look at.
+  // When the user has entered values, show only analytes with data (registry
+  // hormones first, then PDF-imported analytes); otherwise fall back to the
+  // sample LABS so the screen has something to look at.
   const withData = LABS.filter(l => labHistory(panels, l.key).length > 0);
-  const shown = hasData ? withData : LABS;
+  const shown = hasData ? [...withData, ...importedMetas(panels)] : LABS;
   const [sel, setSel] = React.useState(shown[0] ? shown[0].key : LABS[0].key);
   React.useEffect(() => {
     if (shown.length && !shown.find(l => l.key === sel)) setSel(shown[0].key);
   }, [hasData, shown.length]); // eslint-disable-line
 
-  const lab = LABS.find(l => l.key === sel) || LABS[0];
+  const lab = shown.find(l => l.key === sel) || LABS[0];
   const value = hasData ? labCurrent(panels, lab.key) : lab.value;
   const history = hasData ? labHistory(panels, lab.key) : lab.history;
   const dates = hasData ? labReadingsDates(panels, lab.key) : ['Dec','Jan','Feb','Mar','Apr','May','Now'];
-  const inRange = value != null && value >= lab.range[0] && value <= lab.range[1];
+  const inRange = value != null && lab.range != null && value >= lab.range[0] && value <= lab.range[1];
 
   const name = (l) => t(l.name, l.nameTr || l.name);
 
@@ -484,7 +499,10 @@ function LabsScreen({ lunara, api }) {
           ? t(`${panels.length} panel · last ${fmtLabDate(panels[0].date)}`, `${panels.length} panel · son ${fmtLabDate(panels[0].date)}`)
           : t('SAMPLE DATA', 'ÖRNEK VERİ')}
         title={t('Lab results', 'Tahlil sonuçları')}
-        right={<Btn onClick={() => setAdding(true)}><Icon d={ICONS.plus} size={13} sw={2}/> {t('Add results', 'Sonuç ekle')}</Btn>} />
+        right={<div style={{ display: 'flex', gap: 8 }}>
+          <Btn onClick={() => setImporting(true)}><Icon d={ICONS.vial} size={13} sw={1.6}/> {t('Import PDF', 'PDF’ten aktar')}</Btn>
+          <Btn primary onClick={() => setAdding(true)}><Icon d={ICONS.plus} size={13} sw={2}/> {t('Add results', 'Sonuç ekle')}</Btn>
+        </div>} />
 
       {!hasData && (
         <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '-6px 0 16px', fontStyle: 'italic' }}>
@@ -511,12 +529,12 @@ function LabsScreen({ lunara, api }) {
                 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontSize: 13.5, fontWeight: 600 }}>{name(l)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{t('ref', 'ref')} {l.range[0]}–{l.range[1]} {l.unit}</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{l.range ? <>{t('ref', 'ref')} {l.range[0]}–{l.range[1]} {l.unit}</> : l.unit}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{v != null ? v : '—'}</span>
                 </div>
-                <div style={{ width: 120 }}>{v != null && <RangeBar value={v} range={l.range} target={l.target}/>}</div>
+                <div style={{ width: 120 }}>{v != null && l.range && <RangeBar value={v} range={l.range} target={l.target}/>}</div>
               </button>
             );
           })}
@@ -531,7 +549,7 @@ function LabsScreen({ lunara, api }) {
                 <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lab.unit}</span>
               </div>
             </div>
-            {value != null && (
+            {value != null && lab.range && (
               <span style={{
                 fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: '0.06em',
                 padding: '6px 12px', borderRadius: 999,
@@ -553,7 +571,10 @@ function LabsScreen({ lunara, api }) {
             </>
           )}
           <p style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 15, lineHeight: 1.5, color: 'var(--ink-2)', marginTop: 22, borderTop: '1px solid var(--line-soft)', paddingTop: 18 }}>
-            {labNote(lab.key)}
+            {lab.imported
+              ? t('Imported from your e-Nabız report. Reference range comes from the reporting lab — discuss results with your clinician.',
+                  'e-Nabız raporundan içe aktarıldı. Referans aralığı raporu veren laboratuvara aittir — sonuçları hekiminle değerlendir.')
+              : labNote(lab.key)}
           </p>
         </Card>
       </div>
@@ -582,6 +603,7 @@ function LabsScreen({ lunara, api }) {
         </Card>
       )}
 
+      {importing && <ImportLabModal onClose={() => setImporting(false)} api={api} />}
       {adding && <AddLabForm onClose={() => setAdding(false)} onSave={(panel) => api.addLabPanel(panel)} />}
     </div>
   );
