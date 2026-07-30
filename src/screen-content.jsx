@@ -33,7 +33,7 @@ const STAGE_SYMPTOMS = {
     ['joints', 'Joint aches', 'Eklem ağrısı'], ['fog', 'Brain fog', 'Zihin pusu'],
   ],
   perimeno: [
-    ['hotflash', 'Hot flushes', 'Sıcak basması'], ['cycle', 'Irregular cycle', 'Düzensiz döngü'],
+    ['hotflash', 'Hot flushes', 'Sıcak basması'], ['cycle', 'Bleeding', 'Kanama'],
     ['sleep', 'Sleep', 'Uyku'], ['mood', 'Mood', 'Ruh hali'],
     ['energy', 'Energy', 'Enerji'], ['libido', 'Libido', 'Libido'],
   ],

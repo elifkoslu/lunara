@@ -253,7 +253,7 @@ function EdToday({ lunara, api, onNav }) {
         {meds.map((d, i) => (
           <DoseRow key={d.id} dose={d} last={i === meds.length - 1}
             taken={medTaken(lunara, d.id)}
-            onToggle={api ? () => api.toggleMed(TODAY_KEY, d.id, d.time === '22:00' ? nowHM() : '07:42') : null}/>
+            onToggle={api ? () => api.toggleMed(TODAY_KEY, d.id, nowHM()) : null}/>
         ))}
       </div>
       )}

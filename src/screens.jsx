@@ -287,7 +287,7 @@ function heatTint(v) {
     : v === 2 ? 'color-mix(in oklch, var(--accent) 62%, var(--card))'
     : 'var(--accent)';
 }
-function SymptomHeatmap({ symptomLog, syms }) {
+function SymptomHeatmap({ symptomLog, syms, selected, onPick }) {
   const today = new Date(TODAY_DATE);
   const [symKey, setSymKey] = React.useState((syms[0] && syms[0].key) || null);
   const [view, setView] = React.useState({ y: today.getFullYear(), m: today.getMonth() });
@@ -307,7 +307,10 @@ function SymptomHeatmap({ symptomLog, syms }) {
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div className="eyebrow">{t('Symptom calendar', 'Belirti takvimi')}</div>
+        <div>
+          <div className="eyebrow">{t('Symptom calendar', 'Belirti takvimi')}</div>
+          {onPick && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>{t('Tap a day to log it', 'Bir güne dokun ve kaydet')}</div>}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={() => go(-1)} style={{ ...HEAT_NAV_BTN, cursor: 'pointer' }}>‹</button>
           <span style={{ fontSize: 12.5, fontWeight: 600, minWidth: 108, textAlign: 'center' }}>
@@ -349,15 +352,24 @@ function SymptomHeatmap({ symptomLog, syms }) {
           const v = (cell && cell[symKey] != null) ? cell[symKey] : null;
           const future = key > todayKey;
           const isToday = key === todayKey;
-          return (
-            <div key={key} title={`${day} · ${v == null ? t('no entry', 'kayıt yok') : rateLabel(v)}`} style={{
-              aspectRatio: '1 / 1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontFamily: 'var(--mono)',
-              background: future ? 'transparent' : heatTint(v),
-              color: future ? 'var(--muted-2)' : fg(v),
-              opacity: future ? 0.4 : 1,
-              boxShadow: isToday ? 'inset 0 0 0 2px var(--ink)' : (v == null && !future ? 'inset 0 0 0 1px var(--line-soft)' : 'none'),
-            }}>{day}</div>
+          const isSel = key === selected;
+          const pickable = onPick && !future;
+          const style = {
+            aspectRatio: '1 / 1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontFamily: 'var(--mono)', padding: 0,
+            background: future ? 'transparent' : heatTint(v),
+            color: future ? 'var(--muted-2)' : fg(v),
+            opacity: future ? 0.4 : 1,
+            boxShadow: isSel ? 'inset 0 0 0 2px var(--accent)'
+              : isToday ? 'inset 0 0 0 2px var(--ink)'
+              : (v == null && !future ? 'inset 0 0 0 1px var(--line-soft)' : 'none'),
+          };
+          const label = `${day} · ${v == null ? t('no entry', 'kayıt yok') : rateLabel(v)}`;
+          return pickable ? (
+            <button key={key} title={label} aria-label={label} onClick={() => onPick(key)}
+              style={{ ...style, cursor: 'pointer' }}>{day}</button>
+          ) : (
+            <div key={key} title={label} style={style}>{day}</div>
           );
         })}
       </div>
@@ -432,7 +444,7 @@ function SymptomsScreen({ lunara, api, logDate, setLogDate }) {
         </Card>
         {/* History + note */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <SymptomHeatmap symptomLog={lunara.symptomLog} syms={syms} />
+          <SymptomHeatmap symptomLog={lunara.symptomLog} syms={syms} selected={dk} onPick={setLogDate} />
           <Card>
             <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Add a note', 'Not ekle')}</div>
             <textarea value={note} onChange={e => setNote(e.target.value)}
