@@ -9,7 +9,7 @@ import { applyStageTheme, STAGES, OnboardingScreen } from './stages';
 import { useIsMobile, MobileShell } from './mobile';
 import { DashboardEditorial } from './editorial';
 import {
-  SymptomsScreen, DosesScreen, CycleScreen, LabsScreen, CareScreen, LibraryScreen,
+  SymptomsScreen, DosesScreen, CycleScreen, LabsScreen, CareScreen,
 } from './screens';
 import { NourishScreen } from './nourish';
 import { ProfileScreen, PrivacyModal } from './profile';
@@ -102,7 +102,6 @@ export default function App() {
       case 'nourish':  return <NourishScreen lunara={lunara} />;
       case 'labs':     return <LabsScreen lunara={lunara} api={api} />;
       case 'care':     return <CareScreen lunara={lunara} onNav={setActive} />;
-      case 'library':  return <LibraryScreen lunara={lunara} />;
       case 'profile':  return <ProfileScreen lunara={lunara} api={api} onNav={setActive} onOpenPrivacy={() => setPrivacyOpen(true)} />;
       default:
         if (lunara.stage === 'menarche') return <MenarcheHome lunara={lunara} api={api} onNav={setActive} />;

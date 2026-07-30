@@ -34,7 +34,6 @@ const MORE_ITEMS = [
   { k: 'symptoms', icon: ICONS.pulse, en: 'Symptoms', tr: 'Belirtiler', subEn: 'Log how you feel', subTr: 'Nasıl hissettiğini kaydet' },
   { k: 'labs',     icon: ICONS.vial,  en: 'Labs',     tr: 'Tahliller', subEn: 'Results & trends', subTr: 'Sonuçlar & eğilimler' },
   { k: 'care',     icon: ICONS.chat,  en: 'Care team', tr: 'Destek ekibi', subEn: 'Message & consults', subTr: 'Mesaj & randevular' },
-  { k: 'library',  icon: ICONS.book,  en: 'Library',  tr: 'Blog', subEn: 'Learn', subTr: 'Öğren' },
   { k: 'profile',  icon: ICONS.cog,   en: 'Profile & settings', tr: 'Profil & ayarlar', subEn: 'Account, language, alerts', subTr: 'Hesap, dil, uyarılar' },
 ];
 const ICON_DOTS = 'M5 12h.01M12 12h.01M19 12h.01';

@@ -168,11 +168,10 @@ function navItemsFor(stage) {
     nourish:  { icon: ICONS.leaf,  label: t('Nourish & move', 'Beslenme ve hareket') },
     labs:     { icon: ICONS.vial,  label: t('Labs', 'Tahliller') },
     care:     { icon: ICONS.chat,  label: t('Care team', 'Destek ekibi') },
-    library:  { icon: ICONS.book,  label: t('Library', 'Blog') },
   };
   // per-stage nav (defaults to full list)
   const STAGE_NAV = (typeof STAGES !== 'undefined' && STAGES[stage] && STAGES[stage].nav)
-    || ['home','symptoms','doses','cycle','nourish','labs','care','library'];
+    || ['home','symptoms','doses','cycle','nourish','labs','care'];
   return STAGE_NAV.map(k => ({ k, ...reg[k] }));
 }
 
