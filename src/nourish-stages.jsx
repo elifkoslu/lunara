@@ -75,6 +75,7 @@ const TTC_NOURISH = {
       { en: 'Walking & light cardio', tr: 'Yürüyüş & hafif kardiyo', bEn: '30 min most days supports ovulation.', bTr: 'Çoğu gün 30 dk ovülasyonu destekler.' },
       { en: 'Strength training', tr: 'Kuvvet antrenmanı', bEn: '2–3× a week, moderate.', bTr: 'Haftada 2–3, orta yoğunluk.' },
       { en: 'Yoga & stress relief', tr: 'Yoga & stres azaltma', bEn: 'Lower stress helps a regular cycle.', bTr: 'Düşük stres düzenli döngüye yardım eder.' },
+      { en: 'Pelvic floor', tr: 'Pelvik taban', bEn: 'Building the habit now pays off in pregnancy and after.', bTr: 'Alışkanlığı şimdi kurmak gebelikte ve sonrasında işe yarar.' },
     ],
     avoidEn: 'Avoid over-training — very intense exercise can disrupt ovulation.',
     avoidTr: 'Aşırı antrenmandan kaçın — çok yoğun egzersiz ovülasyonu bozabilir.' },
@@ -83,6 +84,8 @@ const TTC_NOURISH = {
       { en: 'Folic acid early', tr: 'Erkenden folik asit', bEn: '400–800 mcg before conceiving.', bTr: 'Gebe kalmadan önce 400–800 mcg.' },
       { en: 'Whole grains & healthy fats', tr: 'Tam tahıl & sağlıklı yağlar', bEn: 'Olive oil, nuts, avocado.', bTr: 'Zeytinyağı, kuruyemiş, avokado.' },
       { en: 'Plant + lean protein, iron', tr: 'Bitkisel + yağsız protein, demir', bEn: 'Lentils, fish, leafy greens.', bTr: 'Mercimek, balık, yeşil yapraklılar.' },
+      { en: 'Omega-3 (DHA)', tr: 'Omega-3 (DHA)', bEn: 'Oily fish or algae — stores build before pregnancy.', bTr: 'Yağlı balık ya da alg — depolar gebelikten önce oluşur.' },
+      { en: 'Vitamin D', tr: 'D vitamini', bEn: 'Low levels are common; ask for a test if you’re unsure.', bTr: 'Düşüklük yaygın; emin değilsen tahlil iste.' },
     ],
     noteEn: 'Limit trans fats, excess caffeine and alcohol while trying.',
     noteTr: 'Denerken trans yağ, fazla kafein ve alkolü sınırla.' },
@@ -94,6 +97,8 @@ const POSTPARTUM_NOURISH = {
       { en: 'Short, slow walks', tr: 'Kısa, yavaş yürüyüşler', bEn: 'Start gently and build up as you heal.', bTr: 'Nazik başla, iyileştikçe artır.' },
       { en: 'Pelvic floor & breathing', tr: 'Pelvik taban & nefes', bEn: 'Reconnect the core gently, no strain.', bTr: 'Karnı nazikçe yeniden bağla, zorlama.' },
       { en: 'Posture & stretching', tr: 'Duruş & esneme', bEn: 'Eases feeding-related neck and back tension.', bTr: 'Beslemeye bağlı boyun/sırt gerginliğini azaltır.' },
+      { en: 'Check for tummy separation', tr: 'Karın ayrılmasını kontrol et', bEn: 'A gap down the midline is common — a physio can guide safe core work.', bTr: 'Orta hatta açıklık yaygındır — fizyoterapist güvenli karın çalışmasını gösterebilir.' },
+      { en: 'Build back gradually', tr: 'Kademeli geri dön', bEn: 'Add a little each week; pain, heaviness or leaking means back off.', bTr: 'Her hafta biraz ekle; ağrı, ağırlık hissi ya da kaçırma varsa geri çekil.' },
     ],
     avoidEn: 'Avoid high-impact exercise and hard core work until your clinician clears you (around 6 weeks).',
     avoidTr: 'Hekimin onaylayana kadar (yaklaşık 6 hafta) yüksek etkili egzersiz ve ağır karın çalışmasından kaçın.' },
@@ -102,9 +107,37 @@ const POSTPARTUM_NOURISH = {
       { en: 'Iron & protein', tr: 'Demir & protein', bEn: 'Replace blood loss and repair tissue.', bTr: 'Kan kaybını yerine koyar, dokuyu onarır.' },
       { en: 'Fluids (more if nursing)', tr: 'Bol sıvı (emziriyorsan daha çok)', bEn: 'Keep a water bottle by the feeding chair.', bTr: 'Besleme koltuğunun yanına bir matara koy.' },
       { en: 'Fibre + healthy fats', tr: 'Lif + sağlıklı yağlar', bEn: 'Eases constipation; supports milk and mood.', bTr: 'Kabızlığı hafifletir; sütü ve ruh halini destekler.' },
+      { en: 'Omega-3 for mood', tr: 'Ruh hali için omega-3', bEn: 'Oily fish, walnuts — supports recovery and low mood.', bTr: 'Yağlı balık, ceviz — iyileşmeyi ve düşük ruh halini destekler.' },
+      { en: 'Calcium + vitamin D', tr: 'Kalsiyum + D vitamini', bEn: 'Breastfeeding draws on your bone stores — replace them.', bTr: 'Emzirme kemik depolarından çeker — yerine koy.' },
     ],
     noteEn: 'If breastfeeding, you need extra calories and fluids — eat regularly, even one-handed snacks count.',
     noteTr: 'Emziriyorsan ekstra kalori ve sıvıya ihtiyacın var — düzenli ye, tek elle atıştırmalıklar bile sayılır.' },
+};
+
+/* Perimenopause priorities — shown above the cycle-phase guidance, because
+   in perimenopause the stage-level needs (muscle, bone, pelvic floor,
+   protein) matter more than where you are in a given cycle. */
+const PERIMENO_NOURISH = {
+  move: { hEn: 'Protect muscle & bone', hTr: 'Kası ve kemiği koru',
+    items: [
+      { en: 'Strength training', tr: 'Kuvvet antrenmanı', bEn: '2–3× a week — the single best protection as estrogen falls.', bTr: 'Haftada 2–3 — östrojen düşerken en güçlü koruma.' },
+      { en: 'Impact for bone', tr: 'Kemik için darbe', bEn: 'Jumps, skipping or stair climbs signal bone to hold density.', bTr: 'Zıplama, ip atlama ya da merdiven kemiğe yoğunluğu koruma sinyali verir.' },
+      { en: 'Pelvic floor', tr: 'Pelvik taban', bEn: 'These muscles weaken with estrogen — a couple of sets a day.', bTr: 'Bu kaslar östrojenle zayıflar — günde birkaç set.' },
+      { en: 'Balance work', tr: 'Denge çalışması', bEn: 'Single-leg holds, yoga — protects against later falls.', bTr: 'Tek ayak duruşu, yoga — ileride düşmelere karşı korur.' },
+      { en: 'Walking', tr: 'Yürüyüş', bEn: 'Steady, most days — heart, mood and sleep.', bTr: 'Çoğu gün, istikrarlı — kalp, ruh hali ve uyku.' },
+    ],
+    avoidEn: 'Prioritise strength over cardio. If sleep or energy is poor, go easier that day — recovery matters more now.',
+    avoidTr: 'Kuvveti kardiyodan önce koy. Uyku ya da enerji kötüyse o gün hafiflet — toparlanma artık daha önemli.' },
+  eat: { hEn: 'Protein first', hTr: 'Önce protein',
+    items: [
+      { en: 'Protein at every meal', tr: 'Her öğünde protein', bEn: 'Aim 1.2–1.6 g per kg a day, 25–30 g per meal, to hold muscle.', bTr: 'Kası korumak için günde kilo başına 1.2–1.6 g, öğün başına 25–30 g hedefle.' },
+      { en: 'Calcium + vitamin D', tr: 'Kalsiyum + D vitamini', bEn: 'Bone loss speeds up now — dairy, greens, fortified foods.', bTr: 'Kemik kaybı şimdi hızlanır — süt, yeşillik, zenginleştirilmiş besinler.' },
+      { en: 'Creatine & collagen', tr: 'Kreatin & kolajen', bEn: 'Creatine 3–5 g for muscle and mood; collagen 5–10 g for skin and joints.', bTr: 'Kas ve ruh hali için kreatin 3–5 g; cilt ve eklem için kolajen 5–10 g.' },
+      { en: 'Fibre & steady blood sugar', tr: 'Lif & dengeli kan şekeri', bEn: 'Whole grains, legumes — eases energy dips and cravings.', bTr: 'Tam tahıl, baklagil — enerji düşüşünü ve isteği azaltır.' },
+      { en: 'Omega-3', tr: 'Omega-3', bEn: 'Oily fish, walnuts, flax — mood, joints and heart.', bTr: 'Yağlı balık, ceviz, keten — ruh hali, eklemler ve kalp.' },
+    ],
+    noteEn: 'Alcohol and caffeine often worsen hot flushes and sleep in perimenopause — notice your own pattern.',
+    noteTr: 'Alkol ve kafein perimenopozda sıcak basmasını ve uykuyu çoğu zaman kötüleştirir — kendi desenini gözlemle.' },
 };
 
 // Tek-rehberli evreler için başlık + içerik
@@ -114,14 +147,18 @@ const MENO_NOURISH = {
       { en: 'Strength training', tr: 'Kuvvet antrenmanı', bEn: '2–3× a week protects bone and muscle.', bTr: 'Haftada 2–3 kez kemik ve kası korur.' },
       { en: 'Weight-bearing cardio', tr: 'Ağırlık taşıyan kardiyo', bEn: 'Brisk walking supports heart and bones.', bTr: 'Tempolu yürüyüş kalbi ve kemikleri destekler.' },
       { en: 'Balance & yoga', tr: 'Denge & yoga', bEn: 'Reduces fall risk and eases stiffness.', bTr: 'Düşme riskini azaltır, tutukluğu hafifletir.' },
+      { en: 'Pelvic floor', tr: 'Pelvik taban', bEn: 'Lower estrogen weakens these muscles — keep training them.', bTr: 'Düşük östrojen bu kasları zayıflatır — çalıştırmayı sürdür.' },
+      { en: 'Gentle impact if safe', tr: 'Uygunsa hafif darbe', bEn: 'Heel drops or small hops load bone — skip if you have osteoporosis or a fracture; ask your doctor.', bTr: 'Topuk düşürme ya da küçük sıçramalar kemiği yükler — osteoporoz veya kırık varsa yapma; doktoruna sor.' },
     ],
     avoidEn: 'Don’t skip resistance work — it’s the strongest protector of bone after menopause.',
     avoidTr: 'Direnç çalışmasını atlama — menopoz sonrası kemiğin en güçlü koruyucusudur.' },
   eat: { hEn: 'Bone & heart plate', hTr: 'Kemik & kalp tabağı',
     items: [
       { en: 'Calcium + vitamin D', tr: 'Kalsiyum + D vitamini', bEn: 'Dairy, greens, fortified foods for bone.', bTr: 'Süt, yeşillik, zenginleştirilmiş besinler — kemik.' },
-      { en: 'Protein at each meal', tr: 'Her öğünde protein', bEn: 'Preserves muscle as metabolism shifts.', bTr: 'Metabolizma değişirken kası korur.' },
+      { en: 'Protein at each meal', tr: 'Her öğünde protein', bEn: 'Aim 1.2–1.6 g per kg a day, 25–30 g per meal — muscle loss speeds up now.', bTr: 'Günde kilo başına 1.2–1.6 g, öğün başına 25–30 g hedefle — kas kaybı şimdi hızlanır.' },
       { en: 'Fibre & healthy fats', tr: 'Lif & sağlıklı yağlar', bEn: 'Whole grains, olive oil, fish for the heart.', bTr: 'Tam tahıl, zeytinyağı, balık — kalp için.' },
+      { en: 'Creatine & collagen', tr: 'Kreatin & kolajen', bEn: 'Creatine 3–5 g for muscle, strength and mood; collagen 5–10 g for skin, joints and bone.', bTr: 'Kas, güç ve ruh hali için kreatin 3–5 g; cilt, eklem ve kemik için kolajen 5–10 g.' },
+      { en: 'Enough water', tr: 'Yeterli su', bEn: 'Thirst signals fade with age — drink regularly, not only when thirsty.', bTr: 'Susuzluk hissi yaşla azalır — sadece susayınca değil, düzenli iç.' },
     ],
     noteEn: 'Limit alcohol, caffeine and spicy food if they trigger hot flushes.',
     noteTr: 'Sıcak basmasını tetikliyorsa alkol, kafein ve baharatlı yiyeceği sınırla.' },
@@ -131,6 +168,7 @@ const MENARCHE_NOURISH = {
   move: { hEn: 'Gentle & fun', hTr: 'Nazik & keyifli',
     items: [
       { en: 'Move in a way you enjoy', tr: 'Sevdiğin şekilde hareket et', bEn: 'Walking, cycling, dancing, any sport you like.', bTr: 'Yürüyüş, bisiklet, dans, sevdiğin herhangi bir spor.' },
+      { en: 'Jumping & running games', tr: 'Zıplamalı & koşulu oyunlar', bEn: 'These years build the bone you keep for life — impact helps.', bTr: 'Bu yıllar ömür boyu taşıyacağın kemiği inşa eder — darbe faydalı.' },
       { en: 'Stretch & relax', tr: 'Esne & gevşe', bEn: 'Easy stretches help cramps and tension.', bTr: 'Hafif esnemeler kramp ve gerginliğe iyi gelir.' },
       { en: 'Rest when tired', tr: 'Yorgunken dinlen', bEn: 'Especially on your period — listen to your body.', bTr: 'Özellikle reglinde — bedenini dinle.' },
     ],
@@ -139,8 +177,9 @@ const MENARCHE_NOURISH = {
   eat: { hEn: 'Balanced & iron', hTr: 'Dengeli & demir',
     items: [
       { en: 'Iron-rich foods', tr: 'Demirden zengin besinler', bEn: 'Red meat, beans, spinach — helpful around your period.', bTr: 'Kırmızı et, kuru baklagiller, ıspanak — regl döneminde faydalı.' },
-      { en: 'Calcium for growing bones', tr: 'Büyüyen kemikler için kalsiyum', bEn: 'Milk, yogurt, cheese or fortified options.', bTr: 'Süt, yoğurt, peynir ya da zenginleştirilmiş seçenekler.' },
+      { en: 'Calcium + vitamin D', tr: 'Kalsiyum + D vitamini', bEn: 'Most of your adult bone is built before 18 — these two are what build it.', bTr: 'Yetişkin kemiğinin çoğu 18’den önce oluşur — bunu inşa eden bu ikisi.' },
       { en: 'Regular meals + water', tr: 'Düzenli öğün + su', bEn: 'Don’t skip breakfast; steady energy helps mood.', bTr: 'Kahvaltıyı atlama; dengeli enerji ruh halini destekler.' },
+      { en: 'Eat enough', tr: 'Yeterince ye', bEn: 'Too little food can pause your periods and slow growth — fuel comes first.', bTr: 'Çok az yemek regli durdurabilir, büyümeyi yavaşlatır — önce yakıt.' },
     ],
     noteEn: 'No diets needed — variety and regular meals are what a growing body needs most.',
     noteTr: 'Diyete gerek yok — büyüyen bir bedenin en çok ihtiyacı çeşitlilik ve düzenli öğünler.' },
@@ -320,4 +359,4 @@ function StageSeedCycle({ stageKey }) {
   );
 }
 
-export { PREG_NOURISH, TTC_NOURISH, POSTPARTUM_NOURISH, MENO_NOURISH, MENARCHE_NOURISH, SINGLE_NOURISH, NourishGuideCard, StageNourishView, NourishFooter, StageSeedCycle };
+export { PREG_NOURISH, PERIMENO_NOURISH, TTC_NOURISH, POSTPARTUM_NOURISH, MENO_NOURISH, MENARCHE_NOURISH, SINGLE_NOURISH, NourishGuideCard, StageNourishView, NourishFooter, StageSeedCycle };

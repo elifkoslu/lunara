@@ -1,7 +1,7 @@
 import React from 'react';
 import { tx } from './dict';
 import { I18N, t } from './i18n';
-import { StageNourishView } from './nourish-stages';
+import { NourishGuideCard, PERIMENO_NOURISH, StageNourishView } from './nourish-stages';
 import { PHASE_TINT, ScreenHead, cycleDayFrom, phaseLabel, phaseOf } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
 
@@ -195,6 +195,7 @@ const MOVE_ICON = {
 function NourishScreen({ lunara, kind = 'eat' }) {
   if (typeof StageNourishView !== 'undefined' && (lunara.stage === 'menarche' || lunara.stage === 'pregnancy' || lunara.stage === 'ttc' || lunara.stage === 'postpartum' || lunara.stage === 'menopause'))
     return <StageNourishView stageKey={lunara.stage} lunara={lunara} kind={kind}/>;
+  const isPerimeno = lunara.stage === 'perimeno';
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today);
   const live = phaseOf(day).key;
@@ -216,6 +217,19 @@ function NourishScreen({ lunara, kind = 'eat' }) {
         right={<span style={{ fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
           {t('Tuned to your', 'Senin')} {phaseLabel(phaseOf(day)).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase', 'fazına göre')}
         </span>} />
+
+      {/* In perimenopause the stage-level needs come first; cycle-phase
+          guidance still follows because many are still cycling. */}
+      {isPerimeno && (
+        <>
+          <NourishGuideCard kind={kind} g={kind === 'move' ? PERIMENO_NOURISH.move : PERIMENO_NOURISH.eat}/>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 -4px' }}>
+            <div style={{ height: 1, flex: 1, background: 'var(--line-soft)' }}/>
+            <span className="eyebrow" style={{ color: 'var(--muted-2)' }}>{t('If you’re cycling · day ' + day, 'Döngün varsa · ' + day + '. gün')}</span>
+            <div style={{ height: 1, flex: 1, background: 'var(--line-soft)' }}/>
+          </div>
+        </>
+      )}
 
       {/* Phase selector */}
       <div className="mb-phasesel" style={{ display: 'flex', gap: 10 }}>
