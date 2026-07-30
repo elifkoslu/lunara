@@ -489,14 +489,41 @@ function activeMeds(regimen, day) {
   });
 }
 // Today's active doses + current cycle day
-function todaysDoses(lunara) {
+function todaysDoses(lunara, when) {
   if (!lunara || !lunara.regimen) return { meds: [], day: null };
-  const day = regimenDay(lunara.regimen, TODAY_DATE);
+  const day = regimenDay(lunara.regimen, when || TODAY_DATE);
   return { meds: activeMeds(lunara.regimen, day), day };
 }
 // Is a med logged as taken today?
-function medTaken(lunara, id) {
-  return (lunara && lunara.doseLog && lunara.doseLog[TODAY_KEY] && lunara.doseLog[TODAY_KEY][id]) || false;
+function medTaken(lunara, id, dateKey) {
+  const k = dateKey || TODAY_KEY;
+  return (lunara && lunara.doseLog && lunara.doseLog[k] && lunara.doseLog[k][id]) || false;
+}
+
+// Date navigator — lets a screen log to any past day (never the future).
+const dateNavBtn = { width: 28, height: 28, borderRadius: 8, background: 'var(--bone)', color: 'var(--ink-2)', fontSize: 16, lineHeight: 1, boxShadow: 'inset 0 0 0 1px var(--line-soft)' };
+function DateNav({ date, onChange }) {
+  const today = getTodayKey();
+  const isToday = date === today;
+  const locale = I18N.lang === 'tr' ? 'tr' : 'en';
+  const label = isToday
+    ? t('Today', 'Bugün')
+    : new Date(date + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'long' });
+  const keyOf = dt => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+  const shift = n => { const nd = new Date(date + 'T00:00:00'); nd.setDate(nd.getDate() + n); const k = keyOf(nd); if (k <= today) onChange(k); };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <button onClick={() => shift(-1)} style={{ ...dateNavBtn, cursor: 'pointer' }} aria-label="Previous day">‹</button>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 999, background: 'var(--card)', boxShadow: 'inset 0 0 0 1px var(--line)' }}>
+        <Icon d={ICONS.clock} size={13} stroke="var(--muted)"/>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{label}</span>
+        <input type="date" max={today} value={date} onChange={e => e.target.value && onChange(e.target.value)}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} aria-label="Pick a date"/>
+      </div>
+      <button onClick={() => shift(1)} disabled={isToday} style={{ ...dateNavBtn, opacity: isToday ? 0.35 : 1, cursor: isToday ? 'default' : 'pointer' }} aria-label="Next day">›</button>
+      {!isToday && <button onClick={() => onChange(today)} style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', paddingLeft: 2 }}>{t('Today', 'Bugün')}</button>}
+    </div>
+  );
 }
 
 function ProgramBar({ idx, total }) {
@@ -650,4 +677,4 @@ function SymptomTrack({ series, color = 'var(--accent)', dotSize = 6, gap = 3 })
   );
 }
 
-export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, todaysDoses, medTaken, ProgramBar, TopBar, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };
+export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, todaysDoses, medTaken, DateNav, ProgramBar, TopBar, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };

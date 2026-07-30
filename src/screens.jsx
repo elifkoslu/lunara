@@ -3,7 +3,7 @@ import { I18N, t, useLang } from './i18n';
 import { ImportLabModal } from './lab-import';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
-import { Card, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
+import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
 
@@ -109,11 +109,14 @@ function Btn({ children, primary, onClick, style }) {
 const wrap = { padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 20 };
 
 /* ════════════════ DOSES ════════════════ */
-function DosesScreen({ lunara, api }) {
+function DosesScreen({ lunara, api, logDate, setLogDate }) {
   const [editing, setEditing] = React.useState(false);
   useLang();
-  const { meds, day } = todaysDoses(lunara);
-  const takenCount = meds.filter(d => medTaken(lunara, d.id)).length;
+  const dk = logDate || TODAY_KEY;
+  const dObj = new Date(dk + 'T00:00:00');
+  const isToday = dk === TODAY_KEY;
+  const { meds, day } = todaysDoses(lunara, dObj);
+  const takenCount = meds.filter(d => medTaken(lunara, d.id, dk)).length;
   const cycLen = lunara.regimen ? lunara.regimen.cycleLength : 28;
   const noRegimen = !lunara.regimen || (lunara.regimen.meds || []).length === 0;
 
@@ -140,10 +143,19 @@ function DosesScreen({ lunara, api }) {
   const adh30 = sch30 > 0 ? Math.round((tak30 / sch30) * 100) : null;
   return (
     <div style={wrap}>
-      <ScreenHead eyebrow={t(`REGIMEN · DAY ${day} OF ${cycLen}`, `REJİM · ${cycLen} GÜNÜN ${day}. GÜNÜ`)} title={t("Today's doses", 'Bugünün dozları')}
+      <ScreenHead eyebrow={t(`REGIMEN · DAY ${day} OF ${cycLen}`, `REJİM · ${cycLen} GÜNÜN ${day}. GÜNÜ`)} title={isToday ? t("Today's doses", 'Bugünün dozları') : t('Doses', 'Dozlar')}
         right={<Btn primary={editing || noRegimen} onClick={() => setEditing(e => !e)}>
           <Icon d={editing ? ICONS.check : (noRegimen ? ICONS.plus : ICONS.cog)} size={14} sw={editing ? 2 : 1.6}/> {editing ? t('Done', 'Bitti') : (noRegimen ? t('Add medication', 'İlaç ekle') : t('Edit schedule', 'Programı düzenle'))}
         </Btn>} />
+
+      {setLogDate && !noRegimen && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, margin: '-4px 0 0' }}>
+          <DateNav date={dk} onChange={setLogDate}/>
+          <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
+            {isToday ? t('Log for another day too', 'Başka bir gün için de kaydedebilirsin') : t('Logging a past day', 'Geçmiş bir güne kaydediyorsun')}
+          </span>
+        </div>
+      )}
 
       {editing && <RegimenEditor lunara={lunara} api={api} onClose={() => setEditing(false)}/>}
 
@@ -170,9 +182,9 @@ function DosesScreen({ lunara, api }) {
           ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {meds.map((d, i) => {
-              const taken = medTaken(lunara, d.id);
+              const taken = medTaken(lunara, d.id, dk);
               return (
-                <button key={d.id} onClick={() => api.toggleMed(TODAY_KEY, d.id, d.time === '22:00' ? nowHM() : '07:42')}
+                <button key={d.id} onClick={() => api.toggleMed(dk, d.id, nowHM())}
                   style={{
                     display: 'grid', gridTemplateColumns: '46px 1fr auto', gap: 14, alignItems: 'center',
                     padding: '14px 0', borderBottom: i < meds.length - 1 ? '1px solid var(--line-soft)' : 'none',
@@ -236,7 +248,7 @@ function DosesScreen({ lunara, api }) {
       {/* Supplements + phase recommendations */}
       <div style={{ marginTop: 4 }}>
         <div className="eyebrow" style={{ marginBottom: 14 }}>{t('SUPPLEMENTS', 'TAKVİYELER')}</div>
-        <SupplementsPanel lunara={lunara} api={api}/>
+        <SupplementsPanel lunara={lunara} api={api} logDate={dk}/>
       </div>
     </div>
   );
@@ -363,19 +375,29 @@ function SymptomHeatmap({ symptomLog, syms }) {
   );
 }
 
-function SymptomsScreen({ lunara, api }) {
-  const todayLog = lunara.symptomLog[TODAY_KEY] || {};
+function SymptomsScreen({ lunara, api, logDate, setLogDate }) {
+  const dk = logDate || TODAY_KEY;
+  const isToday = dk === TODAY_KEY;
+  const todayLog = lunara.symptomLog[dk] || {};
   const syms = symptomsFor(lunara.stage);
   const logged = syms.filter(s => todayLog[s.key] != null).length;
   const [note, setNote] = React.useState('');
   return (
     <div style={wrap}>
-      <ScreenHead eyebrow={t('JOURNAL · TODAY', 'GÜNLÜK · BUGÜN')} title={t('How are you feeling?', 'Nasıl hissediyorsun?')}
+      <ScreenHead eyebrow={isToday ? t('JOURNAL · TODAY', 'GÜNLÜK · BUGÜN') : t('JOURNAL', 'GÜNLÜK')} title={t('How are you feeling?', 'Nasıl hissediyorsun?')}
         right={<span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{logged} / {syms.length} {t('logged', 'kaydedildi')}</span>} />
+      {setLogDate && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, margin: '-4px 0 0' }}>
+          <DateNav date={dk} onChange={setLogDate}/>
+          <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
+            {isToday ? t('Forgot a day? Pick it and log', 'Bir günü mü kaçırdın? Seçip kaydet') : t('Logging a past day', 'Geçmiş bir güne kaydediyorsun')}
+          </span>
+        </div>
+      )}
       <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {/* Logger */}
         <Card>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>{t('Rate today', 'Bugünü puanla')}</div>
+          <div className="eyebrow" style={{ marginBottom: 16 }}>{isToday ? t('Rate today', 'Bugünü puanla') : t('Rate this day', 'Bu günü puanla')}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {syms.map(s => {
               const val = todayLog[s.key] ?? null;
@@ -391,7 +413,7 @@ function SymptomsScreen({ lunara, api }) {
                     {[0,1,2,3].map(v => {
                       const on = val === v;
                       return (
-                        <button key={v} onClick={() => api.logSymptom(TODAY_KEY, s.key, v)}
+                        <button key={v} onClick={() => api.logSymptom(dk, s.key, v)}
                           style={{
                             flex: 1, height: 30, borderRadius: 8,
                             background: on ? 'var(--accent)' : 'var(--bone)',

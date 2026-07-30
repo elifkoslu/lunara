@@ -21,6 +21,7 @@ import { MenopauseHome } from './menopause';
 
 export default function App() {
   const [active, setActive] = React.useState('home');
+  const [logDate, setLogDate] = React.useState(getTodayKey());
   const [lunara, api] = useLunara();
   const isMobile = useIsMobile();
   const [privacyOpen, setPrivacyOpen] = React.useState(false);
@@ -95,8 +96,8 @@ export default function App() {
 
   const screenEl = (() => {
     switch (active) {
-      case 'symptoms': return <SymptomsScreen lunara={lunara} api={api} />;
-      case 'doses':    return <DosesScreen lunara={lunara} api={api} />;
+      case 'symptoms': return <SymptomsScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
+      case 'doses':    return <DosesScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
       case 'cycle':    return <CycleScreen lunara={lunara} api={api} />;
       case 'nourish':  return <NourishScreen lunara={lunara} />;
       case 'labs':     return <LabsScreen lunara={lunara} api={api} />;

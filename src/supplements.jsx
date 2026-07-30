@@ -36,12 +36,13 @@ const SUPP_GUIDE = {
 
 const WHEN_OPTS = ['morning', 'midday', 'evening', 'bedtime'];
 
-function SupplementsPanel({ lunara, api }) {
+function SupplementsPanel({ lunara, api, logDate }) {
+  const dk = logDate || TODAY_KEY;
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today);
   const ph = phaseOf(day);
   const tint = PHASE_TINT[ph.key];
-  const log = lunara.suppLog[TODAY_KEY] || {};
+  const log = lunara.suppLog[dk] || {};
   const recs = SUPP_GUIDE[ph.key];
   const existingNames = lunara.supplements.map(s => s.name.toLowerCase());
 
@@ -75,7 +76,7 @@ function SupplementsPanel({ lunara, api }) {
                 display: 'grid', gridTemplateColumns: '40px 1fr auto auto', gap: 12, alignItems: 'center',
                 padding: '12px 0', borderBottom: i < lunara.supplements.length - 1 ? '1px solid var(--line-soft)' : 'none',
               }}>
-                <button onClick={() => api.toggleSupp(TODAY_KEY, s.id)}
+                <button onClick={() => api.toggleSupp(dk, s.id)}
                   style={{
                     width: 40, height: 40, borderRadius: 12, cursor: 'pointer',
                     background: taken ? 'var(--accent)' : 'var(--bone)',
