@@ -99,7 +99,8 @@ export default function App() {
       case 'symptoms': return <SymptomsScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
       case 'doses':    return <DosesScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
       case 'cycle':    return <CycleScreen lunara={lunara} api={api} />;
-      case 'nourish':  return <NourishScreen lunara={lunara} />;
+      case 'move':     return <NourishScreen lunara={lunara} kind="move" />;
+      case 'nourish':  return <NourishScreen lunara={lunara} kind="eat" />;
       case 'labs':     return <LabsScreen lunara={lunara} api={api} />;
       case 'care':     return <CareScreen lunara={lunara} onNav={setActive} />;
       case 'profile':  return <ProfileScreen lunara={lunara} api={api} onNav={setActive} onOpenPrivacy={() => setPrivacyOpen(true)} />;

@@ -183,8 +183,11 @@ function NourishGuideCard({ kind, g }) {
   );
 }
 
-function StageNourishView({ stageKey, lunara }) {
+/* kind: 'move' → Movement screen · 'eat' → Nutrition screen. */
+function StageNourishView({ stageKey, lunara, kind = 'eat' }) {
   useLang();
+  const isMove = kind === 'move';
+  const screenTitle = isMove ? t('Movement', 'Hareket') : t('Nutrition', 'Beslenme');
   if (stageKey === 'pregnancy') {
     const { week } = pregnancyWeek(lunara.pregnancy.dueDate);
     const tri = trimesterOf(week);
@@ -193,7 +196,7 @@ function StageNourishView({ stageKey, lunara }) {
     const triLabel = n => t(['', 'First', 'Second', 'Third'][n] + ' trimester', ['', 'Birinci', 'İkinci', 'Üçüncü'][n] + ' trimester');
     return (
       <div style={{ padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <ScreenHead eyebrow={t(`WEEK ${week} · MOVEMENT & FOOD`, `${week}. HAFTA · HAREKET & BESLENME`)} title={t('Nourish & move', 'Beslenme ve hareket')}
+        <ScreenHead eyebrow={isMove ? t(`WEEK ${week} · MOVEMENT`, `${week}. HAFTA · HAREKET`) : t(`WEEK ${week} · NUTRITION`, `${week}. HAFTA · BESLENME`)} title={screenTitle}
           right={<span style={{ fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>{triLabel(tri)}</span>} />
         {/* Trimester selector */}
         <div className="mb-phasesel" style={{ display: 'flex', gap: 10 }}>
@@ -216,9 +219,8 @@ function StageNourishView({ stageKey, lunara }) {
             );
           })}
         </div>
-        <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          <NourishGuideCard kind="move" g={g.move}/>
-          <NourishGuideCard kind="eat" g={g.eat}/>
+        <div>
+          {isMove ? <NourishGuideCard kind="move" g={g.move}/> : <NourishGuideCard kind="eat" g={g.eat}/>}
         </div>
         <NourishFooter/>
       </div>
@@ -229,13 +231,14 @@ function StageNourishView({ stageKey, lunara }) {
   const g = cfg.guide;
   return (
     <div style={{ padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <ScreenHead eyebrow={t(cfg.eyebrowEn, cfg.eyebrowTr)} title={t('Nourish & move', 'Beslenme ve hareket')}
+      <ScreenHead
+        eyebrow={t(cfg.eyebrowEn, cfg.eyebrowTr).replace(/MOVEMENT & FOOD/, isMove ? 'MOVEMENT' : 'NUTRITION').replace(/HAREKET & BESLENME/, isMove ? 'HAREKET' : 'BESLENME')}
+        title={screenTitle}
         right={<span style={{ fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>{t(cfg.tagEn, cfg.tagTr)}</span>} />
-      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        <NourishGuideCard kind="move" g={g.move}/>
-        <NourishGuideCard kind="eat" g={g.eat}/>
+      <div>
+        {isMove ? <NourishGuideCard kind="move" g={g.move}/> : <NourishGuideCard kind="eat" g={g.eat}/>}
       </div>
-      <StageSeedCycle stageKey={stageKey}/>
+      {!isMove && <StageSeedCycle stageKey={stageKey}/>}
       <NourishFooter/>
     </div>
   );

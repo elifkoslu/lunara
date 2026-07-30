@@ -28,10 +28,11 @@ const TABS = [
   { k: 'home',    icon: ICONS.home,  en: 'Today',   tr: 'Bugün' },
   { k: 'doses',   icon: ICONS.pill,  en: 'Doses',   tr: 'Dozlar' },
   { k: 'cycle',   icon: ICONS.moon,  en: 'Cycle',   tr: 'Döngü' },
-  { k: 'nourish', icon: ICONS.leaf,  en: 'Nourish', tr: 'Beslenme' },
+  { k: 'move',    icon: ICONS.pulse, en: 'Move',    tr: 'Hareket' },
 ];
 const MORE_ITEMS = [
   { k: 'symptoms', icon: ICONS.pulse, en: 'Symptoms', tr: 'Belirtiler', subEn: 'Log how you feel', subTr: 'Nasıl hissettiğini kaydet' },
+  { k: 'nourish',  icon: ICONS.leaf,  en: 'Nutrition', tr: 'Beslenme', subEn: 'Food for your stage', subTr: 'Evrene göre beslenme' },
   { k: 'labs',     icon: ICONS.vial,  en: 'Labs',     tr: 'Tahliller', subEn: 'Results & trends', subTr: 'Sonuçlar & eğilimler' },
   { k: 'care',     icon: ICONS.chat,  en: 'Care team', tr: 'Destek ekibi', subEn: 'Message & consults', subTr: 'Mesaj & randevular' },
   { k: 'profile',  icon: ICONS.cog,   en: 'Profile & settings', tr: 'Profil & ayarlar', subEn: 'Account, language, alerts', subTr: 'Hesap, dil, uyarılar' },

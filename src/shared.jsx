@@ -165,13 +165,14 @@ function navItemsFor(stage) {
     symptoms: { icon: ICONS.pulse, label: t('Symptoms', 'Belirtiler') },
     doses:    { icon: ICONS.pill,  label: t('Doses', 'Dozlar') },
     cycle:    { icon: ICONS.moon,  label: t('Cycle & moon', 'Döngü & ay') },
-    nourish:  { icon: ICONS.leaf,  label: t('Nourish & move', 'Beslenme ve hareket') },
+    move:     { icon: ICONS.pulse, label: t('Movement', 'Hareket') },
+    nourish:  { icon: ICONS.leaf,  label: t('Nutrition', 'Beslenme') },
     labs:     { icon: ICONS.vial,  label: t('Labs', 'Tahliller') },
     care:     { icon: ICONS.chat,  label: t('Care team', 'Destek ekibi') },
   };
   // per-stage nav (defaults to full list)
   const STAGE_NAV = (typeof STAGES !== 'undefined' && STAGES[stage] && STAGES[stage].nav)
-    || ['home','symptoms','doses','cycle','nourish','labs','care'];
+    || ['home','symptoms','doses','cycle','move','nourish','labs','care'];
   return STAGE_NAV.map(k => ({ k, ...reg[k] }));
 }
 

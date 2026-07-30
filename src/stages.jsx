@@ -17,7 +17,7 @@ const STAGES = {
     descEn: 'Getting to know your body and its new rhythm.',
     descTr: 'Bedenini ve yeni ritmini tanımaya başlamak.',
     accent: 'oklch(0.58 0.10 155)', accentSoft: 'oklch(0.88 0.05 155)',
-    nav: ['home', 'cycle', 'symptoms', 'nourish'],
+    nav: ['home', 'cycle', 'symptoms', 'move', 'nourish'],
   },
   cycle: {
     note: 'Re', order: 1, available: true,
@@ -26,7 +26,7 @@ const STAGES = {
     descEn: 'Knowing your cycle, symptoms and rhythm.',
     descTr: 'Döngünü, belirtilerini ve ritmini tanımak.',
     accent: null, accentSoft: null, // mevcut estetik paleti yönetir (maroon)
-    nav: ['home', 'symptoms', 'cycle', 'nourish', 'care'],
+    nav: ['home', 'symptoms', 'cycle', 'move', 'nourish', 'care'],
   },
   ttc: {
     note: 'Mi', order: 2, available: true,
@@ -35,7 +35,7 @@ const STAGES = {
     descEn: 'Fertile window, ovulation and timing.',
     descTr: 'Doğurgan pencere, ovülasyon ve zamanlama.',
     accent: 'oklch(0.64 0.12 52)', accentSoft: 'oklch(0.87 0.07 55)',
-    nav: ['home', 'cycle', 'symptoms', 'nourish', 'care'],
+    nav: ['home', 'cycle', 'symptoms', 'move', 'nourish', 'care'],
   },
   pregnancy: {
     note: 'Fa', order: 3, available: true,
@@ -44,7 +44,7 @@ const STAGES = {
     descEn: 'Week by week, for you and your baby.',
     descTr: 'Hafta hafta, sen ve bebeğin için.',
     accent: 'oklch(0.56 0.10 8)', accentSoft: 'oklch(0.86 0.06 14)',
-    nav: ['home', 'symptoms', 'nourish', 'care'],
+    nav: ['home', 'symptoms', 'move', 'nourish', 'care'],
   },
   postpartum: {
     note: 'Sol', order: 4, available: true,
@@ -53,7 +53,7 @@ const STAGES = {
     descEn: 'Recovery, mood and feeding in the fourth trimester.',
     descTr: 'İyileşme, ruh hali ve emzirme.',
     accent: 'oklch(0.58 0.07 205)', accentSoft: 'oklch(0.86 0.04 205)',
-    nav: ['home', 'symptoms', 'nourish', 'care'],
+    nav: ['home', 'symptoms', 'move', 'nourish', 'care'],
   },
   perimeno: {
     note: 'La', order: 5, available: true,
@@ -62,7 +62,7 @@ const STAGES = {
     descEn: 'Shifting cycles, symptoms and hormone support (BHRT).',
     descTr: 'Değişen döngüler, belirtiler ve hormon desteği (BHRT).',
     accent: 'oklch(0.62 0.10 75)', accentSoft: 'oklch(0.87 0.07 78)',
-    nav: ['home', 'symptoms', 'doses', 'cycle', 'nourish', 'labs', 'care'],
+    nav: ['home', 'symptoms', 'doses', 'cycle', 'move', 'nourish', 'labs', 'care'],
   },
   menopause: {
     note: 'Si', order: 6, available: true,
@@ -71,7 +71,7 @@ const STAGES = {
     descEn: 'Symptom care, bone and heart health.',
     descTr: 'Belirti yönetimi, kemik ve kalp sağlığı.',
     accent: 'oklch(0.50 0.10 300)', accentSoft: 'oklch(0.84 0.05 300)',
-    nav: ['home', 'symptoms', 'doses', 'nourish', 'labs', 'care'],
+    nav: ['home', 'symptoms', 'doses', 'move', 'nourish', 'labs', 'care'],
   },
 };
 const STAGE_ORDER = Object.keys(STAGES).sort((a, b) => STAGES[a].order - STAGES[b].order);

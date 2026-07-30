@@ -190,9 +190,11 @@ const MOVE_ICON = {
   spark: 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6',
 };
 
-function NourishScreen({ lunara }) {
+/* kind: 'move' → Movement screen · 'eat' → Nutrition screen.
+   Split into two screens so each has room for stage-appropriate depth. */
+function NourishScreen({ lunara, kind = 'eat' }) {
   if (typeof StageNourishView !== 'undefined' && (lunara.stage === 'menarche' || lunara.stage === 'pregnancy' || lunara.stage === 'ttc' || lunara.stage === 'postpartum' || lunara.stage === 'menopause'))
-    return <StageNourishView stageKey={lunara.stage} lunara={lunara}/>;
+    return <StageNourishView stageKey={lunara.stage} lunara={lunara} kind={kind}/>;
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today);
   const live = phaseOf(day).key;
@@ -206,7 +208,11 @@ function NourishScreen({ lunara }) {
 
   return (
     <div style={{ padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <ScreenHead eyebrow={t(`CYCLE DAY ${day} · MOVEMENT & FOOD`, `DÖNGÜ GÜNÜ ${day} · HAREKET & BESLENME`)} title={t('Nourish & move', 'Beslenme ve hareket')}
+      <ScreenHead
+        eyebrow={kind === 'move'
+          ? t(`CYCLE DAY ${day} · MOVEMENT`, `DÖNGÜ GÜNÜ ${day} · HAREKET`)
+          : t(`CYCLE DAY ${day} · NUTRITION`, `DÖNGÜ GÜNÜ ${day} · BESLENME`)}
+        title={kind === 'move' ? t('Movement', 'Hareket') : t('Nutrition', 'Beslenme')}
         right={<span style={{ fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
           {t('Tuned to your', 'Senin')} {phaseLabel(phaseOf(day)).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase', 'fazına göre')}
         </span>} />
@@ -249,9 +255,9 @@ function NourishScreen({ lunara }) {
         </div>
       </Card>
 
-      {/* Two columns: Move + Eat */}
-      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        {/* MOVE */}
+      {/* One column — Movement or Nutrition depending on the screen */}
+      <div>
+        {kind === 'move' && (
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -309,8 +315,9 @@ function NourishScreen({ lunara }) {
             <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{tx(g.move.avoid)}</span>
           </div>
         </Card>
+        )}
 
-        {/* EAT */}
+        {kind === 'eat' && (
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -338,6 +345,7 @@ function NourishScreen({ lunara }) {
           {/* Seed cycling — part of nutrition */}
           <SeedCycle phaseKey={sel} liveKey={live} tint={tint}/>
         </Card>
+        )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', color: 'var(--muted-2)', fontSize: 11.5 }}>
