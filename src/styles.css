@@ -216,3 +216,15 @@ button {
 }
 
 
+
+/* ── Doctor summary: print only the summary sheet ────────────── */
+@media print {
+  body * { visibility: hidden !important; }
+  #doctor-summary, #doctor-summary * { visibility: visible !important; }
+  #doctor-summary {
+    position: absolute; left: 0; top: 0; width: 100%;
+    box-shadow: none !important; border-radius: 0 !important; padding: 0 !important;
+  }
+  .doc-overlay { position: absolute !important; inset: 0 !important; background: #fff !important; padding: 0 !important; }
+  .no-print { display: none !important; }
+}

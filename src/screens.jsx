@@ -1,5 +1,7 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
+import { DoseCalendar } from './dose-calendar';
+import { DoctorSummary } from './doctor-summary';
 import { ImportLabModal } from './lab-import';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
@@ -244,6 +246,9 @@ function DosesScreen({ lunara, api, logDate, setLogDate }) {
         </div>
         )}
       </div>
+
+      {/* Aylık genel görünüm — bir güne dokununca o gün kayıt tarihi olur */}
+      <DoseCalendar lunara={lunara} selected={dk} onPick={setLogDate}/>
 
       {/* Supplements + phase recommendations */}
       <div style={{ marginTop: 4 }}>
@@ -885,6 +890,7 @@ function CycleRing({ day, phase, size = 260 }) {
 
 /* ════════════════ CARE TEAM (AI destekli) ════════════════ */
 function CareScreen({ lunara, onNav }) {
+  const [summaryOpen, setSummaryOpen] = React.useState(false);
   const stage = (lunara && lunara.stage) || 'cycle';
   const stageInfo = (typeof STAGES !== 'undefined' && STAGES[stage]) || {};
   const cycleDay = lunara ? cycleDayFrom(lunara.periodStart, TODAY_DATE) : 14;
@@ -965,6 +971,20 @@ function CareScreen({ lunara, onNav }) {
               </p>
             </div>
           </Card>
+          {/* Doctor visit summary */}
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <Icon d={ICONS.vial} size={17} stroke="var(--accent)"/>
+              <div className="eyebrow">{t('Before your visit', 'Görüşmeden önce')}</div>
+            </div>
+            <div style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.25, marginBottom: 6 }}>{t('Doctor summary', 'Doktora özet')}</div>
+            <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 12px' }}>
+              {t('Your regimen, latest labs and symptoms on one page — print it or save as PDF to take along.',
+                 'Rejimin, son tahlillerin ve belirtilerin tek sayfada — yanında götürmek için yazdır ya da PDF kaydet.')}
+            </p>
+            <Btn primary onClick={() => setSummaryOpen(true)}>{t('Open summary', 'Özeti oluştur')} <Icon d={ICONS.arrow} size={13}/></Btn>
+          </Card>
+
           <Card style={{ background: 'linear-gradient(160deg, var(--accent-soft), var(--card))', cursor: 'pointer' }} onClick={() => onNav && onNav('nourish')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <Icon d={ICONS.leaf} size={17} stroke="var(--accent)"/>
@@ -975,6 +995,7 @@ function CareScreen({ lunara, onNav }) {
           </Card>
         </div>
       </div>
+      {summaryOpen && <DoctorSummary lunara={lunara} onClose={() => setSummaryOpen(false)}/>}
     </div>
   );
 }
