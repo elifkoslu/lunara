@@ -7,6 +7,53 @@ import { STAGES, stageName } from './stages';
 /* profile.jsx — Lunara profil & ayarlar ekranı */
 /* eslint-disable */
 
+/* ─── Yedek dosyası doğrulama ─────────────────────────────────────
+   İçe aktarılan dosya dış kaynaklı: geçerli JSON olması içeriğinin doğru
+   biçimde olduğunu göstermez. Yanlış tipteki bir alan (ör. dizi beklenen
+   regimen.meds'in metin olması) ilgili ekran çizilirken uygulamayı tümden
+   çökertir; kayıt localStorage'a yazıldığı için yeniden yükleme de kurtarmaz.
+   Bu yüzden yalnızca tanınan anahtarlar, yalnızca doğru tipteyse alınır;
+   gerisi sessizce atılır. */
+const nesneMi = v => v != null && typeof v === 'object' && !Array.isArray(v);
+const diziMi = Array.isArray;
+const metinMi = v => typeof v === 'string';
+
+const YEDEK_SEMASI = {
+  onboarded:   v => typeof v === 'boolean',
+  stage:       metinMi,
+  periodStart: metinMi,
+  doses:       nesneMi,
+  symptomLog:  nesneMi,
+  notes:       diziMi,
+  workoutLog:  nesneMi,
+  supplements: diziMi,
+  suppLog:     nesneMi,
+  doseLog:     nesneMi,
+  profile:     nesneMi,
+  ttc:         nesneMi,
+  pregnancy:   nesneMi,
+  postpartum:  nesneMi,
+  menopause:   nesneMi,
+  labPanels:   diziMi,
+  // meds dizi olmalı: activeMeds ve rejim ekranı doğrudan üzerinde döner
+  regimen:     v => nesneMi(v) && (v.meds === undefined || diziMi(v.meds)),
+};
+
+// Tanınan ve tipi tutan alanları döndürür; hiçbiri yoksa null (dosya reddedilir).
+function temizleYedek(ham) {
+  if (!nesneMi(ham)) return null;
+  const temiz = {};
+  let tutan = 0;
+  for (const anahtar of Object.keys(YEDEK_SEMASI)) {
+    if (!Object.prototype.hasOwnProperty.call(ham, anahtar)) continue;
+    if (!YEDEK_SEMASI[anahtar](ham[anahtar])) continue;
+    temiz[anahtar] = ham[anahtar];
+    tutan++;
+  }
+  return tutan > 0 ? temiz : null;
+}
+
+
 function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
   const p = lunara.profile;
   const [draft, setDraft] = React.useState(p);
@@ -22,9 +69,9 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
     e.target.value = '';
     if (!f) return;
     try {
-      const data = JSON.parse(await f.text());
-      const known = ['profile', 'stage', 'symptomLog', 'regimen', 'onboarded', 'labPanels'];
-      if (!data || typeof data !== 'object' || Array.isArray(data) || !known.some(k => k in data)) throw new Error('not-lunara');
+      const ham = JSON.parse(await f.text());
+      const data = temizleYedek(ham);
+      if (!data) throw new Error('not-lunara');
       setImportReq({
         data,
         name: (data.profile && data.profile.name) || '',

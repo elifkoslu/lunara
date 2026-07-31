@@ -19,12 +19,28 @@ async function loadPdfjs() {
 
 // ── 1. PDF → satırlar (hücre dizileri) ────────────────────────────
 // Metin parçalarını y koordinatına göre satırlara, x'e göre hücrelere dizer.
+/* PDF dış kaynaklı bir dosya; ayrıştırıcıyı en dar kipte çalıştırıyoruz.
+   isEvalSupported: pdf.js'in font/desen kodundaki eval benzeri yolu kapatır
+   (CVE-2024-4367 bu sınıftandı; kurulu sürüm yamalı ama kapalı tutmak bedava).
+   disableFontFace: gömülü fontlar tarayıcıya kaydedilmez, yalnızca çizilir.
+   Yalnızca metin okuduğumuz için hiçbiri sonucu etkilemiyor.
+   Sayfa ve boyut sınırı, çok büyük bir dosyanın sekmeyi kilitlemesini önler. */
+const MAKS_SAYFA = 40;
+const MAKS_BAYT = 20 * 1024 * 1024;
+
 async function extractLines(file) {
+  if (file.size > MAKS_BAYT) throw new Error('pdf-cok-buyuk');
   const pdfjs = await loadPdfjs();
   const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await pdfjs.getDocument({ data }).promise;
+  const doc = await pdfjs.getDocument({
+    data,
+    isEvalSupported: false,
+    disableFontFace: true,
+    useSystemFonts: false,
+  }).promise;
   const lines = [];
-  for (let p = 1; p <= doc.numPages; p++) {
+  const sayfaSiniri = Math.min(doc.numPages, MAKS_SAYFA);
+  for (let p = 1; p <= sayfaSiniri; p++) {
     const page = await doc.getPage(p);
     const tc = await page.getTextContent();
     const byY = new Map();
@@ -150,7 +166,9 @@ function ImportLabModal({ onClose, api }) {
       gs.forEach(g => g.readings.forEach(r => { ck[g.date + '|' + r.key] = true; }));
       setGroups(gs); setChecked(ck); setPhase('review');
     } catch (err) {
-      setError(t('The file could not be processed. Is it an e-Nabız lab PDF?', 'Dosya işlenemedi. Bu bir e-Nabız tahlil PDF’i mi?'));
+      setError(err && err.message === 'pdf-cok-buyuk'
+        ? t('This file is too large (limit 20 MB).', 'Bu dosya çok büyük (sınır 20 MB).')
+        : t('The file could not be processed. Is it an e-Nabız lab PDF?', 'Dosya işlenemedi. Bu bir e-Nabız tahlil PDF’i mi?'));
       setPhase('error');
     }
   };
