@@ -290,8 +290,67 @@ function Logo({ size = 28 }) {
 
 // ─── Persistent state (localStorage) ───────────────────────────
 const LS_KEY = 'lunara.v1';
+/* Depolama sağlığı. Tek kopya tarayıcıda durduğu için sessiz başarısızlık
+   kullanıcının günlerce veri girip hepsini kaybetmesi demek; durum burada
+   tutulup ekranda banda dönüşür (bkz. StorageBanner). */
+const STORAGE = {
+  writable: true,   // son yazma başarılı mı
+  reason: null,     // 'quota' | 'blocked'
+  recovered: null,  // bozuk kaydın yedeklendiği anahtar
+  locked: false,    // bozuk kayıt yedeklenemedi: üzerine yazma yasak
+  listeners: new Set(),
+};
+function storagePatch(patch) {
+  Object.assign(STORAGE, patch);
+  STORAGE.listeners.forEach(fn => fn());
+}
+
 function loadState() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; }
+  let raw = null;
+  try {
+    raw = localStorage.getItem(LS_KEY);
+  } catch (e) {
+    // localStorage tümden erişilemez (gizli mod, kapalı çerezler).
+    storagePatch({ writable: false, reason: 'blocked' });
+    return {};
+  }
+  if (!raw) return {};
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('beklenmeyen biçim');
+    return parsed;
+  } catch (e) {
+    /* Kayıt bozuk. Boş state ile devam edersek ilk kaydetme efekti tek
+       kopyanın üzerine yazar ve veri kalıcı gider; önce ham metni ayrı bir
+       anahtara kopyalayıp kullanıcıya haber veriyoruz. */
+    // Güne damgalı anahtar: aynı oturumda ikinci kez okunursa (StrictMode)
+    // veya aynı gün tekrarlarsa yedek çoğalmaz.
+    const backup = LS_KEY + '.bozuk.' + getTodayKey();
+    try {
+      localStorage.setItem(backup, raw);
+      storagePatch({ recovered: backup });
+    } catch (e2) {
+      // Yedek bile yazılamıyorsa üzerine yazmayı göze alamayız: yazmayı kilitle,
+      // böylece bozuk ama belki kurtarılabilir kayıt yerinde kalır.
+      storagePatch({ writable: false, reason: 'quota', recovered: null, locked: true });
+    }
+    return {};
+  }
+}
+
+// State'i diske yazar; başarısızlığı yutmaz, STORAGE üzerinden bildirir.
+function persist(state) {
+  if (STORAGE.locked) return false;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    if (!STORAGE.writable) storagePatch({ writable: true, reason: null });
+    return true;
+  } catch (e) {
+    const quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+    storagePatch({ writable: false, reason: quota ? 'quota' : 'blocked' });
+    return false;
+  }
 }
 function useLunara() {
   const [state, setState] = React.useState(() => {
@@ -315,15 +374,16 @@ function useLunara() {
       // cyclic medication regimen — each med active on cycle days [startDay..endDay].
       // Starts EMPTY: medication must be entered by the user (or their clinician),
       // never pre-seeded in a health app.
-      regimen: saved.regimen || {
+      regimen: {
         cycleLength: 28,
         anchor: saved.periodStart || getTodayKey(),  // date that counts as day 1
         meds: [],
+        ...(saved.regimen || {}),
       },
       // 'YYYY-MM-DD' -> { medId: time }  (dose taken log, date-scoped)
       doseLog: saved.doseLog || {},
       // editable user profile + preferences
-      profile: saved.profile || {
+      profile: {
         name: '',
         condition: '',
         conditionTr: '',
@@ -333,33 +393,40 @@ function useLunara() {
         cycleAlerts: true,
         labReminders: true,
         emailUpdates: false,
+        ...(saved.profile || {}),
       },
       // life stage (Do..Si) + whether onboarding was completed
       stage: saved.stage || 'perimeno',
       onboarded: saved.onboarded !== undefined ? saved.onboarded : false,
+      /* Evre dilimleri alt anahtar bazında birleştirilir. 'saved.x || {...}'
+         yazarsak dilim var ama içindeki günlük eksikse (eski sürümden kalan
+         kayıt, elle düzenlenmiş ya da içe aktarılan dosya) onu okuyan ekran
+         tüm uygulamayı ErrorBoundary'ye düşürür. */
       // TTC (gebe kalma) logs: 'YYYY-MM-DD' -> value
-      ttc: saved.ttc || { bbt: {}, lh: {}, intimacy: {} },
+      ttc: { bbt: {}, lh: {}, intimacy: {}, ...(saved.ttc || {}) },
       // Pregnancy (gebelik): due date + logs
-      pregnancy: saved.pregnancy || {
+      pregnancy: {
         dueDate: '2026-10-08',   // ~24. hafta (bugün 2026-06-18)
         weightKg: 68,
         kicks: {},               // 'YYYY-MM-DD' -> count
+        ...(saved.pregnancy || {}),
       },
       // Postpartum (doğum sonrası): birth date + logs
-      postpartum: saved.postpartum || {
+      postpartum: {
         birthDate: '2026-06-04', // ~2. hafta
         feeds: {},               // 'YYYY-MM-DD' -> count
         mood: {},                // 'YYYY-MM-DD' -> 1..5
         epds: [],                // EPDS results [{ id, date, score, q10, answers }]
+        ...(saved.postpartum || {}),
       },
       // Menopause (menopoz): son regl tarihi
-      menopause: saved.menopause || { lastPeriod: '2024-03-01' },
+      menopause: { lastPeriod: '2024-03-01', ...(saved.menopause || {}) },
       // User-entered lab panels: [{ id, date, readings:[{key,name,nameTr,unit,value}] }]
       labPanels: saved.labPanels || [],
     };
   });
   React.useEffect(() => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+    persist(state);
   }, [state]);
   const api = React.useMemo(() => ({
     toggleDose: (id, time) => setState(s => ({
@@ -540,6 +607,42 @@ function ProgramBar({ idx, total }) {
   );
 }
 
+/* ─── Depolama uyarısı ─────────────────────────────────────────
+   Kayıt sessizce başarısız olursa kullanıcı bunu ancak veriler kaybolunca
+   fark eder. Durum değişince tüm ekranlarda görünen bir bant çizeriz. */
+function StorageBanner() {
+  const [, force] = React.useReducer(n => n + 1, 0);
+  React.useEffect(() => {
+    STORAGE.listeners.add(force);
+    /* loadState() App'in useState başlatıcısında, yani bu efektten önce koşar;
+       o sırada düşen bildirimi kaçırmamak için abone olur olmaz bir kez oku. */
+    force();
+    return () => STORAGE.listeners.delete(force);
+  }, []);
+  if (STORAGE.writable && !STORAGE.recovered) return null;
+
+  const [msg, tone] = !STORAGE.writable
+    ? [STORAGE.reason === 'quota'
+        ? t('Storage is full — new entries are not being saved. Export your data from Profile, then clear some space.',
+            'Depolama dolu — yeni kayıtlar saklanmıyor. Profil\'den verilerini dışa aktarıp yer aç.')
+        : t('This browser is blocking storage (private mode?) — nothing you enter will be saved.',
+            'Tarayıcı depolamayı engelliyor (gizli mod olabilir) — girdiklerin saklanmayacak.'),
+       'crit']
+    : [t('Saved data could not be read and was set aside. You are starting from an empty record.',
+         'Kayıtlı veri okunamadı ve bir kenara alındı. Boş bir kayıtla başlıyorsun.'),
+       'warn'];
+
+  return (
+    <div role="alert" className="no-print" style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+      background: tone === 'crit' ? '#7A2E2E' : '#7A5A2E', color: '#FFF6EC',
+      padding: '10px 16px', paddingTop: 'max(10px, env(safe-area-inset-top))',
+      fontFamily: 'var(--sans)', fontSize: 13, lineHeight: 1.45,
+      boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+    }}>{msg}</div>
+  );
+}
+
 // ─── Top bar ───────────────────────────────────────────────────
 function TopBar({ greeting, lunara }) {
   const locale = I18N.lang === 'tr' ? 'tr' : 'en';
@@ -678,4 +781,4 @@ function SymptomTrack({ series, color = 'var(--accent)', dotSize = 6, gap = 3 })
   );
 }
 
-export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, todaysDoses, medTaken, DateNav, ProgramBar, TopBar, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };
+export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, todaysDoses, medTaken, DateNav, ProgramBar, TopBar, StorageBanner, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };

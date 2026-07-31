@@ -8,7 +8,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
+      includeAssets: [
+        'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'og.png',
+        // Self-host edilmiş fontlar da ön-belleğe girmeli; yoksa çevrimdışı
+        // açılışta sistem fontuna düşer.
+        'fonts/*.woff2',
+      ],
       manifest: {
         name: 'Lunara',
         short_name: 'Lunara',

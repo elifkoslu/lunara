@@ -1,3 +1,6 @@
+/* Self-host edilmiş fontlar: Google CDN'e istek gitmez (bkz. public/fonts). */
+@import './fonts.css';
+
 /* ───────────────────────────────────────────────
    AURA — BHRT app design tokens
    Three premium-medical aesthetics:
@@ -173,6 +176,30 @@ button {
   50% { opacity: 1; }
 }
 .pulse-soft { animation: pulseSoft 2.6s ease-in-out infinite; }
+
+/* ─── Erişilebilirlik ─────────────────────────────────────────
+   Klavyeyle gezenin nerede olduğunu görmesi gerek. :focus-visible
+   kullanıyoruz: fareyle tıklamada halka çıkmaz, Tab'la çıkar. */
+:focus-visible {
+  /* !important: bazı bileşenler seçili durumu için inline outline kullanıyor;
+     odak göstergesi erişilebilirlik garantisi olduğu için onu geçmeli.
+     border-radius bilerek ayarlanmıyor — outline zaten öğenin köşesini izler. */
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+/* Tarayıcının kendi soluk halkası, yukarıdaki kural devreye girdiğinde fazlalık. */
+:focus:not(:focus-visible) { outline: none; }
+
+/* Hareket duyarlılığı (vestibüler rahatsızlık, migren) olanlar için:
+   animasyonu kaldır ama .fade-up'ın 'both' dolgusuna bağlı son durumu koru. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* SVG plot lines */
 .plot-grid line { stroke: var(--line-soft); stroke-width: 1; }

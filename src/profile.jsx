@@ -136,7 +136,7 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
               onClick={() => exportData(lunara)}/>
             <ActionRow icon={ICONS.arrowDown} label={t('Import data file', 'Veri dosyasını içe aktar')}
               onClick={() => importRef.current && importRef.current.click()}/>
-            <input ref={importRef} type="file" accept="application/json,.json" onChange={pickImport} style={{ display: 'none' }}/>
+            <input ref={importRef} type="file" aria-label={t('Import data file', 'Veri dosyasını içe aktar')} accept="application/json,.json" onChange={pickImport} style={{ display: 'none' }}/>
             {importReq && importReq.error && (
               <div className="fade-up" style={{ margin: '4px 0 10px', padding: '12px 14px', borderRadius: 12, background: 'oklch(0.94 0.03 25)', border: '1px solid oklch(0.85 0.05 25)' }}>
                 <p style={{ fontSize: 12.5, color: 'var(--ink)', margin: '0 0 10px', lineHeight: 1.5 }}>
@@ -283,7 +283,7 @@ function NotificationSettings({ lunara, api }) {
             <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>{t('Daily reminder time', 'Günlük hatırlatma saati')}</div>
             <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 1 }}>{t('When the daily check-in fires', 'Günlük check-in’in tetiklendiği saat')}</div>
           </div>
-          <input type="time" value={reminderTime} onChange={e => api.updateProfile({ reminderTime: e.target.value })}
+          <input type="time" value={reminderTime} aria-label={t('Daily reminder time', 'Günlük hatırlatma saati')} onChange={e => api.updateProfile({ reminderTime: e.target.value })}
             style={{
               border: '1px solid var(--line)', borderRadius: 10, padding: '9px 11px',
               fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', background: 'var(--ivory)', outline: 'none',
@@ -341,7 +341,7 @@ function Toggle({ label, sub, on, onToggle, last }) {
         <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>{label}</div>
         {sub && <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 1 }}>{sub}</div>}
       </div>
-      <button onClick={onToggle} aria-pressed={on} style={{
+      <button onClick={onToggle} aria-pressed={on} aria-label={label} style={{
         width: 44, height: 26, borderRadius: 999, flexShrink: 0, cursor: 'pointer',
         background: on ? 'var(--accent)' : 'var(--line)',
         position: 'relative', transition: 'background 180ms ease',

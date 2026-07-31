@@ -77,6 +77,10 @@ function SupplementsPanel({ lunara, api, logDate }) {
                 padding: '12px 0', borderBottom: i < lunara.supplements.length - 1 ? '1px solid var(--line-soft)' : 'none',
               }}>
                 <button onClick={() => api.toggleSupp(dk, s.id)}
+                  aria-pressed={!!taken}
+                  aria-label={taken
+                    ? t('Mark ' + s.name + ' as not taken', s.name + ' alınmadı olarak işaretle')
+                    : t('Mark ' + s.name + ' as taken', s.name + ' alındı olarak işaretle')}
                   style={{
                     width: 40, height: 40, borderRadius: 12, cursor: 'pointer',
                     background: taken ? 'var(--accent)' : 'var(--bone)',
@@ -173,6 +177,9 @@ function SupplementsPanel({ lunara, api, logDate }) {
                   <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(r.why)}</div>
                 </div>
                 <button disabled={already}
+                  aria-label={already
+                    ? t(tx(r.name) + ' already on your list', tx(r.name) + ' zaten listende')
+                    : t('Add ' + tx(r.name) + ' to your list', tx(r.name) + ' takviyesini listene ekle')}
                   onClick={() => api.addSupp({ name: r.name, dose: r.dose, when: 'morning' })}
                   style={{
                     width: 28, height: 28, borderRadius: 9, flexShrink: 0, cursor: already ? 'default' : 'pointer',

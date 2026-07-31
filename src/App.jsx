@@ -3,7 +3,7 @@
 import React from 'react';
 import { I18N, useLang, t } from './i18n';
 import {
-  useLunara, getTodayKey, regimenDay, activeMeds, SideRail, TopBar,
+  useLunara, getTodayKey, TODAY_KEY, regimenDay, activeMeds, SideRail, TopBar,
 } from './shared';
 import { applyStageTheme, STAGES, OnboardingScreen } from './stages';
 import { useIsMobile, MobileShell } from './mobile';
@@ -28,6 +28,26 @@ export default function App() {
   useLang(); // re-render whole tree on language change
 
   // Editorial aesthetic is fixed for production.
+  /* Gün dönümü. TODAY_KEY / TODAY_DATE modül yüklenirken bir kez hesaplanıyor;
+     telefonda PWA günlerce arka planda açık kalabildiği için uygulama ertesi gün
+     hâlâ dünü "bugün" sanar ve kayıtlar yanlış güne yazılır. Bu sabitleri ~30 yer
+     doğrudan import ettiğinden en güvenli tazeleme sayfayı yeniden yüklemek;
+     veri localStorage'da olduğu için kayıp olmaz. */
+  React.useEffect(() => {
+    const kontrol = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (getTodayKey() !== TODAY_KEY) location.reload();
+    };
+    document.addEventListener('visibilitychange', kontrol);
+    window.addEventListener('focus', kontrol);
+    const iv = setInterval(kontrol, 60000);
+    return () => {
+      document.removeEventListener('visibilitychange', kontrol);
+      window.removeEventListener('focus', kontrol);
+      clearInterval(iv);
+    };
+  }, []);
+
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'editorial');
   }, []);

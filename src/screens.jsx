@@ -453,6 +453,7 @@ function SymptomsScreen({ lunara, api, logDate, setLogDate }) {
           <Card>
             <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Add a note', 'Not ekle')}</div>
             <textarea value={note} onChange={e => setNote(e.target.value)}
+              aria-label={t('Add a note', 'Not ekle')}
               placeholder={t('A line about your day, mood, anything…', 'Günün, ruh halin, aklındaki herhangi bir şey hakkında bir satır…')}
               style={{
                 width: '100%', minHeight: 64, resize: 'vertical',
@@ -945,6 +946,7 @@ function CareScreen({ lunara, onNav }) {
           </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 14, borderTop: '1px solid var(--line-soft)' }}>
             <input disabled
+              aria-label={t('Chat (not available yet)', 'Sohbet (henüz kullanılamıyor)')}
               placeholder={t('Chat opens with an upcoming update…', 'Sohbet yakındaki bir güncellemeyle açılıyor…')}
               style={{ flex: 1, border: '1px solid var(--line)', borderRadius: 999, padding: '11px 18px', fontFamily: 'var(--sans)', fontSize: 14, background: 'var(--ivory)', outline: 'none', color: 'var(--ink)', opacity: 0.55, cursor: 'not-allowed' }}/>
             <span style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: 'var(--line)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
