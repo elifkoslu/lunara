@@ -240,7 +240,7 @@ function DosesScreen({ lunara, api, logDate, setLogDate }) {
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line-soft)', display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('30-day adherence', '30 günlük uyum')}</span>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 16 }}>{adh30 == null ? '—' : `${adh30}%`}</span>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 16 }}>{adh30 == null ? '—' : t(adh30 + '%', '%' + adh30)}</span>
             </div>
           </Card>
         </div>

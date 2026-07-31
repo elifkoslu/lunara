@@ -96,7 +96,7 @@ function DoseCalendar({ lunara, onPick, selected }) {
       <div style={{ display: 'flex', gap: 18, alignItems: 'baseline', margin: '14px 0 12px', flexWrap: 'wrap' }}>
         {adh != null && (
           <div>
-            <span style={{ fontFamily: 'var(--serif)', fontSize: 26, color: 'var(--ink)' }}>%{adh}</span>
+            <span style={{ fontFamily: 'var(--serif)', fontSize: 26, color: 'var(--ink)' }}>{t(adh + '%', '%' + adh)}</span>
             <span style={{ fontSize: 11.5, color: 'var(--muted)', marginLeft: 7 }}>
               {tak}/{sch} {t('doses taken', 'doz alındı')}
             </span>

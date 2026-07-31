@@ -93,6 +93,7 @@ const DICT_TR = {
   'Bike + banded glute work': 'Bisiklet + bantlı kalça çalışması', '90 s rest, add load weekly': '90 sn dinlenme, haftalık yük ekle',
   'Hinge, controlled tempo': 'Menteşe, kontrollü tempo', 'Full range': 'Tam hareket açıklığı',
   'Squeeze shoulder blades': 'Kürek kemiklerini sık', 'Build to moderate': 'Ortaya kadar yüksel',
+  '8 × (1 min hard / 1 min easy)': '8 × (1 dk zorlu / 1 dk kolay)',
   'RPE 7 on hard': 'Zorlu kısımda RPE 7', 'Easy pace + breathe': 'Kolay tempo + nefes',
   'Climbing, boxing, dance — coordination is high now': 'Tırmanış, boks, dans — koordinasyon şimdi yüksek',
   'Estrogen aids motor learning this week': 'Östrojen bu hafta motor öğrenmeye yardımcı olur',

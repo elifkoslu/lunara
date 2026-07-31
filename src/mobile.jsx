@@ -95,7 +95,7 @@ function MobileShell({ active, onNav, children, profile }) {
         borderTop: '1px solid var(--line)',
         padding: '8px 6px calc(env(safe-area-inset-bottom) + 8px)',
       }}>
-        {TABS.map(tb => <TabButton key={tb.k} icon={tb.icon} label={t(tb.labelEn, tb.labelTr)} active={active === tb.k} onClick={() => { onNav(tb.k); setSheet(false); }}/>)}
+        {TABS.map(tb => <TabButton key={tb.k} icon={tb.icon} label={t(tb.en, tb.tr)} active={active === tb.k} onClick={() => { onNav(tb.k); setSheet(false); }}/>)}
         <TabButton icon={ICON_DOTS} label={t('More', 'Daha')} active={moreActive || sheet} onClick={() => setSheet(s => !s)}/>
       </nav>
 

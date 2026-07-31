@@ -430,11 +430,11 @@ function SeedCycle({ phaseKey, liveKey, tint }) {
       <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
         <div style={{ flex: 1 }}>
           <div style={{ height: 6, borderRadius: 6, background: half === 'first' ? 'var(--accent)' : 'var(--line)' }}/>
-          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6 }}>FLAX + PUMPKIN · D1–14</div>
+          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6 }}>{t('FLAX + PUMPKIN · D1–14', 'KETEN + KABAK · G1–14')}</div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ height: 6, borderRadius: 6, background: half === 'second' ? 'var(--accent)' : 'var(--line)' }}/>
-          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, textAlign: 'right' }}>SESAME + SUNFLOWER · D15+</div>
+          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, textAlign: 'right' }}>{t('SESAME + SUNFLOWER · D15+', 'SUSAM + AY ÇEK. · G15+')}</div>
         </div>
       </div>
     </div>

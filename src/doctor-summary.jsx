@@ -137,7 +137,7 @@ function DoctorSummary({ lunara, onClose }) {
 
           {/* Regimen */}
           <section style={{ marginBottom: 22 }}>
-            <h2 style={h2}>{t('Current regimen', 'Güncel rejim')}{adherence != null ? ` · ${t('adherence', 'uyum')} %${adherence}` : ''}</h2>
+            <h2 style={h2}>{t('Current regimen', 'Güncel rejim')}{adherence != null ? ` · ${t('adherence', 'uyum')} ${t(adherence + '%', '%' + adherence)}` : ''}</h2>
             {meds.length ? meds.map(m => (
               <div key={m.id} style={row}>
                 <span><strong>{t(m.name, m.nameTr || m.name)}</strong> — {m.dose} · <span style={{ color: MUT }}>{t(m.detail || '', m.detailTr || m.detail || '')}</span></span>
