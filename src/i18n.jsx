@@ -18,6 +18,10 @@ const I18N = {
   },
 };
 
+// index.html'de lang="tr" sabit; kayıtlı dili açılışta uygula.
+// Yoksa CSS text-transform:uppercase İngilizce metni Türkçe kuralıyla büyütür (i → İ).
+try { document.documentElement.setAttribute('lang', I18N.lang); } catch (e) {}
+
 // Aktif dile göre metin seç
 function t(en, tr) {
   return I18N.lang === 'tr' && tr != null ? tr : en;

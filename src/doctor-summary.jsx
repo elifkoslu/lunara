@@ -46,27 +46,124 @@ function buildSummary(lunara) {
   }
   const adherence = sch > 0 ? Math.round((tak / sch) * 100) : null;
 
-  return { p, meds, titration, latestPanel, symptomSummary, adherence };
+  return { p, meds, titration, latestPanel, symptomSummary, adherence, stageBlock: stageBlockFor(lunara, keys) };
+}
+
+/* Stage-specific block: what a clinician actually needs for this life stage.
+   Each row is { l: {en,tr}, v: string }. No rows → section is hidden. */
+const daysApart = (a, b) => Math.round((b - a) / 86400000);
+// profile.bhrtStatus ham anahtarını ('on' / 'exploring' / 'no') okunur metne çevirir.
+const bhrtLabel = (bs) =>
+  bs === 'on' ? t('using', 'kullanıyor')
+  : bs === 'exploring' ? t('exploring', 'değerlendiriyor')
+  : t('not yet', 'henüz değil');
+const sumOver = (log, keys) => keys.reduce((n, k) => n + (Number((log || {})[k]) || 0), 0);
+const daysWith = (log, keys) => keys.filter(k => (log || {})[k] != null).length;
+
+function stageBlockFor(lunara, keys) {
+  const st = lunara.stage;
+  const rows = [];
+  const today = TODAY_DATE;
+  const last7 = keys.slice(-7);
+
+  if (st === 'ttc') {
+    const ttc = lunara.ttc || {};
+    if (lunara.periodStart) {
+      rows.push({ l: { en: 'Last period started', tr: 'Son adet başlangıcı' }, v: lunara.periodStart });
+      rows.push({ l: { en: 'Cycle day today', tr: 'Bugün döngü günü' }, v: String(daysApart(new Date(lunara.periodStart + 'T00:00:00'), today) + 1) });
+    }
+    const cl = (lunara.regimen && lunara.regimen.cycleLength) || lunara.cycleLength;
+    if (cl) rows.push({ l: { en: 'Usual cycle length', tr: 'Olağan döngü uzunluğu' }, v: cl + ' ' + t('days', 'gün') });
+    const bbtDays = daysWith(ttc.bbt, keys);
+    if (bbtDays) rows.push({ l: { en: 'BBT logged (30 d)', tr: 'BBT kaydı (30 g)' }, v: bbtDays + '/30 ' + t('days', 'gün') });
+    const lhPos = keys.filter(k => ttc.lh && (ttc.lh[k] === 'peak' || ttc.lh[k] === 'high' || ttc.lh[k] === true)).length;
+    if (lhPos) rows.push({ l: { en: 'LH surge days (30 d)', tr: 'LH pik günleri (30 g)' }, v: String(lhPos) });
+  }
+
+  if (st === 'pregnancy') {
+    const pg = lunara.pregnancy || {};
+    if (pg.dueDate) {
+      const due = new Date(pg.dueDate + 'T00:00:00');
+      const week = Math.max(0, 40 - Math.ceil(daysApart(today, due) / 7));
+      rows.push({ l: { en: 'Gestational age', tr: 'Gebelik haftası' }, v: t(`week ${week}`, `${week}. hafta`) });
+      rows.push({ l: { en: 'Trimester', tr: 'Trimester' }, v: String(week < 14 ? 1 : week < 28 ? 2 : 3) });
+      rows.push({ l: { en: 'Due date', tr: 'Tahmini doğum' }, v: pg.dueDate });
+    }
+    if (pg.weightKg) rows.push({ l: { en: 'Weight', tr: 'Kilo' }, v: pg.weightKg + ' kg' });
+    const kicks7 = sumOver(pg.kicks, last7);
+    if (kicks7) rows.push({ l: { en: 'Kicks (last 7 d)', tr: 'Tekme (son 7 g)' }, v: `${kicks7} · ${t('avg', 'ort')} ${Math.round(kicks7 / 7)}/${t('day', 'gün')}` });
+  }
+
+  if (st === 'postpartum') {
+    const pp = lunara.postpartum || {};
+    if (pp.birthDate) {
+      const wk = Math.floor(daysApart(new Date(pp.birthDate + 'T00:00:00'), today) / 7);
+      rows.push({ l: { en: 'Weeks since birth', tr: 'Doğumdan bu yana' }, v: wk + ' ' + t('weeks', 'hafta') });
+      rows.push({ l: { en: 'Birth date', tr: 'Doğum tarihi' }, v: pp.birthDate });
+    }
+    const eps = [...(pp.epds || [])].sort((a, b) => (a.date < b.date ? 1 : -1));
+    if (eps.length) {
+      const e = eps[0];
+      rows.push({ l: { en: 'EPDS score (latest)', tr: 'EPDS puanı (son)' }, v: `${e.score}/30 · ${e.date}${e.score >= 13 ? ' ⚠' : ''}` });
+      if (e.q10 != null && e.q10 > 0) rows.push({ l: { en: 'EPDS item 10 (self-harm)', tr: 'EPDS 10. madde (kendine zarar)' }, v: String(e.q10) + ' ⚠' });
+    }
+    const feeds7 = sumOver(pp.feeds, last7);
+    if (feeds7) rows.push({ l: { en: 'Feeds (last 7 d)', tr: 'Emzirme (son 7 g)' }, v: `${feeds7} · ${t('avg', 'ort')} ${Math.round(feeds7 / 7)}/${t('day', 'gün')}` });
+    const moodVals = keys.map(k => (pp.mood || {})[k]).filter(v => v != null);
+    if (moodVals.length) rows.push({ l: { en: 'Mood (30 d avg)', tr: 'Ruh hali (30 g ort)' }, v: (moodVals.reduce((a, b) => a + b, 0) / moodVals.length).toFixed(1) + '/5' });
+  }
+
+  if (st === 'menopause' || st === 'perimeno') {
+    const mp = lunara.menopause || {};
+    const last = mp.lastPeriod || (st === 'perimeno' ? lunara.periodStart : null);
+    if (last) {
+      const months = Math.floor(daysApart(new Date(last + 'T00:00:00'), today) / 30.44);
+      rows.push({ l: { en: 'Last period', tr: 'Son adet' }, v: last });
+      rows.push({ l: { en: 'Time since last period', tr: 'Son adetten bu yana' }, v: months + ' ' + t('months', 'ay') });
+    }
+    if (st === 'perimeno') {
+      const cl = (lunara.regimen && lunara.regimen.cycleLength) || lunara.cycleLength;
+      if (cl) rows.push({ l: { en: 'Cycle length used', tr: 'Kullanılan döngü uzunluğu' }, v: cl + ' ' + t('days', 'gün') });
+    }
+    const bs = lunara.profile && lunara.profile.bhrtStatus;
+    if (bs) rows.push({ l: { en: 'Hormone therapy', tr: 'Hormon tedavisi' }, v: bhrtLabel(bs) });
+  }
+
+  const titles = {
+    ttc: { en: 'Trying to conceive', tr: 'Gebe kalma hazırlığı' },
+    pregnancy: { en: 'Pregnancy', tr: 'Gebelik' },
+    postpartum: { en: 'Postpartum', tr: 'Doğum sonrası' },
+    menopause: { en: 'Menopause', tr: 'Menopoz' },
+    perimeno: { en: 'Perimenopause', tr: 'Perimenopoz' },
+  };
+  return rows.length ? { title: titles[st], rows } : null;
 }
 
 // Plain-text version (for copy / messaging)
 function summaryText(lunara) {
   const lang = I18N.lang;
-  const { p, meds, titration, latestPanel, symptomSummary, adherence } = buildSummary(lunara);
+  const { p, meds, titration, latestPanel, symptomSummary, adherence, stageBlock } = buildSummary(lunara);
   const L = [];
-  L.push(t('ASTER — DOCTOR SUMMARY', 'ASTER — DOKTORA ÖZET'));
+  L.push(t('LUNARA — DOCTOR SUMMARY', 'LUNARA — DOKTORA ÖZET'));
   L.push(fmt(getTodayKey(), lang));
   if (p.name || p.age) L.push(`${p.name || ''}${p.age ? ` · ${p.age} ${t('yrs', 'yaş')}` : ''}`);
-  if (p.bhrtStatus) L.push(t('BHRT: ', 'BHRT: ') + p.bhrtStatus);
-  L.push('');
-  L.push(t('CURRENT REGIMEN', 'GÜNCEL REJİM'));
-  if (meds.length) meds.forEach(m => L.push(`• ${t(m.name, m.nameTr || m.name)} — ${m.dose} · ${t(m.detail || '', m.detailTr || m.detail || '')} · ${m.time}`));
-  else L.push(t('(none)', '(yok)'));
-  if (adherence != null) L.push(t(`30-day adherence: ${adherence}%`, `30 günlük uyum: %${adherence}`));
-  L.push('');
-  L.push(t('DOSE CHANGES', 'DOZ DEĞİŞİKLİKLERİ'));
-  if (titration.length) titration.forEach(x => L.push(`• ${fmt(x.date, lang)} — ${x.med} ${x.from || '—'} → ${x.to || '—'}${x.reason ? ` (${x.reason})` : ''}${x.note ? ` — ${x.note}` : ''}`));
-  else L.push(t('(none logged)', '(kayıt yok)'));
+  if (p.bhrtStatus) L.push('BHRT: ' + bhrtLabel(p.bhrtStatus));
+  if (stageBlock) {
+    L.push('');
+    L.push(t(stageBlock.title.en, stageBlock.title.tr).toLocaleUpperCase(lang === 'tr' ? 'tr' : 'en'));
+    stageBlock.rows.forEach(r => L.push(`• ${t(r.l.en, r.l.tr)}: ${r.v}`));
+  }
+  if (meds.length) {
+    L.push('');
+    L.push(t('CURRENT REGIMEN', 'GÜNCEL REJİM'));
+    meds.forEach(m => L.push(`• ${t(m.name, m.nameTr || m.name)} — ${m.dose} · ${t(m.detail || '', m.detailTr || m.detail || '')} · ${m.time}`));
+    if (adherence != null) L.push(t(`30-day adherence: ${adherence}%`, `30 günlük uyum: %${adherence}`));
+  }
+  if (titration.length) {
+    L.push('');
+    L.push(t('DOSE CHANGES', 'DOZ DEĞİŞİKLİKLERİ'));
+    titration.forEach(x => L.push(`• ${fmt(x.date, lang)} — ${x.med} ${x.from || '—'} → ${x.to || '—'}${x.reason ? ` (${x.reason})` : ''}${x.note ? ` — ${x.note}` : ''}`));
+  }
   L.push('');
   L.push(t('LATEST LABS', 'SON TAHLİLLER') + (latestPanel ? ` · ${fmt(latestPanel.date, lang)}` : ''));
   if (latestPanel) latestPanel.readings.forEach(r => {
@@ -83,7 +180,7 @@ function summaryText(lunara) {
 
 function DoctorSummary({ lunara, onClose }) {
   const lang = I18N.lang;
-  const { p, meds, titration, latestPanel, symptomSummary, adherence } = buildSummary(lunara);
+  const { p, meds, titration, latestPanel, symptomSummary, adherence, stageBlock } = buildSummary(lunara);
   const [copied, setCopied] = React.useState(false);
 
   const copy = async () => {
@@ -131,11 +228,25 @@ function DoctorSummary({ lunara, onClose }) {
             <div style={{ textAlign: 'right', fontSize: 12, color: MUT }}>
               {(p.name || p.age) && <div style={{ fontSize: 14, color: INK, fontWeight: 600 }}>{p.name}{p.age ? ` · ${p.age} ${t('yrs', 'yaş')}` : ''}</div>}
               <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 2 }}>{fmt(getTodayKey(), lang)}</div>
-              {p.bhrtStatus && <div style={{ fontSize: 11, marginTop: 2 }}>{t('BHRT', 'BHRT')}: {p.bhrtStatus}</div>}
+              {p.bhrtStatus && <div style={{ fontSize: 11, marginTop: 2 }}>BHRT: {bhrtLabel(p.bhrtStatus)}</div>}
             </div>
           </div>
 
-          {/* Regimen */}
+          {/* Stage-specific block — the clinical picture for this life stage */}
+          {stageBlock && (
+            <section style={{ marginBottom: 22 }}>
+              <h2 style={h2}>{t(stageBlock.title.en, stageBlock.title.tr)}</h2>
+              {stageBlock.rows.map((r, i) => (
+                <div key={i} style={row}>
+                  <span>{t(r.l.en, r.l.tr)}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11.5, color: MUT }}>{r.v}</span>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* Regimen — hidden when empty (irrelevant in pregnancy, TTC etc.) */}
+          {meds.length > 0 && (
           <section style={{ marginBottom: 22 }}>
             <h2 style={h2}>{t('Current regimen', 'Güncel rejim')}{adherence != null ? ` · ${t('adherence', 'uyum')} ${t(adherence + '%', '%' + adherence)}` : ''}</h2>
             {meds.length ? meds.map(m => (
@@ -145,8 +256,10 @@ function DoctorSummary({ lunara, onClose }) {
               </div>
             )) : <div style={{ fontSize: 12.5, color: MUT, fontStyle: 'italic' }}>{t('No regimen entered.', 'Rejim girilmedi.')}</div>}
           </section>
+          )}
 
-          {/* Titration */}
+          {/* Titration — only when there is something to show */}
+          {titration.length > 0 && (
           <section style={{ marginBottom: 22 }}>
             <h2 style={h2}>{t('Dose changes', 'Doz değişiklikleri')}</h2>
             {titration.length ? titration.map(x => (
@@ -158,6 +271,7 @@ function DoctorSummary({ lunara, onClose }) {
               </div>
             )) : <div style={{ fontSize: 12.5, color: MUT, fontStyle: 'italic' }}>{t('None logged.', 'Kayıt yok.')}</div>}
           </section>
+          )}
 
           {/* Labs */}
           <section style={{ marginBottom: 22 }}>

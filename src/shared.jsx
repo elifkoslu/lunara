@@ -471,7 +471,8 @@ function getTodayKey() {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 const TODAY_KEY = getTodayKey();
-const TODAY_DATE = new Date();
+// Gece yarısına sabitli: gün sayan hesaplar (Math.round'lu fark) saat ilerledikçe kaymasın.
+const TODAY_DATE = new Date(TODAY_KEY + 'T00:00:00');
 
 // Which regimen cycle day is `today` (1..cycleLength)
 function regimenDay(regimen, today = TODAY_DATE) {
@@ -547,7 +548,7 @@ function TopBar({ greeting, lunara }) {
     .toLocaleUpperCase(locale);
   const day = lunara && lunara.periodStart ? cycleDayFrom(lunara.periodStart, TODAY_DATE) : null;
   const name = lunara && lunara.profile && lunara.profile.name;
-  const h = TODAY_DATE.getHours();
+  const h = new Date().getHours(); // TODAY_DATE gece yarısına sabit; selamlama gerçek saati ister
   const greet = h < 12 ? t('Good morning', 'Günaydın') : h < 18 ? t('Good afternoon', 'İyi günler') : t('Good evening', 'İyi akşamlar');
   return (
     <div style={{
