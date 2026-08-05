@@ -582,4 +582,4 @@ function PrivSection({ title, items }) {
   );
 }
 
-export { ProfileScreen, Field, InfoRow, Toggle, ActionRow, toggleNotifications, exportData, PrivacyModal, PrivSection };
+export { temizleYedek, ProfileScreen, Field, InfoRow, Toggle, ActionRow, toggleNotifications, exportData, PrivacyModal, PrivSection };
