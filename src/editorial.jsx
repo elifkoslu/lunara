@@ -288,7 +288,7 @@ function DoseRow({ dose, last, taken, onToggle }) {
       </div>
       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{ fontSize: 12.5, color: isTaken ? 'var(--muted)' : 'var(--ink)', fontWeight: isTaken ? 400 : 600 }}>
-          {isTaken ? `${t('Taken', 'Alındı')} ${taken}` : dose.time}
+          {isTaken ? `${t('Taken', 'Alındı')} ${taken.at}` : dose.time}
         </span>
         <span className="eyebrow-mono" style={{ fontSize: 9.5, color: 'var(--muted-2)' }}>{whenLabel(dose.when).toUpperCase()}</span>
       </div>

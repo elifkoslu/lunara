@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { I18N, t } from './i18n';
-import { LABS, TODAY_DATE, getTodayKey, regimenDay, activeMeds } from './shared';
+import { LABS, TODAY_DATE, activeMeds, getTodayKey, medSchedule, regimenDay } from './shared';
 import { symptomsFor } from './screen-content';
 
 /* doctor-summary.jsx — a one-page summary the user can print / save as PDF
@@ -15,6 +15,18 @@ function fmt(iso, lang) {
 function dateKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
 // Build the summary data model from state
+/* Bir ilacın gün aralıklarını tek satırlık özete çevirir. Tek aralıkta eski
+   görünüm korunur; fazına göre değişen dozda her aralık dozuyla yazılır —
+   hekimin hangi günlerde ne alındığını görmesi gerekir. */
+function medPlanText(m) {
+  const slots = medSchedule(m);
+  if (slots.length <= 1) return t('days', 'gün') + ' ' + m.startDay + '\u2013' + m.endDay;
+  return slots.map(s => t('d', 'g') + s.startDay + '\u2013' + s.endDay + ': ' + s.dose).join(' \u00b7 ');
+}
+function medDoseText(m) {
+  return medSchedule(m).length > 1 ? t('varies by day', 'güne göre değişir') : m.dose;
+}
+
 function buildSummary(lunara) {
   const p = lunara.profile || {};
   const meds = (lunara.regimen && lunara.regimen.meds) || [];
@@ -156,7 +168,7 @@ function summaryText(lunara) {
   if (meds.length) {
     L.push('');
     L.push(t('CURRENT REGIMEN', 'GÜNCEL REJİM'));
-    meds.forEach(m => L.push(`• ${t(m.name, m.nameTr || m.name)} — ${m.dose} · ${t(m.detail || '', m.detailTr || m.detail || '')} · ${m.time}`));
+    meds.forEach(m => L.push(`• ${t(m.name, m.nameTr || m.name)} — ${medDoseText(m)} · ${medPlanText(m)} · ${t(m.detail || '', m.detailTr || m.detail || '')} · ${m.time}`));
     if (adherence != null) L.push(t(`30-day adherence: ${adherence}%`, `30 günlük uyum: %${adherence}`));
   }
   if (titration.length) {
@@ -251,8 +263,8 @@ function DoctorSummary({ lunara, onClose }) {
             <h2 style={h2}>{t('Current regimen', 'Güncel rejim')}{adherence != null ? ` · ${t('adherence', 'uyum')} ${t(adherence + '%', '%' + adherence)}` : ''}</h2>
             {meds.length ? meds.map(m => (
               <div key={m.id} style={row}>
-                <span><strong>{t(m.name, m.nameTr || m.name)}</strong> — {m.dose} · <span style={{ color: MUT }}>{t(m.detail || '', m.detailTr || m.detail || '')}</span></span>
-                <span style={{ fontFamily: 'var(--mono)', color: MUT, fontSize: 11.5 }}>{m.time} · {t('days', 'gün')} {m.startDay}–{m.endDay}</span>
+                <span><strong>{t(m.name, m.nameTr || m.name)}</strong> — {medDoseText(m)} · <span style={{ color: MUT }}>{t(m.detail || '', m.detailTr || m.detail || '')}</span></span>
+                <span style={{ fontFamily: 'var(--mono)', color: MUT, fontSize: 11.5 }}>{m.time} · {medPlanText(m)}</span>
               </div>
             )) : <div style={{ fontSize: 12.5, color: MUT, fontStyle: 'italic' }}>{t('No regimen entered.', 'Rejim girilmedi.')}</div>}
           </section>

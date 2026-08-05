@@ -508,9 +508,24 @@ function useLunara() {
     setRegimenAnchor: (iso) => setState(s => ({
       ...s, regimen: { ...s.regimen, anchor: iso },
     })),
-    toggleMed: (dateKey, id, time) => setState(s => {
+    toggleMed: (dateKey, id, time, amount, unit) => setState(s => {
       const day = { ...(s.doseLog[dateKey] || {}) };
-      if (day[id]) delete day[id]; else day[id] = time || nowHM();
+      if (day[id]) delete day[id];
+      else day[id] = { at: time || nowHM(), amount: numOrNull(amount), unit: unit || '' };
+      return { ...s, doseLog: { ...s.doseLog, [dateKey]: day } };
+    }),
+    /* Kaydedilmiş bir dozun ayrıntılarını düzeltir: alınan miktar ve alınma
+       saati. Geçmiş bir güne işaret koyarken saat özellikle önemli — kayıt
+       anındaki saat, ilacın gerçekten alındığı saat değildir. */
+    updateDose: (dateKey, id, patch) => setState(s => {
+      const day = { ...(s.doseLog[dateKey] || {}) };
+      const cur = doseEntry(day[id]);
+      if (!cur) return s;
+      const next = { ...cur };
+      if ('amount' in patch) next.amount = numOrNull(patch.amount);
+      if ('unit' in patch) next.unit = patch.unit || cur.unit || '';
+      if ('at' in patch && patch.at) next.at = patch.at;
+      day[id] = next;
       return { ...s, doseLog: { ...s.doseLog, [dateKey]: day } };
     }),
     // ── lab panels ──
@@ -549,12 +564,43 @@ function regimenDay(regimen, today = TODAY_DATE) {
   return ((d % L) + L) % L + 1;
 }
 // Meds active on a given cycle day (supports wrap-around ranges)
+/* Bir ilacın gün aralıkları.
+   Eski kayıtlarda tek aralık vardı (startDay/endDay/dose). Yeni kayıtlarda
+   med.schedule birden çok aralık taşıyabilir ve her aralığın kendi dozu olur —
+   fazına göre değişen doz için (ör. folliküler fazda 0.5 mg, luteal fazda
+   0.75 mg estradiol). Okuyan her yer buradan geçsin ki iki biçim de çalışsın. */
+function medSchedule(med) {
+  if (med && Array.isArray(med.schedule) && med.schedule.length) {
+    return med.schedule.map(s => ({
+      startDay: s.startDay,
+      endDay: s.endDay,
+      dose: s.dose != null && s.dose !== '' ? s.dose : med.dose,
+    }));
+  }
+  return [{ startDay: med.startDay, endDay: med.endDay, dose: med.dose }];
+}
+
+// Aralık bu günü kapsıyor mu? (döngü sonundan başına sarabilir)
+function slotCovers(slot, day) {
+  if (slot.startDay <= slot.endDay) return day >= slot.startDay && day <= slot.endDay;
+  return day >= slot.startDay || day <= slot.endDay;
+}
+
+// O güne düşen aralık; hiçbiri kapsamıyorsa null
+function medSlotFor(med, day) {
+  return medSchedule(med).find(s => slotCovers(s, day)) || null;
+}
+
 function activeMeds(regimen, day) {
   if (!regimen || !regimen.meds) return [];
-  return regimen.meds.filter(m => {
-    if (m.startDay <= m.endDay) return day >= m.startDay && day <= m.endDay;
-    return day >= m.startDay || day <= m.endDay;
-  });
+  const out = [];
+  for (const m of regimen.meds) {
+    const slot = medSlotFor(m, day);
+    // O günün dozu ilacın varsayılanının yerine geçer. startDay/endDay bilerek
+    // korunuyor — tüketiciler ilacın bütün aralığını bekliyor olabilir.
+    if (slot) out.push({ ...m, dose: slot.dose, slot });
+  }
+  return out;
 }
 // Today's active doses + current cycle day
 function todaysDoses(lunara, when) {
@@ -563,9 +609,25 @@ function todaysDoses(lunara, when) {
   return { meds: activeMeds(lunara.regimen, day), day };
 }
 // Is a med logged as taken today?
+const numOrNull = v => {
+  if (v == null || v === '') return null;
+  const n = Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+};
+
+/* Bir doz kaydı iki biçimde olabilir: eski sürümlerde yalnızca 'HH:MM' metni,
+   yenilerde { at, amount, unit }. Okuyan her yer buradan geçsin ki eski
+   kayıtlar da çalışsın. Alınmamışsa null. */
+function doseEntry(v) {
+  if (!v) return null;
+  if (typeof v === 'string') return { at: v, amount: null, unit: '' };
+  return { at: v.at || '', amount: numOrNull(v.amount), unit: v.unit || '' };
+}
+
 function medTaken(lunara, id, dateKey) {
   const k = dateKey || TODAY_KEY;
-  return (lunara && lunara.doseLog && lunara.doseLog[k] && lunara.doseLog[k][id]) || false;
+  const raw = lunara && lunara.doseLog && lunara.doseLog[k] && lunara.doseLog[k][id];
+  return doseEntry(raw) || false;
 }
 
 // Date navigator — lets a screen log to any past day (never the future).
@@ -781,4 +843,4 @@ function SymptomTrack({ series, color = 'var(--accent)', dotSize = 6, gap = 3 })
   );
 }
 
-export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, todaysDoses, medTaken, DateNav, ProgramBar, TopBar, StorageBanner, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };
+export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, medSchedule, medSlotFor, slotCovers, todaysDoses, medTaken, doseEntry, DateNav, ProgramBar, TopBar, StorageBanner, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };

@@ -6,6 +6,11 @@ import { ImportLabModal } from './lab-import';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
 import { rangeForLab } from './physiology';
+import { ReferenceCard } from './reference-card';
+
+/* Referans eğrisi ovülatuar bir döngüyü anlatır; döngüsü olmayan evrelerde
+   gösterilmesi yanıltıcı olur. */
+const REFERANS_EVRELERI = new Set(['cycle', 'ttc', 'menarche', 'perimeno']);
 import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, labReadings, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
@@ -129,6 +134,69 @@ function Btn({ children, primary, onClick, style }) {
 
 const wrap = { padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 20 };
 
+/* ── Alınan miktar ────────────────────────────────────────────────
+   İlacın "dose" alanı reçetedeki miktardır ("0.5 mg"). Gerçekte alınan bundan
+   farklı olabilir — yarım uygulama, atlanan yarım tablet, hekimin ara ayarı.
+   İşaretlerken reçetedeki miktar ön-doldurulur, kullanıcı üzerine yazabilir;
+   fark varsa görünür işaretlenir ki doktor özetinde de fark edilsin. */
+const DOSE_NUM_RE = /(\d+(?:[.,]\d+)?)/;
+const DOSE_UNIT_RE = /\d+(?:[.,]\d+)?\s*([a-zA-Zµμ%/]+)/;
+function doseAmountOf(med) {
+  const m = DOSE_NUM_RE.exec(String(med.dose || ''));
+  return m ? Number(m[1].replace(',', '.')) : null;
+}
+function doseUnitOf(med) {
+  const m = DOSE_UNIT_RE.exec(String(med.dose || ''));
+  return m ? m[1] : '';
+}
+
+function TakenAmount({ med, entry, last, onChange }) {
+  const presc = doseAmountOf(med);
+  const unit = entry.unit || doseUnitOf(med);
+  const [draft, setDraft] = React.useState(entry.amount == null ? '' : String(entry.amount));
+  React.useEffect(() => { setDraft(entry.amount == null ? '' : String(entry.amount)); }, [entry.amount]);
+
+  const val = draft === '' ? null : Number(draft.replace(',', '.'));
+  const farkli = val != null && presc != null && Math.abs(val - presc) > 1e-9;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+      padding: '0 0 14px 60px', borderBottom: last ? 'none' : '1px solid var(--line-soft)',
+    }}>
+      {/* Alınma saati. Geçmiş bir güne işaret koyarken kaydedilen saat, ilacın
+          gerçekten alındığı saat değildir — düzeltilebilir olması şart. */}
+      <label style={{ fontSize: 11.5, color: 'var(--muted)' }} htmlFor={'at-' + med.id}>
+        {t('Time taken', 'Alınma saati')}
+      </label>
+      <input id={'at-' + med.id} type="time" value={entry.at || med.time || '08:00'}
+        onChange={e => e.target.value && onChange({ at: e.target.value })}
+        style={{
+          padding: '5px 8px', borderRadius: 9, fontFamily: 'var(--mono)', fontSize: 12.5,
+          border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', outline: 'none',
+        }}/>
+      <label style={{ fontSize: 11.5, color: 'var(--muted)', marginLeft: 4 }} htmlFor={'amt-' + med.id}>
+        {t('Amount taken', 'Alınan miktar')}
+      </label>
+      <input id={'amt-' + med.id} inputMode="decimal" value={draft}
+        onChange={e => setDraft(e.target.value.replace(/[^\d.,]/g, '').slice(0, 8))}
+        onBlur={() => onChange({ amount: draft, unit })}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        placeholder={presc != null ? String(presc) : '—'}
+        style={{
+          width: 68, padding: '5px 9px', borderRadius: 9, fontFamily: 'var(--mono)', fontSize: 12.5,
+          border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', outline: 'none',
+        }}/>
+      {unit && <span style={{ fontFamily: 'var(--mono)', fontSize: 11.5, color: 'var(--muted)' }}>{unit}</span>}
+      {farkli && (
+        <span style={{ fontSize: 11, color: 'var(--signal-warn)' }}>
+          {t('differs from plan', 'plandan farklı')} ({med.dose})
+        </span>
+      )}
+    </div>
+  );
+}
+
 /* ════════════════ DOSES ════════════════ */
 function DosesScreen({ lunara, api, logDate, setLogDate }) {
   const [editing, setEditing] = React.useState(false);
@@ -205,10 +273,16 @@ function DosesScreen({ lunara, api, logDate, setLogDate }) {
             {meds.map((d, i) => {
               const taken = medTaken(lunara, d.id, dk);
               return (
-                <button key={d.id} onClick={() => api.toggleMed(dk, d.id, nowHM())}
+                <React.Fragment key={d.id}>
+                {/* Bugüne işaretlerken "şimdi" doğru varsayılan; geçmiş bir güne
+                    işaretlerken kayıt anındaki saatin bir anlamı yok, ilacın
+                    planlanan saatinden başlamak daha yakın bir tahmin. */}
+                <button onClick={() => api.toggleMed(dk, d.id,
+                    dk === TODAY_KEY ? nowHM() : (d.time || nowHM()),
+                    doseAmountOf(d), doseUnitOf(d))}
                   style={{
                     display: 'grid', gridTemplateColumns: '46px 1fr auto', gap: 14, alignItems: 'center',
-                    padding: '14px 0', borderBottom: i < meds.length - 1 ? '1px solid var(--line-soft)' : 'none',
+                    padding: '14px 0', borderBottom: i < meds.length - 1 && !taken ? '1px solid var(--line-soft)' : 'none',
                     textAlign: 'left', cursor: 'pointer', background: 'transparent', width: '100%',
                   }}>
                   <div style={{
@@ -230,11 +304,16 @@ function DosesScreen({ lunara, api, logDate, setLogDate }) {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: 12.5, color: taken ? 'var(--muted)' : 'var(--ink)', fontWeight: taken ? 400 : 600 }}>
-                      {taken ? `${t('Taken', 'Alındı')} ${taken}` : d.time}
+                      {taken ? `${t('Taken', 'Alındı')} ${taken.at}` : d.time}
                     </span>
                     <div className="eyebrow-mono" style={{ fontSize: 9.5, color: 'var(--muted-2)' }}>{whenLabel(d.when).toUpperCase()}</div>
                   </div>
                 </button>
+                {taken && (
+                  <TakenAmount med={d} entry={taken} last={i === meds.length - 1}
+                    onChange={(patch) => api.updateDose(dk, d.id, patch)}/>
+                )}
+                </React.Fragment>
               );
             })}
           </div>
@@ -847,6 +926,9 @@ function CycleScreen({ lunara, api }) {
             </Btn>
           )
         } />
+      {/* Referans kartı yalnızca yumurtlama döngüsü olan evrelerde anlamlı:
+          gebelikte ve doğum sonrasında döngü yok, menopozda da bitmiş. */}
+      {REFERANS_EVRELERI.has(lunara.stage) && <ReferenceCard lunara={lunara} cycleDay={day}/>}
       <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {/* Cycle ring */}
         <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
