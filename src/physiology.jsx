@@ -42,6 +42,28 @@ const BANDS = {
   tt: { follicular: [1.2, 29], ovulatory: [1.2, 29], luteal: [1.2, 29] },
 };
 
+/* Perimenopozda görülen aralık.
+   Perimenopoz "hormonların yavaşça azalması" değildir: estradiol düzensizdir ve
+   sıklıkla genç kadınlardan daha yüksek seyreder, progesteron ise anovulatuar
+   döngüler yüzünden çöker. Aşağıdaki zarf tek bir eğri değil, bir olasılık
+   alanıdır — asıl anlatan şey, aynı günde değerin nerede olabileceğinin bu kadar
+   geniş olması. Tek bir kan tahlili bu yüzden perimenopozu ne teyit ne dışlar.
+   Ovülatuar eğriyle aynı 29 günlük referans döngüye hizalıdır. */
+const PERI = {
+  e2: {
+    low:  [20, 20, 22, 24, 25, 26, 28, 30, 32, 35, 38, 45, 55, 60, 55,
+           45, 40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 20, 18, 18],
+    high: [60, 70, 85, 100, 130, 180, 240, 300, 340, 360, 380, 390, 400, 395, 370,
+           330, 300, 280, 260, 240, 220, 200, 180, 160, 140, 120, 100, 85, 70],
+  },
+  p4: {
+    low:  [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.15, 0.2,
+           0.2, 0.25, 0.3, 0.3, 0.35, 0.35, 0.35, 0.3, 0.3, 0.25, 0.2, 0.2, 0.15, 0.1],
+    high: [0.3, 0.3, 0.3, 0.3, 0.35, 0.35, 0.4, 0.4, 0.45, 0.5, 0.5, 0.6, 0.7, 0.9, 1.6,
+           2.6, 3.8, 5.0, 6.0, 6.6, 7.0, 6.8, 6.2, 5.2, 4.0, 2.8, 1.7, 0.9, 0.4],
+  },
+};
+
 const HORMONES = [
   { key: 'e2', labKey: 'e2', unit: 'pg/mL', en: 'Estradiol',   tr: 'Estradiol',   series: E2 },
   { key: 'p4', labKey: 'p4', unit: 'ng/mL', en: 'Progesterone', tr: 'Progesteron', series: P4 },
@@ -134,6 +156,21 @@ function rangeForLab(labKey, cycleDay, cycleLength) {
   };
 }
 
+/* Perimenopoz zarfı, kullanıcının döngü uzunluğuna eşlenmiş alt ve üst sınır.
+   Yalnızca estradiol ve progesteron için tanımlı — asıl kontrast orada. */
+function bandFor(key, cycleLength) {
+  const b = PERI[key];
+  if (!b) return null;
+  const L = Math.max(15, Math.min(60, Math.round(cycleLength) || 28));
+  const low = [], high = [];
+  for (let d = 1; d <= L; d++) {
+    const rd = toRefDay(d, L);
+    low.push(round(at(b.low, rd), key));
+    high.push(round(at(b.high, rd), key));
+  }
+  return { low, high };
+}
+
 // Grafik için: kullanıcının döngü uzunluğuna göre 1..L günlerinin tam serisi
 function curveFor(key, cycleLength) {
   const h = HORMONES.find(x => x.key === key);
@@ -144,4 +181,4 @@ function curveFor(key, cycleLength) {
   return out;
 }
 
-export { HORMONES, referenceFor, rangeForLab, curveFor, toRefDay, phaseOf, phaseLabel, REF_LEN, REF_OV };
+export { HORMONES, referenceFor, rangeForLab, curveFor, bandFor, toRefDay, phaseOf, phaseLabel, REF_LEN, REF_OV };

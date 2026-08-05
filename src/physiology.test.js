@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { referenceFor, rangeForLab, curveFor, toRefDay, phaseOf } from './physiology.jsx';
+import { referenceFor, rangeForLab, curveFor, bandFor, toRefDay, phaseOf } from './physiology.jsx';
 
 /* Fizyoloji eşlemesi saf bir hesap: döngü günü → beklenen hormon düzeyi.
    Buradaki testler yayımlanmış medyanları ve iki parçalı eşlemenin
@@ -104,5 +104,42 @@ describe('faz sınırları', () => {
     expect(phaseOf(3)).toBe('follicular');
     expect(phaseOf(15)).toBe('ovulatory');
     expect(phaseOf(25)).toBe('luteal');
+  });
+});
+
+describe('perimenopoz zarfı', () => {
+  it('yalnızca estradiol ve progesteron için tanımlıdır', () => {
+    expect(bandFor('e2', 28)).not.toBeNull();
+    expect(bandFor('p4', 28)).not.toBeNull();
+    expect(bandFor('lh', 28)).toBeNull();
+    expect(bandFor('tt', 28)).toBeNull();
+  });
+
+  it('döngü uzunluğu kadar gün üretir ve alt sınır üstü geçmez', () => {
+    for (const L of [26, 28, 32]) {
+      const b = bandFor('e2', L);
+      expect(b.low, `döngü ${L}`).toHaveLength(L);
+      expect(b.high, `döngü ${L}`).toHaveLength(L);
+      for (let i = 0; i < L; i++) expect(b.low[i], `gün ${i + 1}`).toBeLessThanOrEqual(b.high[i]);
+    }
+  });
+
+  /* Perimenopozun tanımlayıcı asimetrisi: estradiol ovülatuar eğrinin
+     ÜSTÜNE çıkabilir, progesteron ise ALTINDA kalır. */
+  it('estradiolün üst sınırı ovülatuar eğriyi aşar', () => {
+    const b = bandFor('e2', 28), c = curveFor('e2', 28);
+    const asan = c.filter((v, i) => b.high[i] > v).length;
+    expect(asan).toBeGreaterThan(c.length * 0.6);
+  });
+
+  it('progesteronun üst sınırı luteal fazda ovülatuar zirvenin altında kalır', () => {
+    const b = bandFor('p4', 28), c = curveFor('p4', 28);
+    expect(Math.max(...b.high)).toBeLessThan(Math.max(...c));
+  });
+
+  it('estradiol zarfı folliküler fazda bile yüksek değerlere izin verir', () => {
+    // Perimenopozda erken folliküler estradiol genç bir döngüdekinin çok üstünde olabilir
+    const b = bandFor('e2', 28);
+    expect(b.high[2]).toBeGreaterThan(60);
   });
 });
