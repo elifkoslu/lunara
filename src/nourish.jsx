@@ -2,7 +2,7 @@ import React from 'react';
 import { tx } from './dict';
 import { I18N, t } from './i18n';
 import { NourishGuideCard, PERIMENO_NOURISH, StageNourishView } from './nourish-stages';
-import { PHASE_TINT, ScreenHead, cycleDayFrom, phaseLabel, phaseOf } from './screens';
+import { PHASE_TINT, ScreenHead, cycleDayFrom, cycleLenOf, phaseLabel, phaseOf } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
 
 /* nourish.jsx — Lunara · phase-based movement & nutrition guidance
@@ -197,8 +197,8 @@ function NourishScreen({ lunara, kind = 'eat' }) {
     return <StageNourishView stageKey={lunara.stage} lunara={lunara} kind={kind}/>;
   const isPerimeno = lunara.stage === 'perimeno';
   const today = TODAY_DATE;
-  const day = cycleDayFrom(lunara.periodStart, today);
-  const live = phaseOf(day).key;
+  const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
+  const live = phaseOf(day, cycleLenOf(lunara)).key;
   const [sel, setSel] = React.useState(live);
   const g = PHASE_GUIDE[sel];
   const tint = PHASE_TINT[sel];
@@ -215,7 +215,7 @@ function NourishScreen({ lunara, kind = 'eat' }) {
           : t(`CYCLE DAY ${day} · NUTRITION`, `DÖNGÜ GÜNÜ ${day} · BESLENME`)}
         title={kind === 'move' ? t('Movement', 'Hareket') : t('Nutrition', 'Beslenme')}
         right={<span style={{ fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
-          {t('Tuned to your', 'Senin')} {phaseLabel(phaseOf(day)).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase', 'fazına göre')}
+          {t('Tuned to your', 'Senin')} {phaseLabel(phaseOf(day, cycleLenOf(lunara))).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase', 'fazına göre')}
         </span>} />
 
       {/* In perimenopause the stage-level needs come first; cycle-phase
@@ -442,8 +442,8 @@ function SeedCycle({ phaseKey, liveKey, tint }) {
 }
 function TodayWorkoutCard({ lunara, api, onNav }) {
   const today = TODAY_DATE;
-  const day = cycleDayFrom(lunara.periodStart, today);
-  const ph = phaseOf(day);
+  const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
+  const ph = phaseOf(day, cycleLenOf(lunara));
   const g = PHASE_GUIDE[ph.key];
   const tint = PHASE_TINT[ph.key];
   const primary = g.move.items[0];

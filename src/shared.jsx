@@ -649,7 +649,7 @@ function TopBar({ greeting, lunara }) {
   const dateStr = TODAY_DATE
     .toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })
     .toLocaleUpperCase(locale);
-  const day = lunara && lunara.periodStart ? cycleDayFrom(lunara.periodStart, TODAY_DATE) : null;
+  const day = lunara && lunara.periodStart ? cycleDayFrom(lunara.periodStart, TODAY_DATE, (lunara.regimen && lunara.regimen.cycleLength) || 28) : null;
   const name = lunara && lunara.profile && lunara.profile.name;
   const h = new Date().getHours(); // TODAY_DATE gece yarısına sabit; selamlama gerçek saati ister
   const greet = h < 12 ? t('Good morning', 'Günaydın') : h < 18 ? t('Good afternoon', 'İyi günler') : t('Good evening', 'İyi akşamlar');

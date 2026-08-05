@@ -1,6 +1,6 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
-import { Btn, cycleDayFrom, wrap } from './screens';
+import { Btn, cycleDayFrom, cycleLenOf, wrap } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
 import { StageBadge } from './stages';
 
@@ -10,17 +10,29 @@ import { StageBadge } from './stages';
    shared.jsx, stages.jsx (StageBadge), i18n sonrası yüklenir. */
 /* eslint-disable */
 
-// 32-day demo cycle (mevcut periodStart ile uyumlu): ovülasyon ~18. gün
-const TTC_LEN = 32;
-const TTC_OV = 18;        // ovülasyon günü
-const TTC_FERTILE_START = 13;
-const TTC_FERTILE_END = 18;
+/* Doğurgan pencere kullanıcının kendi döngü uzunluğundan türetilir.
+   Buradaki sayılar eskiden sabitti (32 günlük döngü, ovülasyon 18. gün,
+   pencere 13-18). 28 günlük bir döngüde ovülasyon 14. gündür — yani pencere
+   beş gün geç gösteriliyordu; gebe kalma ekranının tek işlevi tam da bu.
 
-function ttcStatus(day) {
-  const toOv = TTC_OV - day;
-  const fertile = day >= TTC_FERTILE_START && day <= TTC_FERTILE_END;
-  const peak = day >= TTC_OV - 1 && day <= TTC_OV; // en doğurgan 2 gün
-  return { day, toOv, fertile, peak, ovulation: day === TTC_OV };
+   Kural: luteal faz uzunluğu kişiden kişiye pek değişmez (~14 gün), değişen
+   folliküler fazdır → ovülasyon ≈ L - 14. Doğurgan pencere, spermin ~5 gün
+   yaşayabilmesi nedeniyle ovülasyondan önceki 5 günü ve ovülasyon gününü
+   kapsar. Bunlar takvime dayalı tahminlerdir; BBT ve LH kaydı gerçek günü
+   daha iyi gösterir. */
+const TTC_LEN_FALLBACK = 28;
+function ttcCycle(cycleLength) {
+  const L = Math.max(15, Math.min(60, Number(cycleLength) || TTC_LEN_FALLBACK));
+  const ov = Math.max(10, L - 14);
+  return { L, ov, fertileStart: Math.max(1, ov - 5), fertileEnd: ov };
+}
+
+function ttcStatus(day, cycleLength) {
+  const c = ttcCycle(cycleLength);
+  const toOv = c.ov - day;
+  const fertile = day >= c.fertileStart && day <= c.fertileEnd;
+  const peak = day >= c.ov - 1 && day <= c.ov; // en doğurgan 2 gün
+  return { day, toOv, fertile, peak, ovulation: day === c.ov, ...c };
 }
 
 // Demo BBT serisi (folliküler, henüz ısı yükselişi yok) — son 14 gün
@@ -28,8 +40,9 @@ const BBT_BASE = [36.32, 36.28, 36.35, 36.30, 36.40, 36.36, 36.34, 36.42, 36.38,
 
 function TtcHome({ lunara, api, onNav }) {
   useLang();
-  const day = cycleDayFrom(lunara.periodStart, TODAY_DATE);
-  const st = ttcStatus(day);
+  const day = cycleDayFrom(lunara.periodStart, TODAY_DATE, cycleLenOf(lunara));
+  const L = cycleLenOf(lunara);
+  const st = ttcStatus(day, L);
   const lhToday = lunara.ttc.lh[TODAY_KEY];
   const bbtToday = lunara.ttc.bbt[TODAY_KEY];
 
@@ -48,12 +61,12 @@ function TtcHome({ lunara, api, onNav }) {
             background: 'linear-gradient(155deg, var(--accent-soft) 0%, var(--card) 72%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <FertilityRing day={day}/>
+            <FertilityRing day={day} cycle={st}/>
           </div>
           <div style={{ padding: '30px 34px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <StageBadge stage="ttc"/>
-              <span className="eyebrow">{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {TTC_LEN}</span>
+              <span className="eyebrow">{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {st.L}</span>
             </div>
             <h2 className="serif-display" style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 32, lineHeight: 1.12, margin: '0 0 12px', letterSpacing: '-0.02em' }}>
               {t(headEn, headTr)}
@@ -68,7 +81,7 @@ function TtcHome({ lunara, api, onNav }) {
                 {lunara.ttc.intimacy[TODAY_KEY] ? t('Logged today', 'Bugün işaretli') : t('Log intimacy', 'İlişkiyi işaretle')}
               </Btn>
               <span style={{ fontSize: 12.5, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
-                {t('PEAK', 'ZİRVE')} · {t('day', 'gün')} {TTC_OV - 1}–{TTC_OV}
+                {t('PEAK', 'ZİRVE')} · {t('day', 'gün')} {st.ov - 1}–{st.ov}
               </span>
             </div>
           </div>
@@ -198,23 +211,24 @@ function Legend({ color, ring, heart, label }) {
 }
 
 // Fertility ring — cycle with fertile window arc, ovulation + today markers
-function FertilityRing({ day, size = 178 }) {
+function FertilityRing({ day, size = 178, cycle }) {
+  const cy = cycle || ttcCycle();
   const r = (size - 30) / 2;
   const c = 2 * Math.PI * r;
   const arc = (from, to, color, w) => {
-    const dash = ((to - from + 1) / TTC_LEN) * c;
-    const off = -((from - 1) / TTC_LEN) * c;
+    const dash = ((to - from + 1) / cy.L) * c;
+    const off = -((from - 1) / cy.L) * c;
     return <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={w}
       strokeDasharray={`${dash} ${c}`} strokeDashoffset={off}/>;
   };
-  const ovAngle = ((TTC_OV - 1) / TTC_LEN) * 360;
-  const todayAngle = ((day - 1) / TTC_LEN) * 360;
+  const ovAngle = ((cy.ov - 1) / cy.L) * 360;
+  const todayAngle = ((day - 1) / cy.L) * 360;
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--card)" strokeWidth="13" opacity="0.7"/>
-        {arc(TTC_FERTILE_START, TTC_FERTILE_END, 'var(--accent-soft)', 13)}
-        {arc(TTC_OV - 1, TTC_OV, 'var(--accent)', 13)}
+        {arc(cy.fertileStart, cy.fertileEnd, 'var(--accent-soft)', 13)}
+        {arc(cy.ov - 1, cy.ov, 'var(--accent)', 13)}
         <g transform={`rotate(${ovAngle} ${size/2} ${size/2})`}>
           <circle cx={size/2 + r} cy={size/2} r="6" fill="none" stroke="var(--ink)" strokeWidth="2.4"/>
         </g>
@@ -234,9 +248,9 @@ function FertilityRing({ day, size = 178 }) {
 function FertileStrip({ day, lunara, api }) {
   const cells = Array.from({ length: 7 }).map((_, i) => {
     const date = new Date(TODAY_DATE); date.setDate(TODAY_DATE.getDate() - 3 + i);
-    const cd = cycleDayFrom(lunara.periodStart, date);
+    const cd = cycleDayFrom(lunara.periodStart, date, cycleLenOf(lunara));
     const key = isoKey(date);
-    const st = ttcStatus(cd);
+    const st = ttcStatus(cd, cycleLenOf(lunara));
     return { date, cd, key, st, isToday: i === 3, intimacy: !!lunara.ttc.intimacy[key] };
   });
   return (
@@ -281,7 +295,7 @@ function BBTChart({ lunara }) {
     const d = new Date(TODAY_DATE); d.setDate(TODAY_DATE.getDate() - i);
     const key = isoKey(d);
     days.push({
-      key, cd: cycleDayFrom(lunara.periodStart, d), isToday: i === 0,
+      key, cd: cycleDayFrom(lunara.periodStart, d, cycleLenOf(lunara)), isToday: i === 0,
       temp: lunara.ttc.bbt[key] != null ? lunara.ttc.bbt[key] : null,
       lh: lunara.ttc.lh[key] || null,
     });
@@ -319,7 +333,7 @@ function BBTChart({ lunara }) {
   if (cur.length) segs.push(cur.join(' '));
 
   const lhColor = k => k === 'peak' ? 'var(--accent)' : k === 'high' ? 'var(--accent-soft)' : null;
-  let ovi = shiftIdx; if (ovi < 0) ovi = series.findIndex(d => d.cd === TTC_OV);
+  let ovi = shiftIdx; if (ovi < 0) ovi = series.findIndex(d => d.cd === ttcCycle(cycleLenOf(lunara)).ov);
 
   return (
     <div>
@@ -360,4 +374,4 @@ function BBTChart({ lunara }) {
   );
 }
 
-export { TTC_LEN, TTC_OV, TTC_FERTILE_START, TTC_FERTILE_END, ttcStatus, BBT_BASE, TtcHome, Legend, FertilityRing, FertileStrip, isoKey, BBTChart };
+export { ttcCycle, ttcStatus, BBT_BASE, TtcHome, Legend, FertilityRing, FertileStrip, isoKey, BBTChart };

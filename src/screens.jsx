@@ -5,7 +5,8 @@ import { DoctorSummary } from './doctor-summary';
 import { ImportLabModal } from './lab-import';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
-import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
+import { rangeForLab } from './physiology';
+import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, labReadings, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
 
@@ -13,19 +14,37 @@ import { SupplementsPanel } from './supplements';
 /* eslint-disable */
 
 // ─── Shared helpers ────────────────────────────────────────────
-const CYCLE_LEN = 32; // PCOS — longer
+/* Yedek döngü uzunluğu. Kullanıcının kendi değeri (regimen.cycleLength) her
+   zaman önceliklidir — burası yalnızca hiç kurulmamışsa devreye girer.
+   Eskiden burada örnek hastadan kalma sabit 32 vardı ve gün sayımı herkes için
+   32'ye sarıyordu; 28 günlük bir döngüde faz etiketleri günlerce kayıyordu. */
+const CYCLE_LEN = 28;
+function cycleLenOf(lunara) {
+  const n = lunara && ((lunara.regimen && lunara.regimen.cycleLength) || lunara.cycleLength);
+  return Math.max(15, Math.min(60, Number(n) || CYCLE_LEN));
+}
 function daysBetween(aIso, b) {
   const a = new Date(aIso + 'T00:00:00');
   return Math.floor((b - a) / 86400000);
 }
-function cycleDayFrom(periodStartIso, today = TODAY_DATE) {
+function cycleDayFrom(periodStartIso, today = TODAY_DATE, cycleLength) {
+  const L = Math.max(15, Math.min(60, Number(cycleLength) || CYCLE_LEN));
   const d = daysBetween(periodStartIso, today);
-  return ((d % CYCLE_LEN) + CYCLE_LEN) % CYCLE_LEN + 1;
+  return ((d % L) + L) % L + 1;
 }
-function phaseOf(day) {
-  if (day <= 5) return { key: 'menstrual', label: 'Menstrual', labelTr: 'Menstrüel' };
-  if (day <= 13) return { key: 'follicular', label: 'Follicular', labelTr: 'Folliküler' };
-  if (day <= 18) return { key: 'ovulation', label: 'Ovulation', labelTr: 'Ovulasyon' };
+/* Faz sınırları döngü uzunluğuna göre kayar. Luteal faz kişiden kişiye pek
+   değişmez (~14 gün); uzayıp kısalan folliküler fazdır. Sınırları sabit günlere
+   çakmak 32 günlük bir döngüde ovülasyonu haftalarca erken gösterirdi. */
+function phaseBounds(cycleLength) {
+  const L = Math.max(15, Math.min(60, Number(cycleLength) || CYCLE_LEN));
+  const ov = Math.max(10, L - 14);
+  return { L, ov, bleedEnd: 5, follEnd: ov - 2, ovEnd: Math.min(L, ov + 2) };
+}
+function phaseOf(day, cycleLength) {
+  const b = phaseBounds(cycleLength);
+  if (day <= b.bleedEnd) return { key: 'menstrual', label: 'Menstrual', labelTr: 'Menstrüel' };
+  if (day <= b.follEnd) return { key: 'follicular', label: 'Follicular', labelTr: 'Folliküler' };
+  if (day <= b.ovEnd) return { key: 'ovulation', label: 'Ovulation', labelTr: 'Ovulasyon' };
   return { key: 'luteal', label: 'Luteal', labelTr: 'Luteal' };
 }
 function phaseLabel(ph) { return t(ph.label, ph.labelTr); }
@@ -508,6 +527,23 @@ function importedMetas(panels) {
   return [...metas.values()];
 }
 
+/* ── Döngü gününe bağlı tahlil aralığı ──────────────────────────────
+   Estradiol ve progesteronun "normal"i döngü gününe bağlıdır: estradiol
+   3. günde ~34, 14. günde ~223 pg/mL; progesteron folliküler fazda <0.3,
+   luteal fazda ~12 ng/mL. Tek bir sabit aralık, folliküler fazda çekilmiş
+   sağlıklı bir tahlili yanlışlıkla "düşük" gösterir. Panelin çekildiği
+   tarihe düşen döngü gününe göre aralık seçilir; fizyoloji modülünün
+   kapsamadığı analitler (SHBG, FSH, serbest T) sabit aralığında kalır. */
+function effectiveRange(lab, drawDate, lunara) {
+  const fallback = { range: lab.range, cycleDay: null };
+  if (!drawDate || !lunara || !lunara.periodStart) return fallback;
+  const L = cycleLenOf(lunara);
+  const cd = cycleDayFrom(lunara.periodStart, new Date(drawDate + 'T00:00:00'), L);
+  const r = rangeForLab(lab.key, cd, L);
+  if (!r) return { range: lab.range, cycleDay: cd };
+  return { range: [r.low, r.high], cycleDay: cd, phaseLabel: r.phaseLabel, typical: r.typical };
+}
+
 function LabsScreen({ lunara, api }) {
   const panels = (lunara && lunara.labPanels) || [];
   const hasData = panels.length > 0;
@@ -528,7 +564,11 @@ function LabsScreen({ lunara, api }) {
   const value = hasData ? labCurrent(panels, lab.key) : lab.value;
   const history = hasData ? labHistory(panels, lab.key) : lab.history;
   const dates = hasData ? labReadingsDates(panels, lab.key) : ['Dec','Jan','Feb','Mar','Apr','May','Now'];
-  const inRange = value != null && lab.range != null && value >= lab.range[0] && value <= lab.range[1];
+  const reads = hasData ? labReadings(panels, lab.key) : [];
+  const drawDate = reads.length ? reads[reads.length - 1].date : null;
+  const eff = effectiveRange(lab, drawDate, lunara);
+  const range = eff.range;
+  const inRange = value != null && range != null && value >= range[0] && value <= range[1];
 
   const name = (l) => t(l.name, l.nameTr || l.name);
 
@@ -557,6 +597,9 @@ function LabsScreen({ lunara, api }) {
           {shown.map((l, i) => {
             const on = l.key === sel;
             const v = hasData ? labCurrent(panels, l.key) : l.value;
+            const rd = hasData ? labReadings(panels, l.key) : [];
+            const e = effectiveRange(l, rd.length ? rd[rd.length - 1].date : null, lunara);
+            const rr = e.range;
             return (
               <button key={l.key} onClick={() => setSel(l.key)}
                 style={{
@@ -569,12 +612,12 @@ function LabsScreen({ lunara, api }) {
                 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontSize: 13.5, fontWeight: 600 }}>{name(l)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{l.range ? <>{t('ref', 'ref')} {l.range[0]}–{l.range[1]} {l.unit}</> : l.unit}</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{rr ? <>{t('ref', 'ref')} {rr[0]}–{rr[1]} {l.unit}{e.phaseLabel ? ' · ' + e.phaseLabel : ''}</> : l.unit}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{v != null ? v : '—'}</span>
                 </div>
-                <div style={{ width: 120 }}>{v != null && l.range && <RangeBar value={v} range={l.range} target={l.target}/>}</div>
+                <div style={{ width: 120 }}>{v != null && rr && <RangeBar value={v} range={rr} target={l.target}/>}</div>
               </button>
             );
           })}
@@ -764,8 +807,9 @@ function labNote(key) {
 /* ════════════════ CYCLE + MOON ════════════════ */
 function CycleScreen({ lunara, api }) {
   const today = TODAY_DATE;
-  const day = cycleDayFrom(lunara.periodStart, today);
-  const ph = phaseOf(day);
+  const L = cycleLenOf(lunara);
+  const day = cycleDayFrom(lunara.periodStart, today, L);
+  const ph = phaseOf(day, L);
   const moon = moonPhase(today);
   const [confirming, setConfirming] = React.useState(false);
   const [justStarted, setJustStarted] = React.useState(false);
@@ -780,12 +824,12 @@ function CycleScreen({ lunara, api }) {
   // build 7-day strip around today
   const strip = Array.from({ length: 7 }).map((_, i) => {
     const date = new Date(today); date.setDate(today.getDate() - 3 + i);
-    const cd = cycleDayFrom(lunara.periodStart, date);
-    return { date, cd, phase: phaseOf(cd), moon: moonPhase(date), isToday: i === 3 };
+    const cd = cycleDayFrom(lunara.periodStart, date, L);
+    return { date, cd, phase: phaseOf(cd, L), moon: moonPhase(date), isToday: i === 3 };
   });
   return (
     <div style={wrap}>
-      <ScreenHead eyebrow={t(`CYCLE DAY ${day} · ${CYCLE_LEN}-DAY`, `DÖNGÜ GÜNÜ ${day} · ${CYCLE_LEN} GÜNLÜK`)} title={t('Cycle & moon', 'Döngü & ay')}
+      <ScreenHead eyebrow={t(`CYCLE DAY ${day} · ${L}-DAY`, `DÖNGÜ GÜNÜ ${day} · ${L} GÜNLÜK`)} title={t('Cycle & moon', 'Döngü & ay')}
         right={
           justStarted ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--signal-good)' }}>
@@ -806,7 +850,7 @@ function CycleScreen({ lunara, api }) {
       <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {/* Cycle ring */}
         <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <CycleRing day={day} phase={ph}/>
+          <CycleRing day={day} phase={ph} length={L}/>
           <div style={{ display: 'flex', gap: 16, marginTop: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
             {Object.entries(PHASE_TINT).map(([k, c]) => (
               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: ph.key === k ? 'var(--ink)' : 'var(--muted)', fontWeight: ph.key === k ? 600 : 400 }}>
@@ -857,26 +901,28 @@ function CycleScreen({ lunara, api }) {
   );
 }
 
-function CycleRing({ day, phase, size = 260 }) {
+function CycleRing({ day, phase, size = 260, length }) {
   const r = (size - 50) / 2;
   const c = 2 * Math.PI * r;
+  const b = phaseBounds(length);
+  const L = b.L;
   const segs = [
-    { from: 0, to: 5, k: 'menstrual' },
-    { from: 5, to: 13, k: 'follicular' },
-    { from: 13, to: 18, k: 'ovulation' },
-    { from: 18, to: 32, k: 'luteal' },
+    { from: 0, to: b.bleedEnd, k: 'menstrual' },
+    { from: b.bleedEnd, to: b.follEnd, k: 'follicular' },
+    { from: b.follEnd, to: b.ovEnd, k: 'ovulation' },
+    { from: b.ovEnd, to: L, k: 'luteal' },
   ];
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--line-soft)" strokeWidth="20"/>
         {segs.map((s, i) => {
-          const dash = ((s.to - s.from) / CYCLE_LEN) * c;
-          const offset = -(s.from / CYCLE_LEN) * c;
+          const dash = ((s.to - s.from) / L) * c;
+          const offset = -(s.from / L) * c;
           return <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={PHASE_TINT[s.k]} strokeWidth="20"
             strokeDasharray={`${dash} ${c}`} strokeDashoffset={offset} opacity="0.92"/>;
         })}
-        <g transform={`rotate(${((day-1)/CYCLE_LEN)*360} ${size/2} ${size/2})`}>
+        <g transform={`rotate(${((day-1)/L)*360} ${size/2} ${size/2})`}>
           <circle cx={size/2 + r} cy={size/2} r="10" fill="var(--ink)" stroke="var(--ivory)" strokeWidth="3"/>
         </g>
       </svg>
@@ -894,8 +940,8 @@ function CareScreen({ lunara, onNav }) {
   const [summaryOpen, setSummaryOpen] = React.useState(false);
   const stage = (lunara && lunara.stage) || 'cycle';
   const stageInfo = (typeof STAGES !== 'undefined' && STAGES[stage]) || {};
-  const cycleDay = lunara ? cycleDayFrom(lunara.periodStart, TODAY_DATE) : 14;
-  const ph = phaseOf(cycleDay);
+  const cycleDay = lunara ? cycleDayFrom(lunara.periodStart, TODAY_DATE, cycleLenOf(lunara)) : 14;
+  const ph = phaseOf(cycleDay, lunara ? cycleLenOf(lunara) : 28);
   const profileName = (lunara && lunara.profile && lunara.profile.name) || '';
   useLang();
 
@@ -1080,4 +1126,4 @@ function careQuickPrompts(stage, phaseKey) {
   return sets[stage] || sets.cycle;
 }
 
-export { CYCLE_LEN, daysBetween, cycleDayFrom, phaseOf, phaseLabel, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };
+export { CYCLE_LEN, cycleLenOf, phaseBounds, daysBetween, cycleDayFrom, phaseOf, phaseLabel, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };

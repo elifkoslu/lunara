@@ -1,7 +1,7 @@
 import React from 'react';
 import { t, useLang } from './i18n';
 import { TodayWorkoutCard } from './nourish';
-import { MoonDisc, cycleDayFrom, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
+import { MoonDisc, cycleDayFrom, cycleLenOf, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
 import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
@@ -23,7 +23,6 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
       )}
       {lunara && api && <TodayWorkoutCard lunara={lunara} api={api} onNav={onNav}/>}
       {hasDoses && lunara && (lunara.labPanels || []).length > 0 && <EdLabsStrip lunara={lunara}/>}
-      <EdLibraryRead/>
     </div>
   );
 }
@@ -45,8 +44,8 @@ function WeeklySummary({ lunara, hasDoses = true }) {
   const weekAgo = today.getTime() - 7 * 86400000;
   const notes = (lunara.notes || []).filter(n => typeof n.id === 'number' && n.id >= weekAgo).length;
 
-  const day = cycleDayFrom(lunara.periodStart, today);
-  const phaseWord = phaseLabel(phaseOf(day)).toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en');
+  const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
+  const phaseWord = phaseLabel(phaseOf(day, cycleLenOf(lunara))).toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en');
 
   const tiles = [
     { value: tracked, label: t('days tracked', 'gün takip'), icon: ICONS.check },
@@ -110,8 +109,8 @@ const HERO_MOON_CLAUSE = [
 function EdHero({ lunara, hasDoses = true, onNav }) {
   const lang = useLang();
   const today = TODAY_DATE;
-  const day = lunara ? cycleDayFrom(lunara.periodStart, today) : 1;
-  const ph = phaseOf(day);
+  const day = lunara ? cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara)) : 1;
+  const ph = phaseOf(day, cycleLenOf(lunara));
   // Real regimen: meds active today, not yet taken
   const { meds } = lunara ? todaysDoses(lunara) : { meds: [] };
   const remaining = meds.filter(m => !medTaken(lunara, m.id)).length;
@@ -385,24 +384,6 @@ function EdLabsStrip({ lunara }) {
 
 // ─── Care note ─────────────────────────────────────────────────
 
-function EdLibraryRead() {
-  return (
-    <Card>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>{t('From the Library', 'Blog’dan')}</div>
-      <div style={{ fontFamily: 'var(--serif)', fontSize: 22, lineHeight: 1.2, letterSpacing: '-0.01em', marginBottom: 8, textWrap: 'pretty' }}>
-        {t('Why SHBG matters more than total testosterone', 'Neden SHBG toplam testosterondan daha önemli')}
-      </div>
-      <p style={{ fontSize: 13.2, color: 'var(--muted)', lineHeight: 1.5, margin: '6px 0 18px' }}>
-        {t('A 4\u00a0min read for the PCOS regimen — what a high SHBG hides, and how progesterone shifts it.',
-           'PKOS rejimi için 4 dk\u2019lık bir okuma — yüksek SHBG neyi gizler ve progesteron onu nasıl değiştirir.')}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <PillButton>{t('Save for later', 'Sonraya kaydet')}</PillButton>
-        <span style={{ fontSize: 11, color: 'var(--muted-2)', fontFamily: 'var(--mono)', letterSpacing: '0.06em' }}>{t('EST · 4 MIN', 'TAHM · 4 DK')}</span>
-      </div>
-    </Card>
-  );
-}
 
 // ─── Moon phase today + its possible effects ──────────────────
 // 8 phases: 0 New · 1 Waxing crescent · 2 First quarter · 3 Waxing gibbous
@@ -524,4 +505,4 @@ function FxBlock({ icon, label, text }) {
   );
 }
 
-export { DashboardEditorial, HERO_PHASE_TIP, HERO_MOON_CLAUSE, EdHero, PillButton, EdToday, DoseRow, EdSymptomFeeling, Trend, EdLabsStrip, EdLibraryRead, MOON_FX, moonPhaseIndex, EdMoonToday, FxBlock };
+export { DashboardEditorial, HERO_PHASE_TIP, HERO_MOON_CLAUSE, EdHero, PillButton, EdToday, DoseRow, EdSymptomFeeling, Trend, EdLabsStrip, MOON_FX, moonPhaseIndex, EdMoonToday, FxBlock };

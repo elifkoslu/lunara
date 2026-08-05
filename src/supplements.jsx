@@ -1,7 +1,7 @@
 import React from 'react';
 import { tx } from './dict';
 import { I18N, t } from './i18n';
-import { Btn, PHASE_TINT, cycleDayFrom, phaseLabel, phaseOf } from './screens';
+import { Btn, PHASE_TINT, cycleDayFrom, cycleLenOf, phaseLabel, phaseOf } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, whenLabel } from './shared';
 
 /* supplements.jsx — Lunara · supplements log + phase-based recommendations
@@ -39,8 +39,8 @@ const WHEN_OPTS = ['morning', 'midday', 'evening', 'bedtime'];
 function SupplementsPanel({ lunara, api, logDate }) {
   const dk = logDate || TODAY_KEY;
   const today = TODAY_DATE;
-  const day = cycleDayFrom(lunara.periodStart, today);
-  const ph = phaseOf(day);
+  const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
+  const ph = phaseOf(day, cycleLenOf(lunara));
   const tint = PHASE_TINT[ph.key];
   const log = lunara.suppLog[dk] || {};
   const recs = SUPP_GUIDE[ph.key];

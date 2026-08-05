@@ -1,6 +1,6 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
-import { Btn, ScreenHead, cycleDayFrom, phaseOf, wrap } from './screens';
+import { Btn, ScreenHead, cycleDayFrom, cycleLenOf, phaseOf, wrap } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, getTodayKey } from './shared';
 import { StageBadge } from './stages';
 
@@ -133,8 +133,8 @@ const LEARN_CARDS = [
 function MenarcheHome({ lunara, api, onNav }) {
   useLang();
   const today = TODAY_DATE;
-  const day = cycleDayFrom(lunara.periodStart, today);
-  const ph = phaseOf(day);
+  const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
+  const ph = phaseOf(day, cycleLenOf(lunara));
   const info = MENARCHE_PHASES[ph.key];
   const todayLog = lunara.symptomLog[TODAY_KEY] || {};
   const [confirming, setConfirming] = React.useState(false);
