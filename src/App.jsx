@@ -13,6 +13,7 @@ import {
 } from './screens';
 import { NourishScreen } from './nourish';
 import { ProfileScreen, PrivacyModal } from './profile';
+import { waterSettings, waterDay } from './water';
 import { MenarcheHome } from './menarche';
 import { TtcHome } from './ttc';
 import { PregnancyHome } from './pregnancy';
@@ -87,6 +88,36 @@ export default function App() {
     return () => clearInterval(iv);
   }, [lunara.profile && lunara.profile.reminders, lunara.regimen, lunara.doseLog]);
 
+  /* Su hatırlatması — uygulama açıkken, ayarlanan altı saatte.
+     Kapalıyken çalmaz; sunucusuz bir PWA arka planda bildirim zamanlayamaz.
+     Kapalı uygulamada da hatırlatma için saatler takvime aktarılabiliyor.
+     O saatte zaten içilmişse rahatsız etmiyoruz. */
+  React.useEffect(() => {
+    if (!lunara.profile || !lunara.profile.reminders) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const ayar = waterSettings(lunara);
+    const atilan = {};
+    const kontrol = () => {
+      const now = new Date();
+      const hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      if (!ayar.times.includes(hm) || atilan[hm]) return;
+      const gun = waterDay(lunara, getTodayKey());
+      // Bu saate kadar beklenen bardak sayısına ulaşıldıysa hatırlatma
+      const beklenen = ayar.times.filter(x => x <= hm).length;
+      if (gun.count >= beklenen) return;
+      atilan[hm] = true;
+      try {
+        new Notification(BRAND, {
+          body: I18N.lang === 'tr' ? 'Su içme zamanı' : 'Time for water',
+          icon: '/icon-192.png', tag: 'water',
+        });
+      } catch (e) {}
+    };
+    const iv = setInterval(kontrol, 30000);
+    kontrol();
+    return () => clearInterval(iv);
+  }, [lunara.profile, lunara.waterLog]);
+
   // Daily check-in reminder at the user's chosen time (while the app is open).
   React.useEffect(() => {
     if (!lunara.profile || !lunara.profile.cycleAlerts) return;
@@ -119,8 +150,8 @@ export default function App() {
       case 'symptoms': return <SymptomsScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
       case 'doses':    return <DosesScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
       case 'cycle':    return <CycleScreen lunara={lunara} api={api} />;
-      case 'move':     return <NourishScreen lunara={lunara} kind="move" />;
-      case 'nourish':  return <NourishScreen lunara={lunara} kind="eat" />;
+      case 'move':     return <NourishScreen lunara={lunara} api={api} kind="move" />;
+      case 'nourish':  return <NourishScreen lunara={lunara} api={api} kind="eat" />;
       case 'labs':     return <LabsScreen lunara={lunara} api={api} />;
       case 'care':     return <CareScreen lunara={lunara} onNav={setActive} />;
       case 'profile':  return <ProfileScreen lunara={lunara} api={api} onNav={setActive} onOpenPrivacy={() => setPrivacyOpen(true)} />;

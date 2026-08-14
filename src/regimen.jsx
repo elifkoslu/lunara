@@ -2,6 +2,7 @@ import React from 'react';
 import { t, useLang } from './i18n';
 import { Btn } from './screens';
 import { exportRegimenIcs, CYCLE_COUNT } from './calendar-export';
+import { waterSettings } from './water';
 import { Card, ICONS, Icon, TODAY_DATE, medSchedule, regimenDay, slotCovers, whenLabel } from './shared';
 
 /* regimen.jsx — Lunara döngü-temelli ilaç programı düzenleyici
@@ -255,8 +256,11 @@ function DoseSchedule({ med, max, api }) {
    o yüzden rejimi alarmlı bir .ics dosyası olarak veriyoruz. */
 function CalendarAlarmRow({ lunara }) {
   const [sonuc, setSonuc] = React.useState(null);
+  // Su hatırlatmaları da aynı dosyaya girer; ayrı bir aktarma gereksiz olurdu.
+  const [suDahil, setSuDahil] = React.useState(true);
+  const suSaatleri = waterSettings(lunara).times;
   const aktar = async () => {
-    const r = await exportRegimenIcs(lunara);
+    const r = await exportRegimenIcs(lunara, suDahil ? suSaatleri : null);
     if (!r) { setSonuc({ ok: false }); return; }
     if (r.yol === 'iptal') { setSonuc(null); return; }   // kullanıcı vazgeçti
     setSonuc({ ok: true, n: r.eventCount, yol: r.yol });
@@ -275,6 +279,10 @@ function CalendarAlarmRow({ lunara }) {
         </div>
         <Btn onClick={aktar}><Icon d={ICONS.clock} size={13}/> {t('Export', 'Aktar')}</Btn>
       </div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12.5, color: 'var(--ink-2)', cursor: 'pointer' }}>
+        <input type="checkbox" checked={suDahil} onChange={e => setSuDahil(e.target.checked)}/>
+        {t(`Include ${suSaatleri.length} water reminders`, `${suSaatleri.length} su hatırlatmasını da ekle`)}
+      </label>
       <p style={{ fontSize: 11, color: 'var(--muted-2)', lineHeight: 1.55, margin: '10px 0 0' }}>
         {t(`The event says only “dose time” — no medicine name or amount, so nothing about your health leaves the device if your calendar syncs to iCloud or Google. Covers about ${CYCLE_COUNT} cycles; export again if your cycle length or period start changes.`,
            `Etkinlikte yalnızca “doz zamanı” yazar — ilaç adı ve miktar yazmaz, yani takvimin iCloud veya Google ile senkronlansa bile sağlık bilgin cihazdan çıkmaz. Yaklaşık ${CYCLE_COUNT} döngüyü kapsar; döngü uzunluğun ya da adet başlangıcın değişirse yeniden aktar.`)}

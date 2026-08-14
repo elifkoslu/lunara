@@ -82,10 +82,31 @@ function timeMap(regimen) {
   return map;
 }
 
-function buildIcs(regimen) {
+/* Su hatırlatmaları: her gün aynı saatlerde, döngüden bağımsız.
+   Etkinlikte yine ilaç/sağlık ayrıntısı yok — yalnızca "su iç". */
+function waterEvents(times, stamp, vevent, t) {
+  if (!Array.isArray(times) || !times.length) return 0;
+  const baslik = t('Lunara · water', 'Lunara · su');
+  let n = 0;
+  for (const hm of times) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const [sh, sm] = hm.split(':').map(Number);
+    const simdi = new Date();
+    if (simdi.getHours() > (sh || 0) || (simdi.getHours() === (sh || 0) && simdi.getMinutes() >= (sm || 0))) {
+      d.setDate(d.getDate() + 1);
+    }
+    vevent(localStamp(d, hm), `FREQ=DAILY;COUNT=${28 * CYCLE_COUNT}`,
+           `wm-su-${hm.replace(':', '')}-${stamp}@lunara`, baslik);
+    n++;
+  }
+  return n;
+}
+
+function buildIcs(regimen, waterTimes) {
   const L = regimen.cycleLength;
   const map = timeMap(regimen);
-  if (!map.size) return null;
+  if (!map.size && !(waterTimes && waterTimes.length)) return null;
 
   const stamp = utcStamp(new Date());
   const baslik = t('Lunara · dose time', 'Lunara · doz zamanı');
@@ -98,16 +119,17 @@ function buildIcs(regimen) {
   ];
   let n = 0;
 
-  const vevent = (dtstart, rrule, uid) => {
+  const vevent = (dtstart, rrule, uid, ozelBaslik) => {
+    const bas = ozelBaslik || baslik;
     lines.push('BEGIN:VEVENT');
     lines.push('UID:' + uid);
     lines.push('DTSTAMP:' + stamp);
     lines.push('DTSTART:' + dtstart);
     lines.push('DURATION:PT15M');
     lines.push('RRULE:' + rrule);
-    lines.push(fold('SUMMARY:' + esc(baslik)));
+    lines.push(fold('SUMMARY:' + esc(bas)));
     lines.push(fold('DESCRIPTION:' + esc(aciklama)));
-    lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', fold('DESCRIPTION:' + esc(baslik)), 'TRIGGER;RELATED=START:PT0S', 'END:VALARM');
+    lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', fold('DESCRIPTION:' + esc(bas)), 'TRIGGER;RELATED=START:PT0S', 'END:VALARM');
     lines.push('END:VEVENT');
   };
 
@@ -124,7 +146,7 @@ function buildIcs(regimen) {
       if (bugunSaat.getHours() > (sh || 0) || (bugunSaat.getHours() === (sh || 0) && bugunSaat.getMinutes() >= (sm || 0))) {
         d.setDate(d.getDate() + 1);
       }
-      vevent(localStamp(d, hm), `FREQ=DAILY;COUNT=${L * CYCLE_COUNT}`, `wm-${hm.replace(':', '')}-all-${stamp}@womentum`);
+      vevent(localStamp(d, hm), `FREQ=DAILY;COUNT=${L * CYCLE_COUNT}`, `wm-${hm.replace(':', '')}-all-${stamp}@lunara`);
       n++;
       continue;
     }
@@ -132,13 +154,16 @@ function buildIcs(regimen) {
     for (const gun of gunler) {
       const d = nextDateForCycleDay(regimen.anchor, L, gun);
       if (!d) continue;
-      vevent(localStamp(d, hm), `FREQ=DAILY;INTERVAL=${L};COUNT=${CYCLE_COUNT}`, `wm-${hm.replace(':', '')}-d${gun}-${stamp}@womentum`);
+      vevent(localStamp(d, hm), `FREQ=DAILY;INTERVAL=${L};COUNT=${CYCLE_COUNT}`, `wm-${hm.replace(':', '')}-d${gun}-${stamp}@lunara`);
       n++;
     }
   }
 
+  const suSayisi = waterEvents(waterTimes, stamp, vevent, t);
+  n += suSayisi;
+
   lines.push('END:VCALENDAR');
-  return { ics: lines.join('\r\n') + '\r\n', eventCount: n, timeCount: map.size };
+  return { ics: lines.join('\r\n') + '\r\n', eventCount: n, timeCount: map.size, waterCount: suSayisi };
 }
 
 const DOSYA_ADI = 'lunara-doz-alarmlari.ics';
@@ -161,10 +186,10 @@ function indir(ics) {
    seçenek olarak çıkar. Masaüstünde ve desteklemeyen tarayıcılarda indirmeye
    düşüyoruz. share() kullanıcı hareketi ister — dosyayı senkron kurup hemen
    çağırıyoruz ki hareket geçerliliğini yitirmesin. */
-async function exportRegimenIcs(lunara) {
+async function exportRegimenIcs(lunara, waterTimes) {
   const regimen = lunara && lunara.regimen;
-  if (!regimen || !regimen.meds || !regimen.meds.length) return null;
-  const built = buildIcs(regimen);
+  if ((!regimen || !regimen.meds || !regimen.meds.length) && !(waterTimes && waterTimes.length)) return null;
+  const built = buildIcs(regimen, waterTimes);
   if (!built) return null;
 
   try {

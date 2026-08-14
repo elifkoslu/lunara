@@ -3,7 +3,8 @@ import { tx } from './dict';
 import { I18N, t } from './i18n';
 import { NourishGuideCard, PERIMENO_NOURISH, StageNourishView } from './nourish-stages';
 import { PHASE_TINT, ScreenHead, cycleDayFrom, cycleLenOf, phaseLabel, phaseOf } from './screens';
-import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
+import { WaterCard } from './water';
+import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, getTodayKey } from './shared';
 
 /* nourish.jsx — Lunara · phase-based movement & nutrition guidance
    Reads the current cycle phase and tailors recommendations.
@@ -192,9 +193,22 @@ const MOVE_ICON = {
 
 /* kind: 'move' → Movement screen · 'eat' → Nutrition screen.
    Split into two screens so each has room for stage-appropriate depth. */
-function NourishScreen({ lunara, kind = 'eat' }) {
+function NourishScreen({ lunara, api, kind = 'eat' }) {
+  /* Su her yaşam evresinde anlamlı — gebelikte ve doğum sonrasında belki daha
+     da fazla. Bu yüzden kart, evreye özel görünüme erken dönülse de çiziliyor.
+     Kendi tarih seçicisini taşıyor: bu ekranda paylaşacağı bir yemek günlüğü yok. */
+  const [suGun, setSuGun] = React.useState(getTodayKey());
+  const suKarti = (kind === 'eat' && api)
+    ? <WaterCard lunara={lunara} api={api} dateKey={suGun} setDateKey={setSuGun}/>
+    : null;
+
   if (typeof StageNourishView !== 'undefined' && (lunara.stage === 'menarche' || lunara.stage === 'pregnancy' || lunara.stage === 'ttc' || lunara.stage === 'postpartum' || lunara.stage === 'menopause'))
-    return <StageNourishView stageKey={lunara.stage} lunara={lunara} kind={kind}/>;
+    return (
+      <>
+        {suKarti && <div style={{ padding: '18px 36px 0' }}>{suKarti}</div>}
+        <StageNourishView stageKey={lunara.stage} lunara={lunara} kind={kind}/>
+      </>
+    );
   const isPerimeno = lunara.stage === 'perimeno';
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
@@ -217,6 +231,8 @@ function NourishScreen({ lunara, kind = 'eat' }) {
         right={<span style={{ fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
           {t('Tuned to your', 'Senin')} {phaseLabel(phaseOf(day, cycleLenOf(lunara))).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase', 'fazına göre')}
         </span>} />
+
+      {suKarti}
 
       {/* In perimenopause the stage-level needs come first; cycle-phase
           guidance still follows because many are still cycling. */}

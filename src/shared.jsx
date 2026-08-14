@@ -367,6 +367,8 @@ function useLunara() {
       notes: saved.notes || [],
       // 'YYYY-MM-DD' -> { stepIdx: true }  (workout step completion)
       workoutLog: saved.workoutLog || {},
+      // 'YYYY-MM-DD' -> [{ id, at, ml }]  (su içme kaydı)
+      waterLog: saved.waterLog || {},
       // user's supplements [{ id, name, dose, when }] — starts empty
       supplements: saved.supplements || [],
       // 'YYYY-MM-DD' -> { suppId: time }  (supplement taken log)
@@ -462,6 +464,35 @@ function useLunara() {
     updateProfile: (patch) => setState(s => ({
       ...s, profile: { ...s.profile, ...patch },
     })),
+    /* ── Su kaydı ────────────────────────────────────────────────
+       Her yudum bir kayıt: { id, at, ml }. Gün toplamı bunların toplamıdır,
+       "kaç kez içtim" ise kayıt sayısıdır — hedef altı kez içmek olduğu için
+       ikisini de tutmak gerekiyor. Tek bir sayaç tutsaydık geçmişe dönüp
+       "saat 14'te 300 ml içmiştim" diye düzeltmek mümkün olmazdı. */
+    addWater: (dateKey, ml, at) => setState(s => {
+      const gun = [...((s.waterLog || {})[dateKey] || [])];
+      gun.push({ id: 'su-' + Date.now(), at: at || nowHM(), ml: Math.max(1, numOrNull(ml) || 250) });
+      gun.sort((a, b) => (a.at < b.at ? -1 : 1));
+      return { ...s, waterLog: { ...(s.waterLog || {}), [dateKey]: gun } };
+    }),
+    removeWater: (dateKey, id) => setState(s => {
+      const gun = ((s.waterLog || {})[dateKey] || []).filter(x => x.id !== id);
+      const wl = { ...(s.waterLog || {}) };
+      if (gun.length) wl[dateKey] = gun; else delete wl[dateKey];
+      return { ...s, waterLog: wl };
+    }),
+    updateWater: (dateKey, id, patch) => setState(s => {
+      const gun = ((s.waterLog || {})[dateKey] || []).map(x => {
+        if (x.id !== id) return x;
+        const n = { ...x };
+        if ('ml' in patch) n.ml = Math.max(1, numOrNull(patch.ml) || x.ml);
+        if ('at' in patch && patch.at) n.at = patch.at;
+        return n;
+      });
+      gun.sort((a, b) => (a.at < b.at ? -1 : 1));
+      return { ...s, waterLog: { ...(s.waterLog || {}), [dateKey]: gun } };
+    }),
+
     setStage: (stage) => setState(s => ({ ...s, stage, onboarded: true })),
     setOnboarded: (v) => setState(s => ({ ...s, onboarded: v })),
     logBBT: (dateKey, temp) => setState(s => ({ ...s, ttc: { ...s.ttc, bbt: { ...s.ttc.bbt, [dateKey]: temp } } })),
