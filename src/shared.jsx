@@ -352,6 +352,22 @@ function persist(state) {
     return false;
   }
 }
+/* İşaretli kanama günlerinin en son kesintisiz serisinin ilk günü.
+   Tarihler 'YYYY-MM-DD' olduğu için sözlük sırası = zaman sırası. */
+function sonKanamaBasi(gunler) {
+  const sirali = Object.keys(gunler || {}).filter(k => gunler[k]).sort();
+  if (sirali.length === 0) return null;
+  const kume = new Set(sirali);
+  let bas = sirali[sirali.length - 1];
+  for (;;) {
+    const d = new Date(bas + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    const onceki = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (!kume.has(onceki)) return bas;
+    bas = onceki;
+  }
+}
+
 function useLunara() {
   const [state, setState] = React.useState(() => {
     const saved = loadState();
@@ -363,6 +379,9 @@ function useLunara() {
       // ISO date string of last period start (defaults to today = cycle day 1
       // until the user sets it in onboarding or on the cycle screen)
       periodStart: saved.periodStart || getTodayKey(),
+      // 'YYYY-MM-DD' -> true  (gerçekleşen kanama günleri; periodStart bunların
+      // en son serisinin ilk gününden türetilir)
+      periodDays: saved.periodDays || {},
       // journal notes [{ id, at, text }]
       notes: saved.notes || [],
       // 'YYYY-MM-DD' -> { stepIdx: true }  (workout step completion)
@@ -437,7 +456,19 @@ function useLunara() {
     logSymptom: (dateKey, key, val) => setState(s => ({
       ...s, symptomLog: { ...s.symptomLog, [dateKey]: { ...(s.symptomLog[dateKey] || {}), [key]: val } },
     })),
-    setPeriodStart: (iso) => setState(s => ({ ...s, periodStart: iso })),
+    // "Regl bugün başladı" hem çapayı taşır hem o günü kanama olarak işaretler —
+    // aksi hâlde takvimde beklenen kanama görünür, gerçekleşen görünmezdi.
+    setPeriodStart: (iso) => setState(s => ({
+      ...s, periodStart: iso, periodDays: { ...(s.periodDays || {}), [iso]: true },
+    })),
+    // Takvimde bir günü kanama olarak işaretler/kaldırır. Döngü günü hesabının
+    // çapası, işaretli günlerin en son kesintisiz serisinin ilk günüdür: kullanıcı
+    // geçmişi düzelttiğinde döngü günü kendiliğinden düzelsin diye türetiliyor.
+    togglePeriodDay: (dateKey) => setState(s => {
+      const gunler = { ...(s.periodDays || {}) };
+      if (gunler[dateKey]) delete gunler[dateKey]; else gunler[dateKey] = true;
+      return { ...s, periodDays: gunler, periodStart: sonKanamaBasi(gunler) || s.periodStart };
+    }),
     addNote: (text) => setState(s => ({
       ...s, notes: [{ id: Date.now(), at: nowHM(), text }, ...s.notes],
     })),
@@ -874,4 +905,4 @@ function SymptomTrack({ series, color = 'var(--accent)', dotSize = 6, gap = 3 })
   );
 }
 
-export { PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, medSchedule, medSlotFor, slotCovers, todaysDoses, medTaken, doseEntry, DateNav, ProgramBar, TopBar, StorageBanner, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };
+export { sonKanamaBasi, PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, medSchedule, medSlotFor, slotCovers, todaysDoses, medTaken, doseEntry, DateNav, ProgramBar, TopBar, StorageBanner, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };

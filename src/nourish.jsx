@@ -2,7 +2,7 @@ import React from 'react';
 import { tx } from './dict';
 import { I18N, t } from './i18n';
 import { NourishGuideCard, PERIMENO_NOURISH, StageNourishView } from './nourish-stages';
-import { PHASE_TINT, ScreenHead, cycleDayFrom, cycleLenOf, phaseLabel, phaseOf } from './screens';
+import { PHASE_TINT, ScreenHead, cycleDayFrom, cycleLenOf, phaseLabel, phaseOf, phaseRange } from './screens';
 import { WaterCard } from './water';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, getTodayKey } from './shared';
 
@@ -213,6 +213,7 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
   const live = phaseOf(day, cycleLenOf(lunara)).key;
+  const cycleLength = cycleLenOf(lunara);
   const [sel, setSel] = React.useState(live);
   const g = PHASE_GUIDE[sel];
   const tint = PHASE_TINT[sel];
@@ -268,7 +269,7 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
                 <span style={{ fontSize: 13.5, fontWeight: on ? 700 : 500, color: on ? 'var(--ink)' : 'var(--ink-2)' }}>{tx(p.label)}</span>
                 {isLive && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.08em', color: 'var(--accent)', marginLeft: 'auto' }}>● {t('NOW','ŞİMDİ')}</span>}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{tx(p.range)} · {tx(p.energy)} {t('energy','enerji')}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{phaseRange(k, cycleLength)} · {tx(p.energy)} {t('energy','enerji')}</div>
             </button>
           );
         })}
@@ -278,7 +279,7 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
       <Card pad={0} style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: 'auto 1fr' }}>
         <div style={{ width: 8, background: tint }}/>
         <div style={{ padding: '22px 28px' }}>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>{tx(g.label)} · {tx(g.range)}</div>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>{tx(g.label)} · {phaseRange(sel, cycleLength)}</div>
           <p style={{ fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.4, margin: 0, color: 'var(--ink)', textWrap: 'pretty', fontStyle: 'italic' }}>
             {tx(g.tagline)}
           </p>
@@ -309,7 +310,7 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
                 <div key={i} style={{ borderBottom: i < g.move.items.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
                   <button onClick={() => setOpenPlan(open ? -1 : i)}
                     style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', width: '100%', textAlign: 'left', background: 'transparent', cursor: 'pointer' }}>
-                    <span style={{ width: 40, height: 40, borderRadius: 12, background: tint, opacity: 0.9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ width: 40, height: 40, borderRadius: 12, background: tint + '33', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Icon d={MOVE_ICON[it.icon]} size={19} stroke="var(--ink)" sw={1.5}/>
                     </span>
                     <div style={{ flex: 1 }}>
@@ -359,7 +360,7 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {g.eat.items.map((it, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.04em', color: 'var(--ink-2)', background: tint, opacity: 0.95, padding: '4px 7px', borderRadius: 6, minWidth: 52, textAlign: 'center', marginTop: 1 }}>{it.tag}</span>
+                <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.04em', color: 'var(--ink-2)', background: tint + '33', padding: '4px 7px', borderRadius: 6, minWidth: 52, textAlign: 'center', marginTop: 1 }}>{it.tag}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{tx(it.name)}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(it.detail)}</div>
@@ -478,7 +479,7 @@ function TodayWorkoutCard({ lunara, api, onNav }) {
             {primary.plan && <span style={{ fontSize: 11.5, color: 'var(--accent)', fontFamily: 'var(--mono)' }}>{tx(primary.plan.meta)}</span>}
           </div>
         </div>
-        <span style={{ width: 44, height: 44, borderRadius: 13, background: tint, opacity: 0.9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ width: 44, height: 44, borderRadius: 13, background: tint + '33', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icon d={MOVE_ICON[primary.icon]} size={21} stroke="var(--ink)" sw={1.5}/>
         </span>
       </div>

@@ -22,6 +22,7 @@ const YEDEK_SEMASI = {
   onboarded:   v => typeof v === 'boolean',
   stage:       metinMi,
   periodStart: metinMi,
+  periodDays:  nesneMi,
   doses:       nesneMi,
   symptomLog:  nesneMi,
   notes:       diziMi,

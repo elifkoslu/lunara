@@ -168,7 +168,7 @@ function SupplementsPanel({ lunara, api, logDate }) {
             const already = existingNames.includes(r.name.toLowerCase());
             return (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.04em', color: 'var(--ink-2)', background: tint, opacity: 0.95, padding: '4px 6px', borderRadius: 6, minWidth: 50, textAlign: 'center', marginTop: 2 }}>{r.tag}</span>
+                <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.04em', color: 'var(--ink-2)', background: tint + '33', padding: '4px 6px', borderRadius: 6, minWidth: 50, textAlign: 'center', marginTop: 2 }}>{r.tag}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                     <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>{tx(r.name)}</span>

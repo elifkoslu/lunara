@@ -1,7 +1,8 @@
 import React from 'react';
 import { t, useLang } from './i18n';
 import { TodayWorkoutCard } from './nourish';
-import { MoonDisc, cycleDayFrom, cycleLenOf, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
+import { MonthNav, WeekdayRow, useMonthView } from './month-grid';
+import { MoonDisc, PHASE_TINT, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
 import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
@@ -12,7 +13,7 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
     <div style={{ padding: '18px 36px 40px', display: 'flex', flexDirection: 'column', gap: 22 }}>
       <EdHero lunara={lunara} hasDoses={hasDoses} onNav={onNav}/>
       <EdMoonToday/>
-      {lunara && <WeeklySummary lunara={lunara} hasDoses={hasDoses}/>}
+      {lunara && <MonthSummary lunara={lunara} hasDoses={hasDoses}/>}
       {hasDoses ? (
         <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 22 }}>
           <EdToday lunara={lunara} api={api} onNav={onNav}/>
@@ -27,12 +28,16 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
   );
 }
 
-// ─── Weekly summary ────────────────────────────────────────────
-function WeeklySummary({ lunara, hasDoses = true }) {
+// ─── 30 günlük özet ────────────────────────────────────────────
+// Yedi gün, düzensiz kaydeden birinde çoğu zaman 0–1 gösteriyordu; bir döngünün
+// tamamı da göze girmiyordu. 30 gün hem bir döngüyü kapsıyor hem sayıları
+// anlamlı kılıyor.
+function MonthSummary({ lunara, hasDoses = true }) {
   const lang = useLang();
   const today = new Date(TODAY_DATE);
+  const PENCERE = 30;
   const keys = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = PENCERE - 1; i >= 0; i--) {
     const d = new Date(today); d.setDate(d.getDate() - i);
     keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
   }
@@ -41,8 +46,7 @@ function WeeklySummary({ lunara, hasDoses = true }) {
   const tracked = keys.filter(k => symLog[k] && Object.keys(symLog[k]).length > 0).length;
   const entries = keys.reduce((s, k) => s + (symLog[k] ? Object.values(symLog[k]).filter(v => v > 0).length : 0), 0);
   const doses = keys.reduce((s, k) => s + (doseLog[k] ? Object.keys(doseLog[k]).length : 0), 0);
-  const weekAgo = today.getTime() - 7 * 86400000;
-  const notes = (lunara.notes || []).filter(n => typeof n.id === 'number' && n.id >= weekAgo).length;
+  const bledDays = keys.filter(k => bledOn(lunara, k) > 0).length;
 
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
   const phaseWord = phaseLabel(phaseOf(day, cycleLenOf(lunara))).toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en');
@@ -51,20 +55,24 @@ function WeeklySummary({ lunara, hasDoses = true }) {
     { value: tracked, label: t('days tracked', 'gün takip'), icon: ICONS.check },
     ...(hasDoses ? [{ value: doses, label: t('doses taken', 'doz alındı'), icon: ICONS.pill }] : []),
     { value: entries, label: t('symptoms logged', 'belirti kaydı'), icon: ICONS.pulse },
-    { value: notes, label: t('notes', 'not'), icon: ICONS.book },
+    // "not" yerine kanama günü: blog kalkınca not kutucuğu boşta kalmıştı ve
+    // ay takviminde gösterilen kanamanın sayısal karşılığı burada eksikti.
+    { value: bledDays, label: t('bleeding days', 'kanama günü'), icon: ICONS.drop },
   ];
 
   const narrative = tracked === 0
-    ? t('No check-ins yet this week — a quick daily note builds your picture.',
-        'Bu hafta henüz kayıt yok — kısa bir günlük not resmini oluşturur.')
-    : t(`You logged ${tracked} of the last 7 days — you’re in your ${phaseWord} phase.`,
-        `Son 7 günün ${tracked}’ini kaydettin — ${phaseWord} fazındasın.`);
+    ? t('No check-ins in the last 30 days — a quick daily note builds your picture.',
+        'Son 30 günde kayıt yok — kısa bir günlük not resmini oluşturur.')
+    : t(`You logged ${tracked} of the last 30 days — you’re in your ${phaseWord} phase.`,
+        `Son 30 günün ${tracked}’ini kaydettin — ${phaseWord} fazındasın.`);
 
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-        <div className="eyebrow">{t('This week', 'Bu hafta')}</div>
-        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{t('last 7 days', 'son 7 gün')}</span>
+        <div className="eyebrow">{t('Last 30 days', 'Son 30 gün')}</div>
+        <span style={{ fontSize: 10.5, color: 'var(--muted-2)', fontFamily: 'var(--mono)' }}>
+          {keys[0].slice(8) + '.' + keys[0].slice(5, 7)} – {keys[keys.length - 1].slice(8) + '.' + keys[keys.length - 1].slice(5, 7)}
+        </span>
       </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
         {tiles.map((tile, i) => (
@@ -106,6 +114,91 @@ const HERO_MOON_CLAUSE = [
   { en: 'The waning crescent calls for rest.', tr: 'İncelen hilal dinlenmeyi çağırır.' },
 ];
 
+/* Bugün ekranındaki ay takvimi — eskiden burada dekoratif bir gradyan vardı.
+   Bir bakışta dört soruyu cevaplaması gerekiyor: bugün hangi fazdayım, bu ay
+   fazlar nereye düşüyor, kanama ne zaman bekleniyor, gerçekte ne zaman oldu.
+
+   Kodlama katmanları üst üste binebildiği için ayrı CSS özelliklerine dağıtıldı:
+   faz → hücre zemini + alt şerit, beklenen kanama → kesikli outline,
+   gerçekleşen kanama → dolu pembe zemin, bugün → boxShadow halkası.
+   Böylece dört durum aynı hücrede aynı anda okunabiliyor. */
+const BEKLENEN_CIZGI = '#b04a72';   // menstrüel pembenin koyusu: hem açık tonlu
+                                    // hücrede hem dolu pembe hücrede görünür
+function HeroMonth({ lunara }) {
+  const { go, isCurrentMonth, monthLabel, weekdays, cells } = useMonthView();
+  useLang();
+  const L = cycleLenOf(lunara);
+
+  return (
+    <div style={{ padding: '18px 18px 16px', background: 'var(--bone)', borderRight: '1px solid var(--line-soft)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+        <div className="eyebrow">{t('Cycle month', 'Döngü ayı')}</div>
+        <MonthNav label={monthLabel} onPrev={() => go(-1)} onNext={() => go(1)} atCurrent={isCurrentMonth}/>
+      </div>
+
+      <WeekdayRow weekdays={weekdays}/>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+        {cells.map((c, i) => {
+          if (!c) return <div key={'b' + i}/>;
+          const cd = lunara ? cycleDayFrom(lunara.periodStart, c.date, L) : 1;
+          const ph = phaseOf(cd, L);
+          const bekleniyor = bleedExpected(cd, L);
+          const oldu = bledOn(lunara, c.key) > 0;
+          const durum = [phaseLabel(ph)];
+          if (bekleniyor) durum.push(t('bleeding expected', 'kanama bekleniyor'));
+          if (oldu) durum.push(t('bleeding logged', 'kanama kaydedildi'));
+          return (
+            <div key={c.key} title={`${c.d} · ${t('day', 'gün')} ${cd} · ${durum.join(' · ')}`}
+              style={{
+                position: 'relative', height: 34, borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                // '3d' ≈ %24 opaklık: fazın hangi haftalara düştüğü hücre
+                // zemininden okunacak kadar belirgin, gün numarasını
+                // bastırmayacak kadar hafif
+                background: oldu ? PHASE_TINT.menstrual : PHASE_TINT[ph.key] + '3d',
+                outline: bekleniyor ? `1.5px dashed ${BEKLENEN_CIZGI}` : 'none',
+                outlineOffset: -2,
+                boxShadow: c.isToday ? '0 0 0 2px var(--ink)' : 'none',
+                opacity: c.isFuture ? 0.5 : 1,
+              }}>
+              <span style={{
+                fontFamily: 'var(--mono)', fontSize: 11.5, lineHeight: 1,
+                fontWeight: c.isToday ? 700 : 500, color: 'var(--ink)',
+              }}>{c.d}</span>
+              {/* faz şeridi — rengin taşıdığı kimliğin tam doygun hâli */}
+              <span style={{
+                position: 'absolute', left: 6, right: 6, bottom: 3, height: 3,
+                borderRadius: 2, background: PHASE_TINT[ph.key],
+              }}/>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Renk körlüğünde faz çiftleri ΔE 8'in altında ayrışıyor; bu yüzden
+          açıklama isteğe bağlı değil, kimliğin ikinci taşıyıcısı. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
+        {['menstrual', 'follicular', 'ovulation', 'luteal'].map(k => (
+          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--muted)' }}>
+            <span style={{ width: 12, height: 4, borderRadius: 2, background: PHASE_TINT[k] }}/>
+            {phaseLabel(phaseOf(k === 'menstrual' ? 1 : k === 'follicular' ? 7 : k === 'ovulation' ? (L - 14) : (L - 4), L))}
+          </span>
+        ))}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', marginTop: 6 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--muted)' }}>
+          <span style={{ width: 12, height: 12, borderRadius: 4, border: `1.5px dashed ${BEKLENEN_CIZGI}` }}/>
+          {t('bleeding expected', 'beklenen kanama')}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--muted)' }}>
+          <span style={{ width: 12, height: 12, borderRadius: 4, background: PHASE_TINT.menstrual }}/>
+          {t('bleeding logged', 'gerçekleşen kanama')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function EdHero({ lunara, hasDoses = true, onNav }) {
   const lang = useLang();
   const today = TODAY_DATE;
@@ -135,31 +228,8 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
     + ' ' + t(HERO_MOON_CLAUSE[moonIdx].en, HERO_MOON_CLAUSE[moonIdx].tr);
 
   return (
-    <Card className="mb-stack" pad={0} style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: '320px 1fr', minHeight: 230 }}>
-      {/* Hero image — drop your own; falls back to the painterly gradient */}
-      <div style={{ position: 'relative', minHeight: 230 }}>
-        <image-slot id="hero-editorial" shape="rect" fit="cover"
-          placeholder={t('Drop an image', 'Bir görsel bırak')}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
-            background: `
-              radial-gradient(120% 80% at 28% 35%, oklch(0.34 0.08 25) 0%, transparent 60%),
-              radial-gradient(80% 110% at 75% 70%, oklch(0.62 0.10 40) 0%, transparent 65%),
-              linear-gradient(160deg, oklch(0.84 0.04 70) 0%, oklch(0.55 0.10 28) 100%)
-            ` }}></image-slot>
-        <div style={{
-          position: 'absolute', top: 22, left: 22, pointerEvents: 'none',
-          fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: 'rgba(251,246,235,0.85)',
-        }}>{t('Cycle portrait', 'Döngü portresi') + ' · ' + phaseWord}</div>
-        <div style={{
-          position: 'absolute', bottom: 22, left: 22, right: 22, pointerEvents: 'none',
-          color: 'oklch(0.96 0.02 70)',
-        }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', opacity: 0.7 }}>
-            {t('DAY', 'GÜN')} {day} · {t('CYCLE', 'DÖNGÜ')} {(lunara && lunara.regimen && lunara.regimen.cycleLength) || 28}
-          </div>
-        </div>
-      </div>
+    <Card className="mb-stack" pad={0} style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: '352px 1fr', minHeight: 230 }}>
+      <HeroMonth lunara={lunara}/>
       {/* Editorial copy */}
       <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>

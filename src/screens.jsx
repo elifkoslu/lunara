@@ -60,12 +60,52 @@ const MOON_NAMES_TR = {
   'Last quarter': 'Son dördün', 'Waning crescent': 'Son hilal',
 };
 function moonName(moon) { return I18N.lang === 'tr' ? (MOON_NAMES_TR[moon.name] || moon.name) : moon.name; }
+/* Faz renkleri. Eski dört ton (kırmızı/kehribar/turuncu/adaçayı) aynı sıcak
+   aileden geliyordu: renk körlüğü simülasyonunda ovulasyon↔folliküler ΔE 2.0,
+   tam renk görüşünde bile ovulasyon↔menstrüel ΔE 5.8 — ayırt edilemiyorlardı.
+   Bunlar, doğrulanmış paletin sekiz durağı arasından her çiftin hem açık hem
+   koyu yüzeyde geçtiği iki dörtlüden biri. CVD ayrımı 6.9 (8 hedefinin altı)
+   ve sarı/pembe zeminle 3:1 kontrastın altında kaldığı için renk tek başına
+   kimlik taşımıyor: her kullanıldığı yerde yanında yazılı faz adı var. */
 const PHASE_TINT = {
-  menstrual: 'oklch(0.70 0.12 24)',
-  follicular: 'oklch(0.74 0.08 80)',
-  ovulation: 'oklch(0.72 0.11 50)',
-  luteal: 'oklch(0.70 0.06 150)',
+  menstrual: '#e87ba4',
+  follicular: '#008300',
+  ovulation: '#eda100',
+  luteal: '#2a78d6',
 };
+
+/* ── Kanama ────────────────────────────────────────────────────
+   Beklenen kanama döngü matematiğinden gelir; gerçekleşen kanama
+   kullanıcının işaretlediği günlerden (periodDays). Loğusa ve perimenopoz
+   belirti setlerinde kanama zaten bir belirti — evre değişince o kayıtlar
+   görünmez olmasın diye onlar da sayılıyor. */
+const BLEED_SYMPTOM_KEYS = ['bleeding', 'cycle'];
+// 0 = kanama yok, 1..3 = yoğunluk (yoğunluksuz işaretlenen gün 2 sayılır)
+function bledOn(lunara, dateKey) {
+  if (!lunara) return 0;
+  const marked = (lunara.periodDays || {})[dateKey];
+  if (marked) return typeof marked === 'number' ? marked : 2;
+  const sym = (lunara.symptomLog || {})[dateKey];
+  if (sym) for (const k of BLEED_SYMPTOM_KEYS) if (sym[k] > 0) return sym[k];
+  return 0;
+}
+// Döngü gününe göre kanama beklenen gün mü
+function bleedExpected(cycleDay, cycleLength) {
+  return cycleDay <= phaseBounds(cycleLength).bleedEnd;
+}
+
+/* Bir fazın gün aralığı, örn. "6.–12. günler".
+   Beslenme ve Hareket ekranlarında bu aralıklar sabit metindi ("19.–32. günler")
+   ve örnek hastanın 32 günlük döngüsünden kalmıştı — 28 günlük bir kullanıcıda
+   döngü takvimiyle çelişiyordu. Artık phaseBounds ile aynı kaynaktan geliyor. */
+function phaseRange(key, cycleLength) {
+  const b = phaseBounds(cycleLength);
+  const [from, to] = key === 'menstrual' ? [1, b.bleedEnd]
+    : key === 'follicular' ? [b.bleedEnd + 1, b.follEnd]
+    : key === 'ovulation' ? [b.follEnd + 1, b.ovEnd]
+    : [b.ovEnd + 1, b.L];
+  return I18N.lang === 'tr' ? `${from}.–${to}. günler` : `Days ${from}–${to}`;
+}
 
 // Moon phase (synodic) for a given date
 function moonPhase(date) {
@@ -925,7 +965,7 @@ function CycleScreen({ lunara, api }) {
           </p>
         </Card>
       </div>
-      <CycleMonth lunara={lunara} length={L}/>
+      <CycleMonth lunara={lunara} api={api} length={L}/>
     </div>
   );
 }
@@ -983,7 +1023,9 @@ function AdherenceMonth({ lunara, adh30 }) {
 }
 
 
-function CycleMonth({ lunara, length }) {
+const BLEED_OUTLINE = '#b04a72';   // menstrüel pembenin koyusu; hem açık zeminde
+                                   // hem dolu pembe hücrede görünür kalır
+function CycleMonth({ lunara, api, length }) {
   const { go, isCurrentMonth, monthLabel, weekdays, cells } = useMonthView();
   useLang();
   const L = length;
@@ -994,7 +1036,8 @@ function CycleMonth({ lunara, length }) {
         <div>
           <div className="eyebrow">{t('Cycle calendar', 'Döngü takvimi')}</div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
-            {t('Phase, cycle day and moon for every day', 'Her gün için faz, döngü günü ve ay')}
+            {t('Tap a day to log bleeding — phase, cycle day and moon are shown for each',
+               'Kanamayı işaretlemek için güne dokun — her günün fazı, döngü günü ve ayı görünür')}
           </div>
         </div>
         <MonthNav label={monthLabel} onPrev={() => go(-1)} onNext={() => go(1)} atCurrent={isCurrentMonth}/>
@@ -1007,27 +1050,42 @@ function CycleMonth({ lunara, length }) {
           const cd = cycleDayFrom(lunara.periodStart, c.date, L);
           const ph = phaseOf(cd, L);
           const mo = moonPhase(c.date);
+          const expected = bleedExpected(cd, L);
+          const bled = bledOn(lunara, c.key) > 0;
+          const durum = [phaseLabel(ph)];
+          if (expected) durum.push(t('bleeding expected', 'kanama bekleniyor'));
+          if (bled) durum.push(t('bleeding logged', 'kanama kaydedildi'));
+          // Gelecek gün işaretlenemez: olmamış bir kanama döngü çapasını kaydırırdı
+          const clickable = !!api && !c.isFuture;
           return (
-            <div key={c.key} title={`${c.d} · ${phaseLabel(ph)} · ${t('day', 'gün')} ${cd}`}
+            <button key={c.key} disabled={!clickable}
+              onClick={clickable ? () => api.togglePeriodDay(c.key) : undefined}
+              aria-pressed={clickable ? bled : undefined}
+              aria-label={`${c.d} · ${t('day', 'gün')} ${cd} · ${durum.join(' · ')}`}
+              title={`${c.d} · ${t('day', 'gün')} ${cd} · ${durum.join(' · ')}`}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                padding: '5px 2px 6px', borderRadius: 10, minHeight: 60,
-                background: c.isToday ? 'var(--ink)' : (c.isFuture ? 'transparent' : 'var(--ivory)'),
-                boxShadow: c.isToday ? 'none' : 'inset 0 0 0 1px var(--line-soft)',
+                padding: '5px 2px 6px', borderRadius: 10, minHeight: 60, width: '100%',
+                background: bled ? PHASE_TINT.menstrual : (c.isToday ? 'var(--ink)' : (c.isFuture ? 'transparent' : 'var(--ivory)')),
+                boxShadow: (c.isToday && !bled) ? 'none' : (c.isToday ? '0 0 0 2px var(--ink)' : 'inset 0 0 0 1px var(--line-soft)'),
+                outline: expected ? `1.5px dashed ${BLEED_OUTLINE}` : 'none',
+                outlineOffset: -3,
                 opacity: c.isFuture ? 0.45 : 1,
+                cursor: clickable ? 'pointer' : 'default',
               }}>
               <span style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.1,
-                color: c.isToday ? 'var(--ivory)' : 'var(--ink)' }}>{c.d}</span>
+                color: (c.isToday && !bled) ? 'var(--ivory)' : 'var(--ink)' }}>{c.d}</span>
               <MoonDisc size={16} frac={mo.frac}/>
               <span style={{ width: 16, height: 4, borderRadius: 3, background: PHASE_TINT[ph.key] }}/>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5,
-                color: c.isToday ? 'rgba(251,246,235,0.75)' : 'var(--muted-2)' }}>{cd}</span>
-            </div>
+                color: (c.isToday && !bled) ? 'rgba(251,246,235,0.75)' : 'var(--muted-2)' }}>{cd}</span>
+            </button>
           );
         })}
       </div>
 
-      {/* faz açıklaması — renk tek başına kimlik taşımasın */}
+      {/* Faz renklerinin CVD ayrımı ΔE 8'in altında; açıklama isteğe bağlı
+          değil, kimliğin ikinci taşıyıcısı. Kanama işaretleri de burada. */}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--line-soft)' }}>
         {['menstrual', 'follicular', 'ovulation', 'luteal'].map(k => (
           <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }}>
@@ -1035,6 +1093,14 @@ function CycleMonth({ lunara, length }) {
             {phaseLabel(phaseOf(k === 'menstrual' ? 1 : k === 'follicular' ? 7 : k === 'ovulation' ? (L - 14) : (L - 4), L))}
           </span>
         ))}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }}>
+          <span style={{ width: 13, height: 13, borderRadius: 4, border: `1.5px dashed ${BLEED_OUTLINE}` }}/>
+          {t('bleeding expected', 'beklenen kanama')}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }}>
+          <span style={{ width: 13, height: 13, borderRadius: 4, background: PHASE_TINT.menstrual }}/>
+          {t('bleeding logged', 'gerçekleşen kanama')}
+        </span>
       </div>
     </Card>
   );
@@ -1265,4 +1331,4 @@ function careQuickPrompts(stage, phaseKey) {
   return sets[stage] || sets.cycle;
 }
 
-export { CYCLE_LEN, cycleLenOf, phaseBounds, daysBetween, cycleDayFrom, phaseOf, phaseLabel, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };
+export { CYCLE_LEN, cycleLenOf, phaseBounds, daysBetween, cycleDayFrom, phaseOf, phaseLabel, phaseRange, bledOn, bleedExpected, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };
