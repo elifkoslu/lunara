@@ -1,6 +1,7 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
 import { Btn, cycleDayFrom, cycleLenOf, wrap } from './screens';
+import { useMonthView, MonthNav, WeekdayRow } from './month-grid';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
 import { StageBadge } from './stages';
 
@@ -88,9 +89,9 @@ function TtcHome({ lunara, api, onNav }) {
         </div>
       </Card>
 
-      {/* Fertile window strip */}
+      {/* Fertile window — monthly */}
       <Card>
-        <div className="eyebrow" style={{ marginBottom: 16 }}>{t('Fertile window · this week', 'Doğurgan pencere · bu hafta')}</div>
+        <div className="eyebrow" style={{ marginBottom: 16 }}>{t('Fertile window', 'Doğurgan pencere')}</div>
         <FertileStrip day={day} lunara={lunara} api={api}/>
         <div style={{ display: 'flex', gap: 18, marginTop: 16, flexWrap: 'wrap' }}>
           <Legend color="var(--accent-soft)" label={t('Fertile', 'Doğurgan')}/>
@@ -245,38 +246,51 @@ function FertilityRing({ day, size = 178, cycle }) {
 }
 
 // 7-day fertile strip with intimacy toggles
+/* ── Ayın doğurgan pencere takvimi ─────────────────────────────────
+   Önce üç gün öncesinden üç gün sonrasına yedi günlük bir şeritti; pencerenin
+   ayın neresine düştüğünü göstermiyordu. Aylık görünümde zirve günleri koyu,
+   doğurgan günler açık tonda; her güne dokunarak ilişki işaretlenebiliyor.
+   Doğurganlık yalnız renkle anlatılmıyor — ovülasyon günü halkalı, işaretli
+   günde kalp simgesi var. */
 function FertileStrip({ day, lunara, api }) {
-  const cells = Array.from({ length: 7 }).map((_, i) => {
-    const date = new Date(TODAY_DATE); date.setDate(TODAY_DATE.getDate() - 3 + i);
-    const cd = cycleDayFrom(lunara.periodStart, date, cycleLenOf(lunara));
-    const key = isoKey(date);
-    const st = ttcStatus(cd, cycleLenOf(lunara));
-    return { date, cd, key, st, isToday: i === 3, intimacy: !!lunara.ttc.intimacy[key] };
-  });
+  const { go, isCurrentMonth, monthLabel, weekdays, cells } = useMonthView();
+  const L = cycleLenOf(lunara);
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10 }}>
-      {cells.map((c, i) => {
-        const bg = c.st.peak ? 'var(--accent)' : c.st.fertile ? 'var(--accent-soft)' : 'var(--ivory)';
-        const fg = c.st.peak ? 'var(--ivory)' : 'var(--ink)';
-        return (
-          <button key={i} onClick={() => api.toggleIntimacy(c.key)} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-            padding: '14px 6px', borderRadius: 14, cursor: 'pointer',
-            background: bg, color: fg,
-            boxShadow: c.isToday ? '0 0 0 2px var(--ink)' : (c.st.fertile || c.st.peak ? 'none' : 'inset 0 0 0 1px var(--line-soft)'),
-            transition: 'all 140ms ease',
-          }}>
-            <span style={{ fontSize: 10, fontFamily: 'var(--mono)', opacity: 0.7 }}>
-              {c.date.toLocaleDateString(I18N.lang === 'tr' ? 'tr' : 'en', { weekday: 'short' }).toUpperCase()}
-            </span>
-            <span style={{ fontFamily: 'var(--serif)', fontSize: 20 }}>{c.date.getDate()}</span>
-            {c.st.ovulation
-              ? <span style={{ width: 12, height: 12, borderRadius: '50%', border: `2px solid ${fg}` }}/>
-              : <span style={{ width: 12, height: 12 }}/>}
-            <Icon d={ICONS.heart} size={13} stroke={c.intimacy ? fg : 'transparent'} fill={c.intimacy ? fg : 'none'}/>
-          </button>
-        );
-      })}
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <MonthNav label={monthLabel} onPrev={() => go(-1)} onNext={() => go(1)} atCurrent={isCurrentMonth}/>
+      </div>
+      <WeekdayRow weekdays={weekdays}/>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {cells.map((c, i) => {
+          if (!c) return <div key={'b' + i}/>;
+          const cd = cycleDayFrom(lunara.periodStart, c.date, L);
+          const st = ttcStatus(cd, L);
+          const iliski = !!(lunara.ttc && lunara.ttc.intimacy && lunara.ttc.intimacy[c.key]);
+          const bg = st.peak ? 'var(--accent)' : st.fertile ? 'var(--accent-soft)' : 'var(--ivory)';
+          const fg = st.peak ? 'var(--ivory)' : 'var(--ink)';
+          return (
+            <button key={c.key} onClick={() => api.toggleIntimacy(c.key)}
+              aria-label={`${c.d} · ${st.peak ? t('peak', 'zirve') : st.fertile ? t('fertile', 'doğurgan') : t('day', 'gün')} ${cd}`}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                padding: '5px 2px 6px', borderRadius: 10, cursor: 'pointer', minHeight: 56,
+                background: bg, color: fg,
+                boxShadow: c.isToday ? 'inset 0 0 0 2px var(--ink)' : (st.fertile || st.peak ? 'none' : 'inset 0 0 0 1px var(--line-soft)'),
+                opacity: c.isFuture ? 0.5 : 1,
+                transition: 'all 140ms ease',
+              }}>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.1 }}>{c.d}</span>
+              {st.ovulation
+                ? <span style={{ width: 10, height: 10, borderRadius: '50%', border: `2px solid ${fg}` }}/>
+                : <span style={{ width: 10, height: 10 }}/>}
+              <Icon d={ICONS.heart} size={11} stroke={iliski ? fg : 'transparent'} fill={iliski ? fg : 'none'}/>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, opacity: 0.65 }}>{cd}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { ImportLabModal } from './lab-import';
 import { RegimenEditor } from './regimen';
 import { libraryFor, symptomsFor } from './screen-content';
 import { rangeForLab } from './physiology';
+import { useMonthView, MonthNav, WeekdayRow } from './month-grid';
 import { ReferenceCard } from './reference-card';
 
 /* Referans eğrisi ovülatuar bir döngüyü anlatır; döngüsü olmayan evrelerde
@@ -211,15 +212,6 @@ function DosesScreen({ lunara, api, logDate, setLogDate }) {
 
   // Real last-7-days adherence from doseLog + regimen schedule
   const locale = I18N.lang === 'tr' ? 'tr' : 'en';
-  const days7 = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(TODAY_DATE); d.setDate(d.getDate() - i);
-    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const scheduled = lunara.regimen ? activeMeds(lunara.regimen, regimenDay(lunara.regimen, d)).length : 0;
-    const takenN = lunara.doseLog[key] ? Object.keys(lunara.doseLog[key]).length : 0;
-    days7.push({ label: d.toLocaleDateString(locale, { weekday: 'short' }), taken: takenN, scheduled, isToday: i === 0 });
-  }
-  const wkMax = Math.max(1, ...days7.map(x => Math.max(x.taken, x.scheduled)));
   // 30-day adherence: taken / scheduled (— when nothing was scheduled)
   let sch30 = 0, tak30 = 0;
   for (let i = 29; i >= 0; i--) {
@@ -321,26 +313,7 @@ function DosesScreen({ lunara, api, logDate, setLogDate }) {
         </Card>
         {!noRegimen && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <Card>
-            <div className="eyebrow" style={{ marginBottom: 14 }}>{t('This week', 'Bu hafta')}</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 90 }}>
-              {days7.map((x, i) => (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: 64 }}
-                    title={`${x.taken}/${x.scheduled}`}>
-                    <div style={{ width: '100%', height: `${(x.taken / wkMax) * 100}%`, minHeight: x.scheduled > 0 ? 3 : 0,
-                      background: x.isToday ? 'var(--accent)' : 'var(--accent-soft)',
-                      borderRadius: 6, transition: 'height 200ms ease' }}/>
-                  </div>
-                  <span style={{ fontSize: 10.5, color: x.isToday ? 'var(--ink)' : 'var(--muted)', fontWeight: x.isToday ? 700 : 400, fontFamily: 'var(--mono)' }}>{x.label}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line-soft)', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('30-day adherence', '30 günlük uyum')}</span>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 16 }}>{adh30 == null ? '—' : t(adh30 + '%', '%' + adh30)}</span>
-            </div>
-          </Card>
+          <AdherenceMonth lunara={lunara} adh30={adh30}/>
         </div>
         )}
       </div>
@@ -901,11 +874,6 @@ function CycleScreen({ lunara, api }) {
     setTimeout(() => setJustStarted(false), 3000);
   };
   // build 7-day strip around today
-  const strip = Array.from({ length: 7 }).map((_, i) => {
-    const date = new Date(today); date.setDate(today.getDate() - 3 + i);
-    const cd = cycleDayFrom(lunara.periodStart, date, L);
-    return { date, cd, phase: phaseOf(cd, L), moon: moonPhase(date), isToday: i === 3 };
-  });
   return (
     <div style={wrap}>
       <ScreenHead eyebrow={t(`CYCLE DAY ${day} · ${L}-DAY`, `DÖNGÜ GÜNÜ ${day} · ${L} GÜNLÜK`)} title={t('Cycle & moon', 'Döngü & ay')}
@@ -957,29 +925,118 @@ function CycleScreen({ lunara, api }) {
           </p>
         </Card>
       </div>
-      {/* 7-day strip */}
-      <Card>
-        <div className="eyebrow" style={{ marginBottom: 16 }}>{t('This week', 'Bu hafta')}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10 }}>
-          {strip.map((d, i) => (
-            <div key={i} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-              padding: '14px 6px', borderRadius: 14,
-              background: d.isToday ? 'var(--ink)' : 'var(--ivory)',
-              boxShadow: d.isToday ? 'none' : 'inset 0 0 0 1px var(--line-soft)',
-            }}>
-              <span style={{ fontSize: 10.5, fontFamily: 'var(--mono)', color: d.isToday ? 'rgba(251,246,235,0.7)' : 'var(--muted)' }}>
-                {d.date.toLocaleDateString(I18N.lang === 'tr' ? 'tr' : 'en', { weekday: 'short' }).toUpperCase()}
-              </span>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 20, color: d.isToday ? 'var(--ivory)' : 'var(--ink)' }}>{d.date.getDate()}</span>
-              <MoonDisc size={26} frac={d.moon.frac}/>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: PHASE_TINT[d.phase.key] }}/>
-              <span style={{ fontSize: 9.5, color: d.isToday ? 'rgba(251,246,235,0.7)' : 'var(--muted-2)', fontFamily: 'var(--mono)' }}>{t('D','G')}{d.cd}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <CycleMonth lunara={lunara} length={L}/>
     </div>
+  );
+}
+
+/* ── Ayın uyum takvimi ──────────────────────────────────────────────
+   Önce son yedi günün çubuk grafiğiydi. Aylık olması, "bu ay hangi günlerde
+   aksadım" sorusunu tek bakışta cevaplıyor. Her gün alınan/planlanan oranına
+   göre doluyor; planlı doz olmayan gün boş kalır, atlanan günden ayrılsın diye
+   ince bir çizgiyle işaretlenir. */
+function AdherenceMonth({ lunara, adh30 }) {
+  const { go, isCurrentMonth, monthLabel, weekdays, cells } = useMonthView();
+  useLang();
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
+        <div className="eyebrow">{t('Adherence calendar', 'Uyum takvimi')}</div>
+        <MonthNav label={monthLabel} onPrev={() => go(-1)} onNext={() => go(1)} atCurrent={isCurrentMonth}/>
+      </div>
+
+      <WeekdayRow weekdays={weekdays}/>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {cells.map((c, i) => {
+          if (!c) return <div key={'b' + i}/>;
+          const planli = lunara.regimen ? activeMeds(lunara.regimen, regimenDay(lunara.regimen, c.date)).length : 0;
+          const alinan = lunara.doseLog[c.key] ? Object.keys(lunara.doseLog[c.key]).length : 0;
+          const oran = planli > 0 ? Math.min(1, alinan / planli) : 0;
+          return (
+            <div key={c.key} title={planli > 0 ? `${c.d}: ${alinan}/${planli}` : String(c.d)}
+              style={{
+                position: 'relative', overflow: 'hidden',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: 34, borderRadius: 9,
+                background: planli > 0 ? 'var(--bone)' : 'transparent',
+                boxShadow: c.isToday ? 'inset 0 0 0 2px var(--ink)' : 'inset 0 0 0 1px var(--line-soft)',
+                opacity: c.isFuture ? 0.4 : 1,
+              }}>
+              {planli > 0 && (
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0,
+                  height: `${oran * 100}%`, background: 'var(--accent)', opacity: 0.85 }}/>
+              )}
+              <span style={{ position: 'relative', fontFamily: 'var(--mono)', fontSize: 11,
+                color: oran > 0.5 ? 'var(--ivory)' : 'var(--ink-2)' }}>{c.d}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('30-day adherence', '30 günlük uyum')}</span>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: 16 }}>{adh30 == null ? '—' : t(adh30 + '%', '%' + adh30)}</span>
+      </div>
+    </Card>
+  );
+}
+
+
+function CycleMonth({ lunara, length }) {
+  const { go, isCurrentMonth, monthLabel, weekdays, cells } = useMonthView();
+  useLang();
+  const L = length;
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <div className="eyebrow">{t('Cycle calendar', 'Döngü takvimi')}</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
+            {t('Phase, cycle day and moon for every day', 'Her gün için faz, döngü günü ve ay')}
+          </div>
+        </div>
+        <MonthNav label={monthLabel} onPrev={() => go(-1)} onNext={() => go(1)} atCurrent={isCurrentMonth}/>
+      </div>
+
+      <WeekdayRow weekdays={weekdays}/>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {cells.map((c, i) => {
+          if (!c) return <div key={'b' + i}/>;
+          const cd = cycleDayFrom(lunara.periodStart, c.date, L);
+          const ph = phaseOf(cd, L);
+          const mo = moonPhase(c.date);
+          return (
+            <div key={c.key} title={`${c.d} · ${phaseLabel(ph)} · ${t('day', 'gün')} ${cd}`}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                padding: '5px 2px 6px', borderRadius: 10, minHeight: 60,
+                background: c.isToday ? 'var(--ink)' : (c.isFuture ? 'transparent' : 'var(--ivory)'),
+                boxShadow: c.isToday ? 'none' : 'inset 0 0 0 1px var(--line-soft)',
+                opacity: c.isFuture ? 0.45 : 1,
+              }}>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.1,
+                color: c.isToday ? 'var(--ivory)' : 'var(--ink)' }}>{c.d}</span>
+              <MoonDisc size={16} frac={mo.frac}/>
+              <span style={{ width: 16, height: 4, borderRadius: 3, background: PHASE_TINT[ph.key] }}/>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5,
+                color: c.isToday ? 'rgba(251,246,235,0.75)' : 'var(--muted-2)' }}>{cd}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* faz açıklaması — renk tek başına kimlik taşımasın */}
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--line-soft)' }}>
+        {['menstrual', 'follicular', 'ovulation', 'luteal'].map(k => (
+          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }}>
+            <span style={{ width: 14, height: 4, borderRadius: 3, background: PHASE_TINT[k] }}/>
+            {phaseLabel(phaseOf(k === 'menstrual' ? 1 : k === 'follicular' ? 7 : k === 'ovulation' ? (L - 14) : (L - 4), L))}
+          </span>
+        ))}
+      </div>
+    </Card>
   );
 }
 
