@@ -2,7 +2,7 @@ import React from 'react';
 import { t, useLang } from './i18n';
 import { TodayWorkoutCard } from './nourish';
 import { MonthNav, WeekdayRow, useMonthView } from './month-grid';
-import { MoonDisc, PHASE_TINT, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
+import { MoonDisc, PHASE_TINT, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, hasCycleAnchor, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
 import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
@@ -49,7 +49,8 @@ function MonthSummary({ lunara, hasDoses = true }) {
   const bledDays = keys.filter(k => bledOn(lunara, k) > 0).length;
 
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
-  const phaseWord = phaseLabel(phaseOf(day, cycleLenOf(lunara))).toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en');
+  const ph = phaseOf(day, cycleLenOf(lunara));
+  const phaseWord = ph ? phaseLabel(ph).toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en') : '';
 
   const tiles = [
     { value: tracked, label: t('days tracked', 'gün takip'), icon: ICONS.check },
@@ -60,11 +61,33 @@ function MonthSummary({ lunara, hasDoses = true }) {
     { value: bledDays, label: t('bleeding days', 'kanama günü'), icon: ICONS.drop },
   ];
 
+  /* Hiç kayıt yokken dört sıfır göstermek, yeni kullanıcıya verilen ilk
+     izlenim olarak caydırıcıydı. Sayaçlar ancak sayacak bir şey olunca
+     görünsün; öncesinde tek bir başlangıç adımı dursun. */
+  const hicKayitYok = tracked === 0 && doses === 0 && entries === 0 && bledDays === 0;
+  if (hicKayitYok) {
+    return (
+      <Card>
+        <div className="eyebrow" style={{ marginBottom: 10 }}>{t('Getting started', 'Başlarken')}</div>
+        <p style={{ fontFamily: 'var(--serif)', fontSize: 17, lineHeight: 1.5, color: 'var(--ink-2)', margin: 0, maxWidth: '48ch' }}>
+          {ph
+            ? t('Log how you feel today — one tap. After a few days this card starts showing your patterns.',
+                'Bugün nasıl hissettiğini kaydet — tek dokunuş. Birkaç gün sonra bu kart örüntülerini göstermeye başlar.')
+            : t('Mark the first day of your last period to set up your cycle — everything else follows from it.',
+                'Döngünü kurmak için son reglinin ilk gününü işaretle — geri kalan her şey ondan çıkıyor.')}
+        </p>
+      </Card>
+    );
+  }
+
   const narrative = tracked === 0
     ? t('No check-ins in the last 30 days — a quick daily note builds your picture.',
         'Son 30 günde kayıt yok — kısa bir günlük not resmini oluşturur.')
-    : t(`You logged ${tracked} of the last 30 days — you’re in your ${phaseWord} phase.`,
-        `Son 30 günün ${tracked}’ini kaydettin — ${phaseWord} fazındasın.`);
+    : ph
+      ? t(`You logged ${tracked} of the last 30 days — you’re in your ${phaseWord} phase.`,
+          `Son 30 günün ${tracked}’ini kaydettin — ${phaseWord} fazındasın.`)
+      : t(`You logged ${tracked} of the last 30 days.`,
+          `Son 30 günün ${tracked}’ini kaydettin.`);
 
   return (
     <Card>
@@ -128,11 +151,12 @@ function HeroMonth({ lunara }) {
   const { go, isCurrentMonth, monthLabel, weekdays, cells } = useMonthView();
   useLang();
   const L = cycleLenOf(lunara);
+  const anchored = hasCycleAnchor(lunara);
 
   return (
     <div style={{ padding: '18px 18px 16px', background: 'var(--bone)', borderRight: '1px solid var(--line-soft)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-        <div className="eyebrow">{t('Cycle month', 'Döngü ayı')}</div>
+        <div className="eyebrow">{anchored ? t('Cycle month', 'Döngü ayı') : t('This month', 'Bu ay')}</div>
         <MonthNav label={monthLabel} onPrev={() => go(-1)} onNext={() => go(1)} atCurrent={isCurrentMonth}/>
       </div>
 
@@ -140,22 +164,23 @@ function HeroMonth({ lunara }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
         {cells.map((c, i) => {
           if (!c) return <div key={'b' + i}/>;
-          const cd = lunara ? cycleDayFrom(lunara.periodStart, c.date, L) : 1;
+          const cd = cycleDayFrom(lunara && lunara.periodStart, c.date, L);
           const ph = phaseOf(cd, L);
-          const bekleniyor = bleedExpected(cd, L);
+          // Çapa yokken faz ve beklenen kanama hesaplanamaz; takvim boş kalır
+          const bekleniyor = cd != null && bleedExpected(cd, L);
           const oldu = bledOn(lunara, c.key) > 0;
-          const durum = [phaseLabel(ph)];
+          const durum = ph ? [phaseLabel(ph)] : [];
           if (bekleniyor) durum.push(t('bleeding expected', 'kanama bekleniyor'));
           if (oldu) durum.push(t('bleeding logged', 'kanama kaydedildi'));
           return (
-            <div key={c.key} title={`${c.d} · ${t('day', 'gün')} ${cd} · ${durum.join(' · ')}`}
+            <div key={c.key} title={[c.d, cd != null && `${t('day', 'gün')} ${cd}`].filter(Boolean).concat(durum).join(' · ')}
               style={{
                 position: 'relative', height: 34, borderRadius: 8,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 // '3d' ≈ %24 opaklık: fazın hangi haftalara düştüğü hücre
                 // zemininden okunacak kadar belirgin, gün numarasını
                 // bastırmayacak kadar hafif
-                background: oldu ? PHASE_TINT.menstrual : PHASE_TINT[ph.key] + '3d',
+                background: oldu ? PHASE_TINT.menstrual : (ph ? PHASE_TINT[ph.key] + '3d' : 'var(--ivory)'),
                 outline: bekleniyor ? `1.5px dashed ${BEKLENEN_CIZGI}` : 'none',
                 outlineOffset: -2,
                 boxShadow: c.isToday ? '0 0 0 2px var(--ink)' : 'none',
@@ -168,7 +193,7 @@ function HeroMonth({ lunara }) {
               {/* faz şeridi — rengin taşıdığı kimliğin tam doygun hâli */}
               <span style={{
                 position: 'absolute', left: 6, right: 6, bottom: 3, height: 3,
-                borderRadius: 2, background: PHASE_TINT[ph.key],
+                borderRadius: 2, background: ph ? PHASE_TINT[ph.key] : 'transparent',
               }}/>
             </div>
           );
@@ -178,7 +203,7 @@ function HeroMonth({ lunara }) {
       {/* Renk körlüğünde faz çiftleri ΔE 8'in altında ayrışıyor; bu yüzden
           açıklama isteğe bağlı değil, kimliğin ikinci taşıyıcısı. */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
-        {['menstrual', 'follicular', 'ovulation', 'luteal'].map(k => (
+        {anchored && ['menstrual', 'follicular', 'ovulation', 'luteal'].map(k => (
           <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--muted)' }}>
             <span style={{ width: 12, height: 4, borderRadius: 2, background: PHASE_TINT[k] }}/>
             {phaseLabel(phaseOf(k === 'menstrual' ? 1 : k === 'follicular' ? 7 : k === 'ovulation' ? (L - 14) : (L - 4), L))}
@@ -186,10 +211,12 @@ function HeroMonth({ lunara }) {
         ))}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', marginTop: 6 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--muted)' }}>
-          <span style={{ width: 12, height: 12, borderRadius: 4, border: `1.5px dashed ${BEKLENEN_CIZGI}` }}/>
-          {t('bleeding expected', 'beklenen kanama')}
-        </span>
+        {anchored && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--muted)' }}>
+            <span style={{ width: 12, height: 12, borderRadius: 4, border: `1.5px dashed ${BEKLENEN_CIZGI}` }}/>
+            {t('bleeding expected', 'beklenen kanama')}
+          </span>
+        )}
         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--muted)' }}>
           <span style={{ width: 12, height: 12, borderRadius: 4, background: PHASE_TINT.menstrual }}/>
           {t('bleeding logged', 'gerçekleşen kanama')}
@@ -202,7 +229,7 @@ function HeroMonth({ lunara }) {
 function EdHero({ lunara, hasDoses = true, onNav }) {
   const lang = useLang();
   const today = TODAY_DATE;
-  const day = lunara ? cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara)) : 1;
+  const day = cycleDayFrom(lunara && lunara.periodStart, today, cycleLenOf(lunara));
   const ph = phaseOf(day, cycleLenOf(lunara));
   // Real regimen: meds active today, not yet taken
   const { meds } = lunara ? todaysDoses(lunara) : { meds: [] };
@@ -216,7 +243,12 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
   const doseLine = remaining === 0
     ? t('All doses done for today.', 'Bugün tüm dozlar tamam.')
     : t(`${remaining} dose${remaining > 1 ? 's' : ''} left today.`, `Bugün ${remaining} doz kaldı.`);
-  const headline = showDoses ? t(
+  /* Faz iddiası yalnızca kullanıcı son reglini işaretlemişse kurulur.
+     Eskiden çapa yokken de "döngünün 1. günündesin" yazıyordu — uydurma. */
+  const headline = !ph ? t(
+    <>Let’s set up your cycle — mark the first day of your last period.</>,
+    <>Döngünü kuralım — son reglinin ilk gününü işaretle.</>
+  ) : showDoses ? t(
     <>{doseLine} You’re in your <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{phaseWord}</em> phase.</>,
     <>{doseLine} <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{phaseWord}</em> fazındasın.</>
   ) : t(
@@ -224,8 +256,11 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
     <>Döngünün {day}. günündesin — <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{phaseWord}</em> fazı.</>
   );
   // Daily tip: cycle phase + moon clause
-  const tip = t(HERO_PHASE_TIP[ph.key].en, HERO_PHASE_TIP[ph.key].tr)
-    + ' ' + t(HERO_MOON_CLAUSE[moonIdx].en, HERO_MOON_CLAUSE[moonIdx].tr);
+  const tip = !ph
+    ? t('Once it is marked, this screen shows your phase, what to expect, and when bleeding is due.',
+        'İşaretlediğin an bu ekran fazını, ne bekleyeceğini ve kanamanın ne zaman beklendiğini gösterir.')
+    : t(HERO_PHASE_TIP[ph.key].en, HERO_PHASE_TIP[ph.key].tr)
+      + ' ' + t(HERO_MOON_CLAUSE[moonIdx].en, HERO_MOON_CLAUSE[moonIdx].tr);
 
   return (
     <Card className="mb-stack" pad={0} style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: '352px 1fr', minHeight: 230 }}>
@@ -233,7 +268,9 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
       {/* Editorial copy */}
       <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {phaseWord}</div>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>
+            {ph ? <>{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {phaseWord}</> : t('GETTING STARTED', 'BAŞLARKEN')}
+          </div>
           <h2 className="serif-display" style={{ fontSize: 28, lineHeight: 1.15, margin: 0, color: 'var(--ink)', textWrap: 'pretty' }}>
             {headline}
           </h2>
@@ -242,12 +279,20 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 12, marginTop: 20, alignItems: 'center' }}>
-          <PillButton primary onClick={() => onNav && onNav('symptoms')}>
-            <Icon d={ICONS.plus} size={14} sw={2}/> {t('Log how you feel', 'Nasıl hissettiğini kaydet')}
-          </PillButton>
-          <PillButton onClick={() => onNav && onNav(hasDoses ? 'labs' : 'cycle')}>
-            {t('View full report', 'Tam raporu gör')} <Icon d={ICONS.arrow} size={13}/>
-          </PillButton>
+          {!ph ? (
+            <PillButton primary onClick={() => onNav && onNav('cycle')}>
+              <Icon d={ICONS.drop} size={14} sw={2}/> {t('Mark my last period', 'Son reglimi işaretle')}
+            </PillButton>
+          ) : (
+            <>
+              <PillButton primary onClick={() => onNav && onNav('symptoms')}>
+                <Icon d={ICONS.plus} size={14} sw={2}/> {t('Log how you feel', 'Nasıl hissettiğini kaydet')}
+              </PillButton>
+              <PillButton onClick={() => onNav && onNav(hasDoses ? 'labs' : 'cycle')}>
+                {t('View full report', 'Tam raporu gör')} <Icon d={ICONS.arrow} size={13}/>
+              </PillButton>
+            </>
+          )}
         </div>
       </div>
     </Card>

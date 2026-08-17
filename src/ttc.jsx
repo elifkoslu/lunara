@@ -28,8 +28,14 @@ function ttcCycle(cycleLength) {
   return { L, ov, fertileStart: Math.max(1, ov - 5), fertileEnd: ov };
 }
 
+/* Döngü günü bilinmiyorsa doğurgan pencere de bilinmiyor. Korumasız
+   bırakılırsa toOv = ov - null = ov çıkıyor ve uygulama "ovülasyon 14 gün
+   içinde bekleniyor" diye uydurma bir tahmin veriyordu. */
 function ttcStatus(day, cycleLength) {
   const c = ttcCycle(cycleLength);
+  if (day == null) {
+    return { day: null, unknown: true, toOv: null, fertile: false, peak: false, ovulation: false, ...c };
+  }
   const toOv = c.ov - day;
   const fertile = day >= c.fertileStart && day <= c.fertileEnd;
   const peak = day >= c.ov - 1 && day <= c.ov; // en doğurgan 2 gün
@@ -47,10 +53,14 @@ function TtcHome({ lunara, api, onNav }) {
   const lhToday = lunara.ttc.lh[TODAY_KEY];
   const bbtToday = lunara.ttc.bbt[TODAY_KEY];
 
-  const headEn = st.ovulation ? 'Ovulation day' : st.peak ? 'Your most fertile days' : st.fertile ? 'Your fertile window is open' : st.toOv > 0 ? 'Fertile window approaching' : 'After ovulation — the two-week wait';
-  const headTr = st.ovulation ? 'Ovülasyon günü' : st.peak ? 'En doğurgan günlerindesin' : st.fertile ? 'Doğurgan pencere açık' : st.toOv > 0 ? 'Doğurgan pencere yaklaşıyor' : 'Ovülasyon sonrası — iki haftalık bekleyiş';
-  const subEn = st.toOv > 0 ? `Ovulation expected in ${st.toOv} day${st.toOv>1?'s':''}. Timing now gives the best chance.` : st.ovulation ? 'An egg is likely released today.' : 'A test makes sense from about day 28.';
-  const subTr = st.toOv > 0 ? `Ovülasyon ${st.toOv} gün içinde bekleniyor. Şimdi zamanlamak en iyi şansı verir.` : st.ovulation ? 'Bugün bir yumurta serbest kalmış olabilir.' : 'Yaklaşık 28. günden itibaren test mantıklı.';
+  const headEn = st.unknown ? 'Set up your cycle first'
+    : st.ovulation ? 'Ovulation day' : st.peak ? 'Your most fertile days' : st.fertile ? 'Your fertile window is open' : st.toOv > 0 ? 'Fertile window approaching' : 'After ovulation — the two-week wait';
+  const headTr = st.unknown ? 'Önce döngünü kuralım'
+    : st.ovulation ? 'Ovülasyon günü' : st.peak ? 'En doğurgan günlerindesin' : st.fertile ? 'Doğurgan pencere açık' : st.toOv > 0 ? 'Doğurgan pencere yaklaşıyor' : 'Ovülasyon sonrası — iki haftalık bekleyiş';
+  const subEn = st.unknown ? 'Mark the first day of your last period — the fertile window is calculated from it.'
+    : st.toOv > 0 ? `Ovulation expected in ${st.toOv} day${st.toOv>1?'s':''}. Timing now gives the best chance.` : st.ovulation ? 'An egg is likely released today.' : 'A test makes sense from about day 28.';
+  const subTr = st.unknown ? 'Son reglinin ilk gününü işaretle — doğurgan pencere ondan hesaplanıyor.'
+    : st.toOv > 0 ? `Ovülasyon ${st.toOv} gün içinde bekleniyor. Şimdi zamanlamak en iyi şansı verir.` : st.ovulation ? 'Bugün bir yumurta serbest kalmış olabilir.' : 'Yaklaşık 28. günden itibaren test mantıklı.';
 
   return (
     <div style={{ padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 22 }}>
@@ -67,7 +77,11 @@ function TtcHome({ lunara, api, onNav }) {
           <div style={{ padding: '30px 34px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <StageBadge stage="ttc"/>
-              <span className="eyebrow">{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {st.L}</span>
+              <span className="eyebrow">
+                {day == null
+                  ? t('CYCLE NOT SET YET', 'DÖNGÜ HENÜZ BELİRLENMEDİ')
+                  : <>{t('CYCLE DAY', 'DÖNGÜ GÜNÜ')} {day} · {st.L}</>}
+              </span>
             </div>
             <h2 className="serif-display" style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 32, lineHeight: 1.12, margin: '0 0 12px', letterSpacing: '-0.02em' }}>
               {t(headEn, headTr)}
@@ -81,9 +95,13 @@ function TtcHome({ lunara, api, onNav }) {
                   fill={lunara.ttc.intimacy[TODAY_KEY] ? 'var(--ivory)' : 'none'}/>
                 {lunara.ttc.intimacy[TODAY_KEY] ? t('Logged today', 'Bugün işaretli') : t('Log intimacy', 'İlişkiyi işaretle')}
               </Btn>
-              <span style={{ fontSize: 12.5, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
-                {t('PEAK', 'ZİRVE')} · {t('day', 'gün')} {st.ov - 1}–{st.ov}
-              </span>
+              {/* Zirve günleri döngü çapasından türüyor; çapa yokken bu satır
+                  hesaplanmış bir tahmin gibi görünüp yanıltıyordu. */}
+              {!st.unknown && (
+                <span style={{ fontSize: 12.5, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+                  {t('PEAK', 'ZİRVE')} · {t('day', 'gün')} {st.ov - 1}–{st.ov}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -233,13 +251,18 @@ function FertilityRing({ day, size = 178, cycle }) {
         <g transform={`rotate(${ovAngle} ${size/2} ${size/2})`}>
           <circle cx={size/2 + r} cy={size/2} r="6" fill="none" stroke="var(--ink)" strokeWidth="2.4"/>
         </g>
-        <g transform={`rotate(${todayAngle} ${size/2} ${size/2})`}>
-          <circle cx={size/2 + r} cy={size/2} r="5" fill="var(--ink)" stroke="var(--card)" strokeWidth="2"/>
-        </g>
+        {/* Gün bilinmiyorken "buradasın" işaretçisi çizilmez */}
+        {day != null && (
+          <g transform={`rotate(${todayAngle} ${size/2} ${size/2})`}>
+            <circle cx={size/2 + r} cy={size/2} r="5" fill="var(--ink)" stroke="var(--card)" strokeWidth="2"/>
+          </g>
+        )}
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-        <span className="eyebrow" style={{ fontSize: 9.5 }}>{t('DAY', 'GÜN')}</span>
-        <span style={{ fontFamily: 'var(--serif)', fontSize: 44, lineHeight: 0.9, letterSpacing: '-0.03em' }}>{day}</span>
+        <span className="eyebrow" style={{ fontSize: 9.5 }}>{day == null ? t('CYCLE', 'DÖNGÜ') : t('DAY', 'GÜN')}</span>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: day == null ? 30 : 44, lineHeight: 0.9, letterSpacing: '-0.03em' }}>
+          {day == null ? '—' : day}
+        </span>
       </div>
     </div>
   );
@@ -272,7 +295,8 @@ function FertileStrip({ day, lunara, api }) {
           const fg = st.peak ? 'var(--ivory)' : 'var(--ink)';
           return (
             <button key={c.key} onClick={() => api.toggleIntimacy(c.key)}
-              aria-label={`${c.d} · ${st.peak ? t('peak', 'zirve') : st.fertile ? t('fertile', 'doğurgan') : t('day', 'gün')} ${cd}`}
+              aria-label={cd == null ? String(c.d)
+                : `${c.d} · ${st.peak ? t('peak', 'zirve') : st.fertile ? t('fertile', 'doğurgan') : t('day', 'gün')} ${cd}`}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                 padding: '5px 2px 6px', borderRadius: 10, cursor: 'pointer', minHeight: 56,

@@ -378,7 +378,10 @@ function useLunara() {
       symptomLog: saved.symptomLog || {},
       // ISO date string of last period start (defaults to today = cycle day 1
       // until the user sets it in onboarding or on the cycle screen)
-      periodStart: saved.periodStart || getTodayKey(),
+      // Çapa YOK demek "bilinmiyor" demek. Eskiden bugüne düşüyordu ve
+      // kullanıcı hiçbir şey girmemişken uygulama döngünün 1. günü olduğunu
+      // iddia ediyordu.
+      periodStart: saved.periodStart || null,
       // 'YYYY-MM-DD' -> true  (gerçekleşen kanama günleri; periodStart bunların
       // en son serisinin ilk gününden türetilir)
       periodDays: saved.periodDays || {},

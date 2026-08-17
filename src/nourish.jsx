@@ -212,9 +212,12 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
   const isPerimeno = lunara.stage === 'perimeno';
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
-  const live = phaseOf(day, cycleLenOf(lunara)).key;
+  // Çapa yoksa "şimdi buradasın" işareti konmaz; içerik yine gezilebilir olsun
+  // diye seçili faz menstrüelden başlar.
+  const livePh = phaseOf(day, cycleLenOf(lunara));
+  const live = livePh ? livePh.key : null;
   const cycleLength = cycleLenOf(lunara);
-  const [sel, setSel] = React.useState(live);
+  const [sel, setSel] = React.useState(live || 'menstrual');
   const g = PHASE_GUIDE[sel];
   const tint = PHASE_TINT[sel];
   const [openPlan, setOpenPlan] = React.useState(0);
@@ -248,136 +251,141 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
         </>
       )}
 
-      {/* Phase selector */}
-      <div className="mb-phasesel" style={{ display: 'flex', gap: 10 }}>
-        {Object.entries(PHASE_GUIDE).map(([k, p]) => {
-          const on = k === sel;
-          const isLive = k === live;
-          return (
-            <button key={k} onClick={() => setSel(k)}
-              style={{
-                flex: 1, textAlign: 'left', cursor: 'pointer',
-                padding: '14px 16px', borderRadius: 14,
-                background: on ? 'var(--card)' : 'var(--bone)',
-                boxShadow: on ? 'var(--shadow-soft)' : 'none',
-                border: `1px solid ${on ? 'var(--line)' : 'transparent'}`,
-                borderTop: `3px solid ${on ? PHASE_TINT[k] : 'transparent'}`,
-                transition: 'all 160ms ease',
-              }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: PHASE_TINT[k] }}/>
-                <span style={{ fontSize: 13.5, fontWeight: on ? 700 : 500, color: on ? 'var(--ink)' : 'var(--ink-2)' }}>{tx(p.label)}</span>
-                {isLive && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.08em', color: 'var(--accent)', marginLeft: 'auto' }}>● {t('NOW','ŞİMDİ')}</span>}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{phaseRange(k, cycleLength)} · {tx(p.energy)} {t('energy','enerji')}</div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Phase intro band */}
-      <Card pad={0} style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: 'auto 1fr' }}>
-        <div style={{ width: 8, background: tint }}/>
-        <div style={{ padding: '22px 28px' }}>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>{tx(g.label)} · {phaseRange(sel, cycleLength)}</div>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.4, margin: 0, color: 'var(--ink)', textWrap: 'pretty', fontStyle: 'italic' }}>
-            {tx(g.tagline)}
-          </p>
+      <ReferansBolum
+        ozet={t(`Today: ${tx(g[kind === 'move' ? 'move' : 'eat'].headline)}.`, `Bugün: ${tx(g[kind === 'move' ? 'move' : 'eat'].headline)}.`)}
+        acKapaEtiketi={t('See the full phase guide', 'Tüm faz rehberini gör')}>
+        {/* Phase selector */}
+        <div className="mb-phasesel" style={{ display: 'flex', gap: 10 }}>
+          {Object.entries(PHASE_GUIDE).map(([k, p]) => {
+            const on = k === sel;
+            const isLive = k === live;
+            return (
+              <button key={k} onClick={() => setSel(k)}
+                style={{
+                  flex: 1, textAlign: 'left', cursor: 'pointer',
+                  padding: '14px 16px', borderRadius: 14,
+                  background: on ? 'var(--card)' : 'var(--bone)',
+                  boxShadow: on ? 'var(--shadow-soft)' : 'none',
+                  border: `1px solid ${on ? 'var(--line)' : 'transparent'}`,
+                  borderTop: `3px solid ${on ? PHASE_TINT[k] : 'transparent'}`,
+                  transition: 'all 160ms ease',
+                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: PHASE_TINT[k] }}/>
+                  <span style={{ fontSize: 13.5, fontWeight: on ? 700 : 500, color: on ? 'var(--ink)' : 'var(--ink-2)' }}>{tx(p.label)}</span>
+                  {isLive && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.08em', color: 'var(--accent)', marginLeft: 'auto' }}>● {t('NOW','ŞİMDİ')}</span>}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{phaseRange(k, cycleLength)} · {tx(p.energy)} {t('energy','enerji')}</div>
+              </button>
+            );
+          })}
         </div>
-      </Card>
 
-      {/* One column — Movement or Nutrition depending on the screen */}
-      <div>
-        {kind === 'move' && (
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon d={ICONS.pulse} size={16} stroke="var(--accent)"/>
-            </span>
-            <div className="eyebrow">{t('Movement','Hareket')}</div>
+        {/* Phase intro band */}
+        <Card pad={0} style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: 'auto 1fr' }}>
+          <div style={{ width: 8, background: tint }}/>
+          <div style={{ padding: '22px 28px' }}>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>{tx(g.label)} · {phaseRange(sel, cycleLength)}</div>
+            <p style={{ fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.4, margin: 0, color: 'var(--ink)', textWrap: 'pretty', fontStyle: 'italic' }}>
+              {tx(g.tagline)}
+            </p>
           </div>
-          <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 23, margin: '6px 0 4px', letterSpacing: '-0.01em' }}>{tx(g.move.headline)}</h3>
-          {g.move.session && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
-              <Icon d={ICONS.clock} size={13} stroke="var(--muted)"/>
-              <span style={{ fontSize: 11.5, color: 'var(--muted)', fontFamily: 'var(--mono)', letterSpacing: '0.03em' }}>{tx(g.move.session)}</span>
+        </Card>
+
+        {/* One column — Movement or Nutrition depending on the screen */}
+        <div>
+          {kind === 'move' && (
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon d={ICONS.pulse} size={16} stroke="var(--accent)"/>
+              </span>
+              <div className="eyebrow">{t('Movement','Hareket')}</div>
             </div>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {g.move.items.map((it, i) => {
-              const open = openPlan === i;
-              return (
-                <div key={i} style={{ borderBottom: i < g.move.items.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
-                  <button onClick={() => setOpenPlan(open ? -1 : i)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', width: '100%', textAlign: 'left', background: 'transparent', cursor: 'pointer' }}>
-                    <span style={{ width: 40, height: 40, borderRadius: 12, background: tint + '33', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon d={MOVE_ICON[it.icon]} size={19} stroke="var(--ink)" sw={1.5}/>
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)' }}>{tx(it.name)}</div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(it.detail)}</div>
-                    </div>
-                    {it.plan && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                        <span style={{ fontSize: 10.5, color: 'var(--accent)', fontFamily: 'var(--mono)', letterSpacing: '0.03em' }}>{tx(it.plan.meta)}</span>
-                        <Icon d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} size={15} stroke="var(--muted)"/>
+            <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 23, margin: '6px 0 4px', letterSpacing: '-0.01em' }}>{tx(g.move.headline)}</h3>
+            {g.move.session && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
+                <Icon d={ICONS.clock} size={13} stroke="var(--muted)"/>
+                <span style={{ fontSize: 11.5, color: 'var(--muted)', fontFamily: 'var(--mono)', letterSpacing: '0.03em' }}>{tx(g.move.session)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {g.move.items.map((it, i) => {
+                const open = openPlan === i;
+                return (
+                  <div key={i} style={{ borderBottom: i < g.move.items.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+                    <button onClick={() => setOpenPlan(open ? -1 : i)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', width: '100%', textAlign: 'left', background: 'transparent', cursor: 'pointer' }}>
+                      <span style={{ width: 40, height: 40, borderRadius: 12, background: tint + '33', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon d={MOVE_ICON[it.icon]} size={19} stroke="var(--ink)" sw={1.5}/>
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)' }}>{tx(it.name)}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(it.detail)}</div>
+                      </div>
+                      {it.plan && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <span style={{ fontSize: 10.5, color: 'var(--accent)', fontFamily: 'var(--mono)', letterSpacing: '0.03em' }}>{tx(it.plan.meta)}</span>
+                          <Icon d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} size={15} stroke="var(--muted)"/>
+                        </div>
+                      )}
+                    </button>
+                    {it.plan && open && (
+                      <div className="fade-up" style={{ padding: '4px 0 16px 54px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        {it.plan.steps.map((s, j) => (
+                          <div key={j} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'baseline', padding: '9px 0', borderBottom: j < it.plan.steps.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{tx(s.phase)}</div>
+                              <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(s.sub)}</div>
+                            </div>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink-2)', background: 'var(--bone)', padding: '4px 9px', borderRadius: 7, whiteSpace: 'nowrap' }}>{tx(s.spec)}</span>
+                          </div>
+                        ))}
                       </div>
                     )}
-                  </button>
-                  {it.plan && open && (
-                    <div className="fade-up" style={{ padding: '4px 0 16px 54px', display: 'flex', flexDirection: 'column', gap: 0 }}>
-                      {it.plan.steps.map((s, j) => (
-                        <div key={j} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'baseline', padding: '9px 0', borderBottom: j < it.plan.steps.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{tx(s.phase)}</div>
-                            <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(s.sub)}</div>
-                          </div>
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink-2)', background: 'var(--bone)', padding: '4px 9px', borderRadius: 7, whiteSpace: 'nowrap' }}>{tx(s.spec)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 12, background: 'var(--bone)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <Icon d={ICONS.spark} size={15} stroke="var(--accent)" sw={1.6}/>
-            <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{tx(g.move.avoid)}</span>
-          </div>
-        </Card>
-        )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 12, background: 'var(--bone)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <Icon d={ICONS.spark} size={15} stroke="var(--accent)" sw={1.6}/>
+              <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{tx(g.move.avoid)}</span>
+            </div>
+          </Card>
+          )}
 
-        {kind === 'eat' && (
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon d={ICONS.leaf} size={16} stroke="var(--accent)"/>
-            </span>
-            <div className="eyebrow">{t('Nutrition','Beslenme')}</div>
-          </div>
-          <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 23, margin: '6px 0 18px', letterSpacing: '-0.01em' }}>{tx(g.eat.headline)}</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {g.eat.items.map((it, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.04em', color: 'var(--ink-2)', background: tint + '33', padding: '4px 7px', borderRadius: 6, minWidth: 52, textAlign: 'center', marginTop: 1 }}>{it.tag}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{tx(it.name)}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(it.detail)}</div>
+          {kind === 'eat' && (
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon d={ICONS.leaf} size={16} stroke="var(--accent)"/>
+              </span>
+              <div className="eyebrow">{t('Nutrition','Beslenme')}</div>
+            </div>
+            <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 23, margin: '6px 0 18px', letterSpacing: '-0.01em' }}>{tx(g.eat.headline)}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {g.eat.items.map((it, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.04em', color: 'var(--ink-2)', background: tint + '33', padding: '4px 7px', borderRadius: 6, minWidth: 52, textAlign: 'center', marginTop: 1 }}>{it.tag}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{tx(it.name)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>{tx(it.detail)}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 12, background: 'var(--accent-soft)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <Icon d={ICONS.drop} size={15} stroke="var(--ink-2)" sw={1.6}/>
-            <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{tx(g.eat.note)}</span>
-          </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 12, background: 'var(--accent-soft)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <Icon d={ICONS.drop} size={15} stroke="var(--ink-2)" sw={1.6}/>
+              <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{tx(g.eat.note)}</span>
+            </div>
 
-          {/* Seed cycling — part of nutrition */}
-          <SeedCycle phaseKey={sel} liveKey={live} tint={tint}/>
-        </Card>
-        )}
-      </div>
+            {/* Seed cycling — part of nutrition */}
+            <SeedCycle phaseKey={sel} liveKey={live} tint={tint}/>
+          </Card>
+          )}
+        </div>
+      </ReferansBolum>
+
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', color: 'var(--muted-2)', fontSize: 11.5 }}>
         <Icon d={ICONS.heart} size={13} stroke="var(--muted-2)"/>
@@ -457,12 +465,38 @@ function SeedCycle({ phaseKey, liveKey, tint }) {
     </div>
   );
 }
+/* Referans içeriği için katlanır kabuk. Beslenme ekranı telefonda dokuz kart
+   ve 251 kelimeyle açılıyordu, Hareket 369 kelimeyle. İkisi de ayda bir
+   okunacak içerik; her gün açılan ekranın onları bir makale gibi karşılaması
+   gerekmiyor. Artık tek satırlık bir özetle açılıp istendiğinde genişliyorlar. */
+function ReferansBolum({ ozet, acKapaEtiketi, children }) {
+  const [acik, setAcik] = React.useState(false);
+  return (
+    <div>
+      <button onClick={() => setAcik(v => !v)} aria-expanded={acik}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 14, padding: '15px 18px', borderRadius: 'var(--r-md)', cursor: 'pointer',
+          background: 'var(--bone)', border: 'none', textAlign: 'left',
+        }}>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: 16, lineHeight: 1.45, color: 'var(--ink)' }}>{ozet}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', whiteSpace: 'nowrap', fontFamily: 'var(--sans)' }}>
+          {acik ? t('Hide', 'Gizle') : acKapaEtiketi}
+        </span>
+      </button>
+      {acik && <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 20 }}>{children}</div>}
+    </div>
+  );
+}
+
 function TodayWorkoutCard({ lunara, api, onNav }) {
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
   const ph = phaseOf(day, cycleLenOf(lunara));
-  const g = PHASE_GUIDE[ph.key];
-  const tint = PHASE_TINT[ph.key];
+  // Faz bilinmiyorsa genel bir öneri gösterilir ama "şu fazdasın" denmez
+  const phKey = ph ? ph.key : 'follicular';
+  const g = PHASE_GUIDE[phKey];
+  const tint = PHASE_TINT[phKey];
   const primary = g.move.items[0];
   const steps = primary.plan ? primary.plan.steps : [];
   const log = lunara.workoutLog[TODAY_KEY] || {};
@@ -473,7 +507,7 @@ function TodayWorkoutCard({ lunara, api, onNav }) {
     <Card style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>{t("Today's movement", 'Bugünün hareketi')} · {phaseLabel(ph).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase','fazı')}</div>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>{t("Today's movement", 'Bugünün hareketi')}{ph ? <> · {phaseLabel(ph).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase','fazı')}</> : null}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontFamily: 'var(--serif)', fontSize: 22, letterSpacing: '-0.01em' }}>{tx(primary.name)}</span>
             {primary.plan && <span style={{ fontSize: 11.5, color: 'var(--accent)', fontFamily: 'var(--mono)' }}>{tx(primary.plan.meta)}</span>}

@@ -135,7 +135,8 @@ function MenarcheHome({ lunara, api, onNav }) {
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
   const ph = phaseOf(day, cycleLenOf(lunara));
-  const info = MENARCHE_PHASES[ph.key];
+  // Çapa yokken faz anlatısı gösterilmez; ilk adım son regli işaretlemek
+  const info = ph ? MENARCHE_PHASES[ph.key] : null;
   const todayLog = lunara.symptomLog[TODAY_KEY] || {};
   const [confirming, setConfirming] = React.useState(false);
   const [justStarted, setJustStarted] = React.useState(false);
@@ -184,11 +185,16 @@ function MenarcheHome({ lunara, api, onNav }) {
         <Card>
           <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Where you are this month', 'Bu ay neredesin')}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-            <span style={{ fontFamily: 'var(--serif)', fontSize: 30, letterSpacing: '-0.01em' }}>{t(info.en, info.tr)}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{t('day', 'gün')} {day}</span>
+            <span style={{ fontFamily: 'var(--serif)', fontSize: 30, letterSpacing: '-0.01em' }}>
+              {info ? t(info.en, info.tr) : t('Not set yet', 'Henüz belli değil')}
+            </span>
+            {day != null && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{t('day', 'gün')} {day}</span>}
           </div>
           <p style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.55, color: 'var(--ink-2)', margin: '0 0 18px' }}>
-            {t(info.bodyEn, info.bodyTr)}
+            {info
+              ? t(info.bodyEn, info.bodyTr)
+              : t('Tell us when your last period started and this page will follow your month with you.',
+                  'Son reglinin ne zaman başladığını söyle, bu sayfa ayını seninle birlikte takip etsin.')}
           </p>
           {justStarted ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--signal-good)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>

@@ -33,11 +33,20 @@ function daysBetween(aIso, b) {
   const a = new Date(aIso + 'T00:00:00');
   return Math.floor((b - a) / 86400000);
 }
+/* Döngü çapası yoksa döngü günü BİLİNMİYOR demektir — null döner.
+   Eskiden çapa kurulumda sessizce bugüne düşüyordu; kullanıcı hiçbir şey
+   girmemişken uygulama "döngünün 1. günündesin, menstrüel fazı" diyor,
+   ayı fazlara boyuyor ve beş günü "beklenen kanama" işaretliyordu.
+   null döndürmek çağıranı bu hâli ele almaya zorluyor. */
 function cycleDayFrom(periodStartIso, today = TODAY_DATE, cycleLength) {
+  if (!periodStartIso) return null;
   const L = Math.max(15, Math.min(60, Number(cycleLength) || CYCLE_LEN));
   const d = daysBetween(periodStartIso, today);
   return ((d % L) + L) % L + 1;
 }
+// Kullanıcı son reglinin ilk gününü işaretlemiş mi
+function hasCycleAnchor(lunara) { return !!(lunara && lunara.periodStart); }
+
 /* Faz sınırları döngü uzunluğuna göre kayar. Luteal faz kişiden kişiye pek
    değişmez (~14 gün); uzayıp kısalan folliküler fazdır. Sınırları sabit günlere
    çakmak 32 günlük bir döngüde ovülasyonu haftalarca erken gösterirdi. */
@@ -46,14 +55,19 @@ function phaseBounds(cycleLength) {
   const ov = Math.max(10, L - 14);
   return { L, ov, bleedEnd: 5, follEnd: ov - 2, ovEnd: Math.min(L, ov + 2) };
 }
+// Gün bilinmiyorsa faz da bilinmiyor — uydurulmuş bir faz göstermektense null
 function phaseOf(day, cycleLength) {
+  if (day == null) return null;
   const b = phaseBounds(cycleLength);
   if (day <= b.bleedEnd) return { key: 'menstrual', label: 'Menstrual', labelTr: 'Menstrüel' };
   if (day <= b.follEnd) return { key: 'follicular', label: 'Follicular', labelTr: 'Folliküler' };
   if (day <= b.ovEnd) return { key: 'ovulation', label: 'Ovulation', labelTr: 'Ovulasyon' };
   return { key: 'luteal', label: 'Luteal', labelTr: 'Luteal' };
 }
-function phaseLabel(ph) { return t(ph.label, ph.labelTr); }
+function phaseLabel(ph) {
+  if (!ph) return t('not set yet', 'henüz belirlenmedi');
+  return t(ph.label, ph.labelTr);
+}
 const MOON_NAMES_TR = {
   'New': 'Yeni ay', 'Waxing crescent': 'İlk hilal', 'First quarter': 'İlk dördün',
   'Waxing gibbous': 'Şişkin (büyüyen)', 'Full': 'Dolunay', 'Waning gibbous': 'Şişkin (küçülen)',
@@ -89,8 +103,11 @@ function bledOn(lunara, dateKey) {
   if (sym) for (const k of BLEED_SYMPTOM_KEYS) if (sym[k] > 0) return sym[k];
   return 0;
 }
-// Döngü gününe göre kanama beklenen gün mü
+/* Döngü gününe göre kanama beklenen gün mü.
+   Gün bilinmiyorsa beklenti de yoktur: null'ı sessizce 0'a çevirip "evet"
+   demek, çapası olmayan bir kaydın takvimini kesikli çerçevelerle doldururdu. */
 function bleedExpected(cycleDay, cycleLength) {
+  if (cycleDay == null) return false;
   return cycleDay <= phaseBounds(cycleLength).bleedEnd;
 }
 
@@ -916,7 +933,9 @@ function CycleScreen({ lunara, api }) {
   // build 7-day strip around today
   return (
     <div style={wrap}>
-      <ScreenHead eyebrow={t(`CYCLE DAY ${day} · ${L}-DAY`, `DÖNGÜ GÜNÜ ${day} · ${L} GÜNLÜK`)} title={t('Cycle & moon', 'Döngü & ay')}
+      <ScreenHead eyebrow={day == null
+          ? t('CYCLE NOT SET YET', 'DÖNGÜ HENÜZ BELİRLENMEDİ')
+          : t(`CYCLE DAY ${day} · ${L}-DAY`, `DÖNGÜ GÜNÜ ${day} · ${L} GÜNLÜK`)} title={t('Cycle & moon', 'Döngü & ay')}
         right={
           justStarted ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--signal-good)' }}>
@@ -924,7 +943,9 @@ function CycleScreen({ lunara, api }) {
             </span>
           ) : confirming ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{t('Reset cycle to day 1?', 'Döngüyü 1. güne sıfırla?')}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{day == null
+                ? t('Set today as day 1?', 'Bugünü 1. gün olarak ayarla?')
+                : t('Reset cycle to day 1?', 'Döngüyü 1. güne sıfırla?')}</span>
               <Btn primary onClick={handlePeriodStart}>{t('Yes', 'Evet')}</Btn>
               <Btn onClick={() => setConfirming(false)}>{t('Cancel', 'İptal')}</Btn>
             </div>
@@ -943,7 +964,7 @@ function CycleScreen({ lunara, api }) {
           <CycleRing day={day} phase={ph} length={L}/>
           <div style={{ display: 'flex', gap: 16, marginTop: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
             {Object.entries(PHASE_TINT).map(([k, c]) => (
-              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: ph.key === k ? 'var(--ink)' : 'var(--muted)', fontWeight: ph.key === k ? 600 : 400 }}>
+              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: (ph && ph.key === k) ? 'var(--ink)' : 'var(--muted)', fontWeight: (ph && ph.key === k) ? 600 : 400 }}>
                 <span style={{ width: 9, height: 9, borderRadius: '50%', background: c }}/>{phaseLabel(phaseOf(k === 'menstrual' ? 1 : k === 'follicular' ? 8 : k === 'ovulation' ? 15 : 25))}
               </div>
             ))}
@@ -1036,8 +1057,11 @@ function CycleMonth({ lunara, api, length }) {
         <div>
           <div className="eyebrow">{t('Cycle calendar', 'Döngü takvimi')}</div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
-            {t('Tap a day to log bleeding — phase, cycle day and moon are shown for each',
-               'Kanamayı işaretlemek için güne dokun — her günün fazı, döngü günü ve ayı görünür')}
+            {hasCycleAnchor(lunara)
+              ? t('Tap a day to log bleeding — phase, cycle day and moon are shown for each',
+                  'Kanamayı işaretlemek için güne dokun — her günün fazı, döngü günü ve ayı görünür')
+              : t('Tap the first day of your last period — phases appear once it is set',
+                  'Son reglinin ilk gününe dokun — fazlar ancak o zaman görünür')}
           </div>
         </div>
         <MonthNav label={monthLabel} onPrev={() => go(-1)} onNext={() => go(1)} atCurrent={isCurrentMonth}/>
@@ -1050,9 +1074,11 @@ function CycleMonth({ lunara, api, length }) {
           const cd = cycleDayFrom(lunara.periodStart, c.date, L);
           const ph = phaseOf(cd, L);
           const mo = moonPhase(c.date);
-          const expected = bleedExpected(cd, L);
+          // Çapa yokken faz da beklenen kanama da hesaplanamaz — boş takvim
+          // göstermek, uydurulmuş bir döngü boyamaktan iyidir.
+          const expected = cd != null && bleedExpected(cd, L);
           const bled = bledOn(lunara, c.key) > 0;
-          const durum = [phaseLabel(ph)];
+          const durum = ph ? [phaseLabel(ph)] : [];
           if (expected) durum.push(t('bleeding expected', 'kanama bekleniyor'));
           if (bled) durum.push(t('bleeding logged', 'kanama kaydedildi'));
           // Gelecek gün işaretlenemez: olmamış bir kanama döngü çapasını kaydırırdı
@@ -1061,8 +1087,8 @@ function CycleMonth({ lunara, api, length }) {
             <button key={c.key} disabled={!clickable}
               onClick={clickable ? () => api.togglePeriodDay(c.key) : undefined}
               aria-pressed={clickable ? bled : undefined}
-              aria-label={`${c.d} · ${t('day', 'gün')} ${cd} · ${durum.join(' · ')}`}
-              title={`${c.d} · ${t('day', 'gün')} ${cd} · ${durum.join(' · ')}`}
+              aria-label={[c.d, cd != null && `${t('day', 'gün')} ${cd}`].filter(Boolean).concat(durum).join(' · ')}
+              title={[c.d, cd != null && `${t('day', 'gün')} ${cd}`].filter(Boolean).concat(durum).join(' · ')}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                 padding: '5px 2px 6px', borderRadius: 10, minHeight: 60, width: '100%',
@@ -1076,9 +1102,9 @@ function CycleMonth({ lunara, api, length }) {
               <span style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.1,
                 color: (c.isToday && !bled) ? 'var(--ivory)' : 'var(--ink)' }}>{c.d}</span>
               <MoonDisc size={16} frac={mo.frac}/>
-              <span style={{ width: 16, height: 4, borderRadius: 3, background: PHASE_TINT[ph.key] }}/>
+              <span style={{ width: 16, height: 4, borderRadius: 3, background: ph ? PHASE_TINT[ph.key] : 'var(--line-soft)' }}/>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5,
-                color: (c.isToday && !bled) ? 'rgba(251,246,235,0.75)' : 'var(--muted-2)' }}>{cd}</span>
+                color: (c.isToday && !bled) ? 'rgba(251,246,235,0.75)' : 'var(--muted-2)' }}>{cd == null ? '' : cd}</span>
             </button>
           );
         })}
@@ -1127,14 +1153,25 @@ function CycleRing({ day, phase, size = 260, length }) {
           return <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={PHASE_TINT[s.k]} strokeWidth="20"
             strokeDasharray={`${dash} ${c}`} strokeDashoffset={offset} opacity="0.92"/>;
         })}
-        <g transform={`rotate(${((day-1)/L)*360} ${size/2} ${size/2})`}>
-          <circle cx={size/2 + r} cy={size/2} r="10" fill="var(--ink)" stroke="var(--ivory)" strokeWidth="3"/>
-        </g>
+        {/* Gün bilinmiyorken işaretçi yok: halka fazların şemasını gösterir,
+            ama "buradasın" iddiasında bulunmaz. */}
+        {day != null && (
+          <g transform={`rotate(${((day-1)/L)*360} ${size/2} ${size/2})`}>
+            <circle cx={size/2 + r} cy={size/2} r="10" fill="var(--ink)" stroke="var(--ivory)" strokeWidth="3"/>
+          </g>
+        )}
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span className="eyebrow">{t('Day', 'Gün')}</span>
-        <span style={{ fontFamily: 'var(--serif)', fontSize: 72, lineHeight: 0.9, letterSpacing: '-0.04em' }}>{day}</span>
-        <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--ink-2)' }}>{phaseLabel(phase).toLocaleLowerCase(I18N.lang === 'tr' ? 'tr' : 'en')}</span>
+        <span className="eyebrow">{day == null ? t('Cycle', 'Döngü') : t('Day', 'Gün')}</span>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: day == null ? 40 : 72, lineHeight: 0.9, letterSpacing: '-0.04em' }}>
+          {day == null ? '—' : day}
+        </span>
+        <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--ink-2)', textAlign: 'center', padding: '0 24px' }}>
+          {day == null
+            ? t('mark your last period', 'son regl gününü işaretle')
+            : phaseLabel(phase).toLocaleLowerCase(I18N.lang === 'tr' ? 'tr' : 'en')}
+        </span>
+
       </div>
     </div>
   );
@@ -1145,7 +1182,7 @@ function CareScreen({ lunara, onNav }) {
   const [summaryOpen, setSummaryOpen] = React.useState(false);
   const stage = (lunara && lunara.stage) || 'cycle';
   const stageInfo = (typeof STAGES !== 'undefined' && STAGES[stage]) || {};
-  const cycleDay = lunara ? cycleDayFrom(lunara.periodStart, TODAY_DATE, cycleLenOf(lunara)) : 14;
+  const cycleDay = lunara ? cycleDayFrom(lunara.periodStart, TODAY_DATE, cycleLenOf(lunara)) : null;
   const ph = phaseOf(cycleDay, lunara ? cycleLenOf(lunara) : 28);
   const profileName = (lunara && lunara.profile && lunara.profile.name) || '';
   useLang();
@@ -1176,8 +1213,10 @@ function CareScreen({ lunara, onNav }) {
               </div>
             </div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--muted-2)', textAlign: 'right', lineHeight: 1.4 }}>
-              {t('Day', 'Gün')} {cycleDay}<br/>
-              <span style={{ fontStyle: 'italic', fontFamily: 'var(--serif)', fontSize: 12 }}>{t(ph.label, ph.labelTr || ph.label)}</span>
+              {ph ? <>{t('Day', 'Gün')} {cycleDay}<br/></> : null}
+              <span style={{ fontStyle: 'italic', fontFamily: 'var(--serif)', fontSize: 12 }}>
+                {ph ? t(ph.label, ph.labelTr || ph.label) : t('cycle not set', 'döngü kurulmadı')}
+              </span>
             </div>
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, padding: '18px 0' }}>
@@ -1209,7 +1248,7 @@ function CareScreen({ lunara, onNav }) {
           <Card>
             <div className="eyebrow" style={{ marginBottom: 12 }}>{t("Things you'll be able to ask", 'Yakında sorabileceklerin')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {careQuickPrompts(stage, ph.key).map((q, i) => (
+              {careQuickPrompts(stage, ph ? ph.key : 'follicular').map((q, i) => (
                 <div key={i}
                   style={{ padding: '10px 14px', borderRadius: 12, textAlign: 'left', background: 'var(--bone)', color: 'var(--muted)', fontSize: 13, lineHeight: 1.4, boxShadow: 'inset 0 0 0 1px var(--line-soft)', fontStyle: 'italic' }}>{q}</div>
               ))}
@@ -1331,4 +1370,4 @@ function careQuickPrompts(stage, phaseKey) {
   return sets[stage] || sets.cycle;
 }
 
-export { CYCLE_LEN, cycleLenOf, phaseBounds, daysBetween, cycleDayFrom, phaseOf, phaseLabel, phaseRange, bledOn, bleedExpected, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };
+export { CYCLE_LEN, cycleLenOf, phaseBounds, daysBetween, cycleDayFrom, hasCycleAnchor, phaseOf, phaseLabel, phaseRange, bledOn, bleedExpected, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };

@@ -41,9 +41,11 @@ function SupplementsPanel({ lunara, api, logDate }) {
   const today = TODAY_DATE;
   const day = cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara));
   const ph = phaseOf(day, cycleLenOf(lunara));
-  const tint = PHASE_TINT[ph.key];
+  // Faz bilinmiyorsa genel öneri listesi gösterilir, faz adı iddia edilmez
+  const phKey = ph ? ph.key : 'follicular';
+  const tint = PHASE_TINT[phKey];
   const log = lunara.suppLog[dk] || {};
-  const recs = SUPP_GUIDE[ph.key];
+  const recs = SUPP_GUIDE[phKey];
   const existingNames = lunara.supplements.map(s => s.name.toLowerCase());
 
   const [adding, setAdding] = React.useState(false);
@@ -158,7 +160,7 @@ function SupplementsPanel({ lunara, api, logDate }) {
       <Card style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: tint }}/>
-          <div className="eyebrow">{t('Suggested','Önerilen')} · {phaseLabel(ph).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase','fazı')}</div>
+          <div className="eyebrow">{t('Suggested','Önerilen')}{ph ? <> · {phaseLabel(ph).toLocaleLowerCase(I18N.lang==='tr'?'tr':'en')} {t('phase','fazı')}</> : null}</div>
         </div>
         <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '6px 0 16px' }}>
           {t('Common support for where you are in your cycle. Tap + to add to your list.', 'Döngüdeki yerine göre yaygın destek. Listene eklemek için + simgesine dokun.')}
