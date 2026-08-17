@@ -59,8 +59,10 @@ function MiniCurve({ series, day, length, color, band }) {
 /* Bu kart "bugün normalde şu seviyelerde olurdun" diyor — döngü günü
    bilinmiyorken söyleyecek bir şeyi yok, o yüzden hiç çizilmiyor. */
 function ReferenceCard({ lunara, cycleDay }) {
-  if (cycleDay == null) return null;
+  // useLang bir hook; erken çıkış ondan sonra olmalı, yoksa koşullu hook
+  // çağrısı olur ve React ağacı bozulur.
   useLang();
+  if (cycleDay == null) return null;
   const L = (lunara.regimen && lunara.regimen.cycleLength) || lunara.cycleLength || 28;
   const day = Math.max(1, Math.min(L, cycleDay || 1));
   const ref = referenceFor(day, L);
