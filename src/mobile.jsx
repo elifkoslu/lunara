@@ -1,6 +1,6 @@
 import React from 'react';
 import { t } from './i18n';
-import { ICONS, Icon, Logo } from './shared';
+import { ICONS, Icon, Logo, navItemsFor } from './shared';
 
 /* mobile.jsx — Lunara responsive mobile shell (bottom tabs + sheet) */
 /* eslint-disable */
@@ -24,23 +24,49 @@ function useIsMobile(bp = 720) {
   return m;
 }
 
-const TABS = [
-  { k: 'home',    icon: ICONS.home,  en: 'Today',   tr: 'Bugün' },
-  { k: 'doses',   icon: ICONS.pill,  en: 'Doses',   tr: 'Dozlar' },
-  { k: 'cycle',   icon: ICONS.moon,  en: 'Cycle',   tr: 'Döngü' },
-  { k: 'move',    icon: ICONS.pulse, en: 'Move',    tr: 'Hareket' },
-];
-const MORE_ITEMS = [
-  { k: 'symptoms', icon: ICONS.pulse, en: 'Symptoms', tr: 'Belirtiler', subEn: 'Log how you feel', subTr: 'Nasıl hissettiğini kaydet' },
-  { k: 'nourish',  icon: ICONS.leaf,  en: 'Nutrition', tr: 'Beslenme', subEn: 'Food for your stage', subTr: 'Evrene göre beslenme' },
-  { k: 'labs',     icon: ICONS.vial,  en: 'Labs',     tr: 'Tahliller', subEn: 'Results & trends', subTr: 'Sonuçlar & eğilimler' },
-  { k: 'care',     icon: ICONS.chat,  en: 'Care team', tr: 'Destek ekibi', subEn: 'Message & consults', subTr: 'Mesaj & randevular' },
-  { k: 'profile',  icon: ICONS.cog,   en: 'Profile & settings', tr: 'Profil & ayarlar', subEn: 'Account, language, alerts', subTr: 'Hesap, dil, uyarılar' },
-];
+/* Bölüm künyesi. Hangi bölümün görüneceğine burası değil, evrenin kendi
+   listesi (navItemsFor) karar verir — burada yalnızca ikon ve etiket durur. */
+const NAV_META = {
+  home:     { icon: ICONS.home,  en: 'Today',     tr: 'Bugün',      subEn: 'Your day at a glance',    subTr: 'Günün özeti' },
+  symptoms: { icon: ICONS.pulse, en: 'Symptoms',  tr: 'Belirtiler', subEn: 'Log how you feel',        subTr: 'Nasıl hissettiğini kaydet' },
+  cycle:    { icon: ICONS.moon,  en: 'Cycle',     tr: 'Döngü',      subEn: 'Calendar & phases',       subTr: 'Takvim & fazlar' },
+  doses:    { icon: ICONS.pill,  en: 'Doses',     tr: 'Dozlar',     subEn: 'Today’s regimen',         subTr: 'Bugünün rejimi' },
+  move:     { icon: ICONS.pulse, en: 'Move',      tr: 'Hareket',    subEn: 'Movement for your phase', subTr: 'Fazına göre hareket' },
+  nourish:  { icon: ICONS.leaf,  en: 'Nutrition', tr: 'Beslenme',   subEn: 'Cycle-phase eating',      subTr: 'Döngü fazına göre beslenme' },
+  labs:     { icon: ICONS.vial,  en: 'Labs',      tr: 'Tahliller',  subEn: 'Results & trends',        subTr: 'Sonuçlar & eğilimler' },
+  care:     { icon: ICONS.chat,  en: 'Care team', tr: 'Destek ekibi', subEn: 'Message & consults',    subTr: 'Mesaj & randevular' },
+  profile:  { icon: ICONS.cog,   en: 'Profile & settings', tr: 'Profil & ayarlar', subEn: 'Account, language, alerts', subTr: 'Hesap, dil, uyarılar' },
+};
+
+/* Alt barda dört yer var; oraya günlük dokunulan bölümler çıkmalı. Bu sıra,
+   evrenin bölüm listesini yeniden dizmek için kullanılıyor: Belirtiler her
+   evrede var ve Bugün ekranının birincil butonu oraya gidiyor, o yüzden ayda
+   bir açılan Hareket/Beslenme gibi referans ekranlarının önünde. */
+const MOBILE_PRIORITY = ['home', 'symptoms', 'cycle', 'doses', 'move', 'nourish', 'labs', 'care'];
+const BAR_SLOTS = 4;
+
+/* Evrenin bölümlerini bara ve "Daha" sayfasına dağıtır.
+   Eskiden bar sabitti: döngü takibi yapan biri de gebe biri de telefonda aynı
+   dokuz bölümü görüyordu — kendi evresinde tanımlı olmayan Dozlar ve Tahliller
+   dahil. navItemsFor masaüstü yan menüde zaten kullanılıyordu, mobil onu
+   atlıyordu; tek fark buydu. */
+function mobileNav(stage) {
+  const keys = navItemsFor(stage).map(i => i.k).filter(k => NAV_META[k]);
+  const sirali = MOBILE_PRIORITY.filter(k => keys.indexOf(k) !== -1)
+    .concat(keys.filter(k => MOBILE_PRIORITY.indexOf(k) === -1));
+  const al = k => ({ k, ...NAV_META[k] });
+  return {
+    tabs: sirali.slice(0, BAR_SLOTS).map(al),
+    // Profil hiçbir evrenin bölüm listesinde yok ama her zaman erişilebilmeli
+    more: sirali.slice(BAR_SLOTS).map(al).concat([al('profile')]),
+  };
+}
+
 const ICON_DOTS = 'M5 12h.01M12 12h.01M19 12h.01';
 
-function MobileShell({ active, onNav, children, profile }) {
+function MobileShell({ active, onNav, children, profile, stage }) {
   const [sheet, setSheet] = React.useState(false);
+  const { tabs: TABS, more: MORE_ITEMS } = React.useMemo(() => mobileNav(stage), [stage]);
   const moreActive = MORE_ITEMS.some(m => m.k === active);
   const initial = (profile && profile.name) ? profile.name.charAt(0).toLocaleLowerCase('tr') : '·';
 
@@ -90,7 +116,7 @@ function MobileShell({ active, onNav, children, profile }) {
       {/* Bottom tab bar */}
       <nav style={{
         flexShrink: 0,
-        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+        display: 'grid', gridTemplateColumns: `repeat(${TABS.length + 1}, 1fr)`,
         background: 'var(--card)',
         borderTop: '1px solid var(--line)',
         padding: '8px 6px calc(env(safe-area-inset-bottom) + 8px)',
@@ -150,4 +176,4 @@ function TabButton({ icon, label, active, onClick }) {
   );
 }
 
-export { useIsMobile, TABS, MORE_ITEMS, ICON_DOTS, MobileShell, TabButton };
+export { useIsMobile, mobileNav, NAV_META, MOBILE_PRIORITY, BAR_SLOTS, ICON_DOTS, MobileShell, TabButton };

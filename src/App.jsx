@@ -179,7 +179,7 @@ export default function App() {
     }
     return (
       <div data-screen-label={`mobile · ${active}`} style={{ position: 'fixed', inset: 0 }}>
-        <MobileShell active={active} onNav={setActive} profile={lunara.profile}>
+        <MobileShell active={active} onNav={setActive} profile={lunara.profile} stage={lunara.stage}>
           {screenEl}
         </MobileShell>
         {privacyOpen && <PrivacyModal onClose={() => setPrivacyOpen(false)} />}
