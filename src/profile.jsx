@@ -1,7 +1,7 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
 import { Btn, ScreenHead, wrap } from './screens';
-import { Card, ICONS, Icon, LS_KEY } from './shared';
+import { Card, ICONS, Icon, LS_KEY, SilBtn } from './shared';
 import { STAGES, stageName } from './stages';
 
 /* profile.jsx — Lunara profil & ayarlar ekranı */
@@ -54,6 +54,75 @@ function temizleYedek(ham) {
   return tutan > 0 ? temiz : null;
 }
 
+
+/* ── Girdilerim ───────────────────────────────────────────────────
+   Girilen her şeyin nerede olduğunu ve nasıl silineceğini bilmek zordu:
+   ilaç rejimde, takviye Takviyeler'de, tahlil Tahliller'de, not Belirtiler'de.
+   Bu kart hepsini tek yerde sayıyor ve kategori kategori temizliyor.
+   Tek tek silme kendi ekranlarında duruyor; burası toplu temizlik için. */
+function MyEntries({ lunara, api }) {
+  useLang();
+  const say = (o) => Object.keys(o || {}).length;
+  const gruplar = [
+    { k: 'meds',    n: ((lunara.regimen && lunara.regimen.meds) || []).length,
+      en: 'Medications', tr: 'İlaçlar',
+      sil: () => ((lunara.regimen && lunara.regimen.meds) || []).forEach(m => api.removeMed(m.id)) },
+    { k: 'supps',   n: (lunara.supplements || []).length,
+      en: 'Supplements', tr: 'Takviyeler',
+      sil: () => (lunara.supplements || []).forEach(x => api.removeSupp(x.id)) },
+    { k: 'labs',    n: (lunara.labPanels || []).length,
+      en: 'Lab panels', tr: 'Tahlil panelleri',
+      sil: () => (lunara.labPanels || []).forEach(x => api.removeLabPanel(x.id)) },
+    { k: 'titr',    n: (lunara.titration || []).length,
+      en: 'Titration log', tr: 'Titrasyon günlüğü',
+      sil: () => (lunara.titration || []).forEach(x => api.removeTitration(x.id)) },
+    { k: 'notes',   n: (lunara.notes || []).length,
+      en: 'Notes', tr: 'Notlar',
+      sil: () => (lunara.notes || []).forEach(x => api.removeNote(x.id)) },
+    { k: 'symp',    n: say(lunara.symptomLog), birim: { en: 'days', tr: 'gün' },
+      en: 'Symptom entries', tr: 'Belirti kayıtları',
+      sil: () => Object.keys(lunara.symptomLog || {}).forEach(d => api.clearSymptomDay(d)) },
+    { k: 'dose',    n: say(lunara.doseLog), birim: { en: 'days', tr: 'gün' },
+      en: 'Doses taken', tr: 'Alınan dozlar',
+      sil: () => Object.keys(lunara.doseLog || {}).forEach(d => api.clearDoseDay(d)) },
+    { k: 'work',    n: say(lunara.workoutLog), birim: { en: 'days', tr: 'gün' },
+      en: 'Movement log', tr: 'Hareket kaydı',
+      sil: () => Object.keys(lunara.workoutLog || {}).forEach(d => api.clearWorkoutDay(d)) },
+    { k: 'kegel',   n: say(lunara.kegelLog), birim: { en: 'days', tr: 'gün' },
+      en: 'Pelvic floor sets', tr: 'Pelvik taban setleri',
+      sil: () => Object.keys(lunara.kegelLog || {}).forEach(d => api.resetKegel(d)) },
+    { k: 'bleed',   n: say(lunara.periodDays), birim: { en: 'days', tr: 'gün' },
+      en: 'Bleeding days', tr: 'Kanama günleri',
+      sil: () => Object.keys(lunara.periodDays || {}).forEach(d => api.togglePeriodDay(d)) },
+  ].filter(g => g.n > 0);
+
+  return (
+    <Card>
+      <div className="eyebrow" style={{ marginBottom: 6 }}>{t('My entries', 'Girdilerim')}</div>
+      <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 14px' }}>
+        {gruplar.length === 0
+          ? t('Nothing saved yet. Anything you enter will show up here and can be deleted from this list.',
+              'Henüz kayıt yok. Girdiğin her şey burada görünür ve buradan silinebilir.')
+          : t('Everything you have entered, and where to clear it. Deleting is permanent — export first if you want a copy.',
+              'Girdiğin her şey ve nereden temizleneceği. Silme kalıcıdır — kopya istiyorsan önce dışa aktar.')}
+      </p>
+      {gruplar.map((g, i) => (
+        <div key={g.k} style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0',
+          borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
+        }}>
+          <span style={{ flex: 1, fontSize: 14, color: 'var(--ink)' }}>{t(g.en, g.tr)}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>
+            {g.n}{g.birim ? ' ' + t(g.birim.en, g.birim.tr) : ''}
+          </span>
+          <SilBtn variant="metin" onSil={g.sil}
+            label={t('Clear', 'Temizle')}
+            confirmLabel={t('Delete all', 'Hepsini sil')}/>
+        </div>
+      ))}
+    </Card>
+  );
+}
 
 function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
   const p = lunara.profile;
@@ -176,6 +245,9 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
 
           {/* Notifications & reminders */}
           <NotificationSettings lunara={lunara} api={api}/>
+
+          {/* Girilen her şeyin tek yerden görünüp silinebildiği yer */}
+          <MyEntries lunara={lunara} api={api}/>
 
           {/* Data & account */}
           <Card>

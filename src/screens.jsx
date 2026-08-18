@@ -12,7 +12,7 @@ import { ReferenceCard } from './reference-card';
 /* Referans eğrisi ovülatuar bir döngüyü anlatır; döngüsü olmayan evrelerde
    gösterilmesi yanıltıcı olur. */
 const REFERANS_EVRELERI = new Set(['cycle', 'ttc', 'menarche', 'perimeno']);
-import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, labReadings, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
+import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SilBtn, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, labReadings, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
 
@@ -597,10 +597,13 @@ function SymptomsScreen({ lunara, api, logDate, setLogDate }) {
             </div>
             {lunara.notes.length > 0 && (
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line-soft)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Not eklenebiliyordu ama silinemiyordu — yanlış yazılan bir
+                    not kayıtta sonsuza kadar kalıyordu. */}
                 {lunara.notes.slice(0, 3).map(n => (
-                  <div key={n.id} style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--muted-2)', marginRight: 8 }}>{n.at}</span>
-                    {n.text}
+                  <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--muted-2)', marginTop: 2 }}>{n.at}</span>
+                    <span style={{ flex: 1, minWidth: 0 }}>{n.text}</span>
+                    <SilBtn onSil={() => api.removeNote(n.id)} label={t('Delete note', 'Notu sil')}/>
                   </div>
                 ))}
               </div>

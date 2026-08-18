@@ -156,6 +156,7 @@ const ICONS = {
   brain: 'M9 4a3 3 0 00-3 3 3 3 0 00-2 5 3 3 0 002 5 3 3 0 003 3 3 3 0 003-2v-14a3 3 0 00-3 0zM15 4a3 3 0 013 3 3 3 0 012 5 3 3 0 01-2 5 3 3 0 01-3 3 3 3 0 01-3-2',
   heart: 'M12 21s-7-4.5-7-10a4.5 4.5 0 018-3 4.5 4.5 0 018 3c0 5.5-7 10-7 10z',
   ring: 'M12 22a10 10 0 110-20 10 10 0 010 20zM12 18a6 6 0 110-12 6 6 0 010 12z',
+  trash: 'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6',
 };
 
 // ─── Side rail (stage-aware routes) ──────────────────────────
@@ -472,6 +473,40 @@ function useLunara() {
       if (gunler[dateKey]) delete gunler[dateKey]; else gunler[dateKey] = true;
       return { ...s, periodDays: gunler, periodStart: sonKanamaBasi(gunler) || s.periodStart };
     }),
+    /* ── Silme ────────────────────────────────────────────────────
+       Girilen her şeyin geri alınabilmesi gerekiyor: deneme amaçlı bir
+       kayıt yüzünden uygulamayı sıfırlamak zorunda kalmak kabul edilemez.
+       Aşağıdakiler eksik olan silme yollarıydı. */
+    // Günlük notu sil — eskiden not eklenebiliyordu ama silinemiyordu
+    removeNote: (id) => setState(s => ({
+      ...s, notes: (s.notes || []).filter(n => n.id !== id),
+    })),
+    // Bir günün tüm belirti kayıtlarını temizle. logSymptom(…, 0) girdiyi
+    // sıfırlıyor ama günü "kayıt var" saymaya devam ediyordu.
+    clearSymptomDay: (dateKey) => setState(s => {
+      const log = { ...(s.symptomLog || {}) };
+      delete log[dateKey];
+      return { ...s, symptomLog: log };
+    }),
+    // Pelvik taban setlerini sıfırla (jumpLog/proteinLog'da karşılığı vardı)
+    resetKegel: (dateKey) => setState(s => {
+      const log = { ...(s.kegelLog || {}) };
+      delete log[dateKey];
+      return { ...s, kegelLog: log };
+    }),
+    // Bir günün alınan doz kayıtlarını temizle
+    clearDoseDay: (dateKey) => setState(s => {
+      const log = { ...(s.doseLog || {}) };
+      delete log[dateKey];
+      return { ...s, doseLog: log };
+    }),
+    // Bir günün hareket adımlarını temizle
+    clearWorkoutDay: (dateKey) => setState(s => {
+      const log = { ...(s.workoutLog || {}) };
+      delete log[dateKey];
+      return { ...s, workoutLog: log };
+    }),
+
     addNote: (text) => setState(s => ({
       ...s, notes: [{ id: Date.now(), at: nowHM(), text }, ...s.notes],
     })),
@@ -821,6 +856,54 @@ const pillBtn = {
 };
 
 // ─── Primitives ────────────────────────────────────────────────
+/* ── Silme düğmesi ────────────────────────────────────────────────
+   Silmeler kalıcı ve geri alınamaz (yerel kayıt, sunucu yok), ama eskiden
+   tek dokunuşla oluyordu. Bu düğme iki adımlı: ilk dokunuş "Emin misin?"e
+   çeviriyor, ikincisi siliyor. Beş saniye dokunulmazsa kendi kendine
+   normale dönüyor, böylece yanlışlıkla açık kalmış bir onay ekranda
+   asılı kalmıyor.
+
+   variant='ikon'  → satır içinde çöp kutusu (liste öğeleri)
+   variant='metin' → yazılı buton (kart altı, tehlikeli toplu silme) */
+function SilBtn({ onSil, label, confirmLabel, variant = 'ikon', style }) {
+  const [soruyor, setSoruyor] = React.useState(false);
+  React.useEffect(() => {
+    if (!soruyor) return;
+    const z = setTimeout(() => setSoruyor(false), 5000);
+    return () => clearTimeout(z);
+  }, [soruyor]);
+
+  const ad = label || t('Delete', 'Sil');
+  const onay = confirmLabel || t('Tap again to delete', 'Silmek için tekrar dokun');
+
+  if (variant === 'ikon' && !soruyor) {
+    return (
+      <button onClick={() => setSoruyor(true)} aria-label={ad} title={ad}
+        style={{
+          width: 30, height: 30, borderRadius: 8, flexShrink: 0, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'transparent', border: 'none', color: 'var(--muted-2)', ...style,
+        }}>
+        <Icon d={ICONS.trash} size={15} stroke="currentColor"/>
+      </button>
+    );
+  }
+  return (
+    <button onClick={() => { if (soruyor) { onSil(); setSoruyor(false); } else setSoruyor(true); }}
+      aria-label={soruyor ? onay : ad}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0,
+        padding: soruyor ? '6px 11px' : '6px 0', borderRadius: 8, border: 'none',
+        background: soruyor ? 'var(--signal-low)' : 'transparent',
+        color: soruyor ? 'var(--ivory)' : 'var(--signal-low)',
+        fontSize: 12, fontWeight: soruyor ? 700 : 500, fontFamily: 'var(--sans)',
+        whiteSpace: 'nowrap', ...style,
+      }}>
+      <Icon d={ICONS.trash} size={14} stroke="currentColor"/> {soruyor ? onay : ad}
+    </button>
+  );
+}
+
 function Card({ children, style, pad = 24, ...rest }) {
   return (
     <div
@@ -908,4 +991,4 @@ function SymptomTrack({ series, color = 'var(--accent)', dotSize = 6, gap = 3 })
   );
 }
 
-export { sonKanamaBasi, PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, medSchedule, medSlotFor, slotCovers, todaysDoses, medTaken, doseEntry, DateNav, ProgramBar, TopBar, StorageBanner, pillBtn, Card, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };
+export { sonKanamaBasi, PATIENT, DOSES_TODAY, SYMPTOMS, LABS, PROVIDER, PROGRAM, Icon, ICONS, navItemsFor, SideRail, Logo, LS_KEY, loadState, useLunara, nowHM, WHEN_TR, whenLabel, getTodayKey, TODAY_KEY, TODAY_DATE, regimenDay, activeMeds, medSchedule, medSlotFor, slotCovers, todaysDoses, medTaken, doseEntry, DateNav, ProgramBar, TopBar, StorageBanner, pillBtn, Card, SilBtn, Sparkline, RangeBar, SymptomTrack, labReadings, labHistory, labCurrent };

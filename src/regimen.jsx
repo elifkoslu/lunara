@@ -3,7 +3,7 @@ import { t, useLang } from './i18n';
 import { Btn } from './screens';
 import { exportRegimenIcs, CYCLE_COUNT } from './calendar-export';
 import { waterSettings } from './water';
-import { Card, ICONS, Icon, TODAY_DATE, medSchedule, regimenDay, slotCovers, whenLabel } from './shared';
+import { Card, ICONS, Icon, SilBtn, TODAY_DATE, medSchedule, regimenDay, slotCovers, whenLabel } from './shared';
 
 /* regimen.jsx — Lunara döngü-temelli ilaç programı düzenleyici
    Her ilaç döngünün [startDay..endDay] günlerinde aktif olur.
@@ -382,6 +382,11 @@ function MedEditRow({ med, max, api, color }) {
         <button onClick={() => setOpen(o => !o)} style={{ fontSize: 12, color: 'var(--muted)', padding: '6px 10px', borderRadius: 8, boxShadow: 'inset 0 0 0 1px var(--line)' }}>
           {open ? t('Close', 'Kapat') : t('Edit', 'Düzenle')}
         </button>
+        {/* Silme eskiden yalnızca satır açıldığında görünüyordu; deneme amaçlı
+            eklenen bir ilacı kaldırmak isteyen kişi onu bulamıyordu. */}
+        <SilBtn onSil={() => api.removeMed(med.id)}
+          label={t('Delete medication', 'İlacı sil')}
+          confirmLabel={t('Tap again', 'Tekrar dokun')}/>
       </div>
       {open && (
         <div style={{ padding: '4px 14px 16px', display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid var(--line-soft)' }}>
@@ -414,11 +419,6 @@ function MedEditRow({ med, max, api, color }) {
             </div>
           </div>
           <DoseSchedule med={med} max={max} api={api}/>
-          <button onClick={() => api.removeMed(med.id)} style={{
-            alignSelf: 'flex-start', fontSize: 12, color: 'var(--signal-low)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginTop: 2,
-          }}>
-            <Icon d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" size={14} stroke="var(--signal-low)"/> {t('Remove', 'Kaldır')}
-          </button>
         </div>
       )}
     </div>
