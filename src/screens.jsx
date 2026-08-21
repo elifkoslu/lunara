@@ -1373,4 +1373,4 @@ function careQuickPrompts(stage, phaseKey) {
   return sets[stage] || sets.cycle;
 }
 
-export { CYCLE_LEN, cycleLenOf, phaseBounds, daysBetween, cycleDayFrom, hasCycleAnchor, phaseOf, phaseLabel, phaseRange, bledOn, bleedExpected, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };
+export { TakenAmount, doseAmountOf, doseUnitOf, CYCLE_LEN, cycleLenOf, phaseBounds, daysBetween, cycleDayFrom, hasCycleAnchor, phaseOf, phaseLabel, phaseRange, bledOn, bleedExpected, MOON_NAMES_TR, moonName, PHASE_TINT, moonPhase, MoonDisc, ScreenHead, Btn, wrap, DosesScreen, RATE_LABELS, RATE_LABELS_TR, rateLabel, realSeries, SymptomsScreen, LabsScreen, labNote, CycleScreen, CycleRing, CareScreen, LibraryScreen, careQuickPrompts };

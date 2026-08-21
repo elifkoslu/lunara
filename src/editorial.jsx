@@ -2,7 +2,9 @@ import React from 'react';
 import { t, useLang } from './i18n';
 import { TodayWorkoutCard } from './nourish';
 import { MonthNav, WeekdayRow, useMonthView } from './month-grid';
-import { MoonDisc, PHASE_TINT, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, hasCycleAnchor, moonName, moonPhase, phaseLabel, phaseOf } from './screens';
+import { MoonDisc, PHASE_TINT, TakenAmount, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, doseAmountOf, doseUnitOf, hasCycleAnchor, moonName, moonPhase, phaseLabel, phaseOf, rateLabel } from './screens';
+import { ReferenceCard } from './reference-card';
+import { symptomsFor } from './screen-content';
 import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
@@ -11,19 +13,17 @@ import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, 
 function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
   return (
     <div style={{ padding: '18px 36px 40px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+      {/* Sıralama günlük işe göre: önce döngüde neredesin, sonra bugünün
+          tablosu (olması gereken seviye · ölçülen · aldığın doz), sonra
+          bugünün girişi. Ay kartı bilgilendirici ama günlük bir eylem
+          değil — en alta indi. */}
       <EdHero lunara={lunara} hasDoses={hasDoses} onNav={onNav}/>
-      <EdMoonToday/>
-      {lunara && <MonthSummary lunara={lunara} hasDoses={hasDoses}/>}
-      {hasDoses ? (
-        <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 22 }}>
-          <EdToday lunara={lunara} api={api} onNav={onNav}/>
-          <EdSymptomFeeling/>
-        </div>
-      ) : (
-        <EdSymptomFeeling/>
-      )}
+      {lunara && hasDoses && <TodayVitals lunara={lunara} api={api} onNav={onNav}/>}
+      {lunara && <TodaySymptoms lunara={lunara} api={api} onNav={onNav}/>}
       {lunara && api && <TodayWorkoutCard lunara={lunara} api={api} onNav={onNav}/>}
+      {lunara && <MonthSummary lunara={lunara} hasDoses={hasDoses}/>}
       {hasDoses && lunara && (lunara.labPanels || []).length > 0 && <EdLabsStrip lunara={lunara}/>}
+      <EdMoonToday/>
     </div>
   );
 }
@@ -321,6 +321,139 @@ function doseStreak(doseLog) {
   let streak = 0;
   while (doseLog[key(d)] && Object.keys(doseLog[key(d)]).length > 0) { streak++; d.setDate(d.getDate() - 1); }
   return streak;
+}
+
+/* ── Bugünün tablosu ──────────────────────────────────────────────
+   Üç şeyi tek bakışta birleştiriyor:
+     · normalde bugün hangi seviyeler olurdu (referans eğri)
+     · tahlilinde ne ölçüldü (eğri üzerinde içi boş halka)
+     · bugün hangi dozu, ne kadar aldın
+   Eğri bir hedef değil; doz kararı hekimin. Kartın altındaki not bunu
+   söylüyor ve üç katmanı birden kapsıyor. Ölçülen değer olmadan
+   "ulaşabildim mi" sorusu cevapsız kalırdı — eğri tek başına onu söylemez. */
+function TodayVitals({ lunara, api, onNav }) {
+  useLang();
+  const L = cycleLenOf(lunara);
+  const day = cycleDayFrom(lunara && lunara.periodStart, TODAY_DATE, L);
+  const { meds } = todaysDoses(lunara);
+  const rejimYok = !lunara.regimen || (lunara.regimen.meds || []).length === 0;
+  const alinan = meds.filter(d => medTaken(lunara, d.id)).length;
+
+  const dozlar = (
+    <>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+        <div className="eyebrow">{t("Today's doses", 'Bugünün dozları')}</div>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>
+          {rejimYok ? '' : `${alinan} / ${meds.length}`}
+        </span>
+      </div>
+
+      {rejimYok ? (
+        <div style={{ padding: '2px 0 4px' }}>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: 14.5, fontStyle: 'italic', color: 'var(--muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
+            {t('Add the plan your clinician prescribed to track doses here.',
+               'Dozlarını burada takip etmek için hekiminin verdiği programı ekle.')}
+          </p>
+          <PillButton onClick={() => onNav && onNav('doses')}>
+            {t('Add medication', 'İlaç ekle')} <Icon d={ICONS.arrow} size={13}/>
+          </PillButton>
+        </div>
+      ) : meds.length === 0 ? (
+        <p style={{ fontFamily: 'var(--serif)', fontSize: 15, fontStyle: 'italic', color: 'var(--muted)', margin: 0 }}>
+          {t('A rest day — no doses scheduled.', 'Bir ara günü — planlı doz yok.')}
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {meds.map((d, i) => {
+            const alindi = medTaken(lunara, d.id);
+            return (
+              <React.Fragment key={d.id}>
+                <DoseRow dose={d} last={i === meds.length - 1 && !alindi}
+                  taken={alindi}
+                  onToggle={api ? () => api.toggleMed(TODAY_KEY, d.id, nowHM(), doseAmountOf(d), doseUnitOf(d)) : null}/>
+                {/* Ne kadar aldığın burada giriliyor — eskiden yalnızca
+                    Dozlar ekranında vardı, Bugün'de sadece işaretleme vardı. */}
+                {alindi && api && (
+                  <TakenAmount med={d} entry={alindi} last={i === meds.length - 1}
+                    onChange={(patch) => api.updateDose(TODAY_KEY, d.id, patch)}/>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+
+  return <ReferenceCard lunara={lunara} cycleDay={day} altBolum={dozlar}/>;
+}
+
+/* ── Bugünün belirtileri ──────────────────────────────────────────
+   Buradaki eski kart (EdSymptomFeeling) hiç parametre almıyordu: örnek
+   hastanın sabit dizisini çiziyordu, yani herkese aynı uydurma veriyi
+   gösteriyordu. Artık kendi kaydın, ve dokunarak buradan giriliyor. */
+function TodaySymptoms({ lunara, api, onNav }) {
+  useLang();
+  const syms = symptomsFor(lunara.stage);
+  const bugun = (lunara.symptomLog || {})[TODAY_KEY] || {};
+  const girilen = syms.filter(s => bugun[s.key] != null).length;
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4, gap: 10 }}>
+        <div className="eyebrow">{t('How you feel today', 'Bugün nasıl hissediyorsun')}</div>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: girilen ? 'var(--accent)' : 'var(--muted-2)' }}>
+          {girilen} / {syms.length}
+        </span>
+      </div>
+      <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 16px' }}>
+        {girilen === 0
+          ? t('Tap to log — it takes a few seconds and builds the picture your clinician reads.',
+              'Dokunarak kaydet — birkaç saniye sürer ve hekiminin okuduğu resmi oluşturur.')
+          : t('Tap again to change any of them.', 'Değiştirmek için tekrar dokun.')}
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {syms.map(s => {
+          const val = bugun[s.key];
+          return (
+            <div key={s.key}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: 13.5, fontWeight: 500 }}>{t(s.label, s.labelTr)}</span>
+                <span style={{ fontSize: 11.5, fontFamily: 'var(--mono)', color: val == null ? 'var(--muted-2)' : 'var(--accent)' }}>
+                  {val == null ? '—' : rateLabel(val)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[0, 1, 2, 3].map(v => {
+                  const on = val === v;
+                  return (
+                    <button key={v} onClick={() => api && api.logSymptom(TODAY_KEY, s.key, v)}
+                      aria-pressed={on}
+                      aria-label={`${t(s.label, s.labelTr)} · ${rateLabel(v)}`}
+                      style={{
+                        flex: 1, height: 30, borderRadius: 8, cursor: 'pointer', border: 'none',
+                        background: on ? 'var(--accent)' : 'var(--bone)',
+                        color: on ? 'var(--ivory)' : 'var(--muted)',
+                        boxShadow: on ? 'none' : 'inset 0 0 0 1px var(--line-soft)',
+                        fontSize: 11, fontWeight: on ? 700 : 500, fontFamily: 'var(--sans)',
+                      }}>{rateLabel(v)}</button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <button onClick={() => onNav && onNav('symptoms')} style={{
+        marginTop: 16, fontSize: 12, color: 'var(--muted)', background: 'transparent',
+        border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, padding: 0,
+      }}>
+        {t('History & other days', 'Geçmiş & diğer günler')} <Icon d={ICONS.arrow} size={11}/>
+      </button>
+    </Card>
+  );
 }
 
 function EdToday({ lunara, api, onNav }) {
