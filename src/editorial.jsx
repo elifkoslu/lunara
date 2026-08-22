@@ -5,7 +5,7 @@ import { MonthNav, WeekdayRow, useMonthView } from './month-grid';
 import { MoonDisc, PHASE_TINT, TakenAmount, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, doseAmountOf, doseUnitOf, hasCycleAnchor, moonName, moonPhase, phaseLabel, phaseOf, rateLabel } from './screens';
 import { ReferenceCard } from './reference-card';
 import { symptomsFor } from './screen-content';
-import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
+import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SilBtn, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
 /* eslint-disable */
@@ -370,7 +370,8 @@ function TodayVitals({ lunara, api, onNav }) {
               <React.Fragment key={d.id}>
                 <DoseRow dose={d} last={i === meds.length - 1 && !alindi}
                   taken={alindi}
-                  onToggle={api ? () => api.toggleMed(TODAY_KEY, d.id, nowHM(), doseAmountOf(d), doseUnitOf(d)) : null}/>
+                  onToggle={api ? () => api.toggleMed(TODAY_KEY, d.id, nowHM(), doseAmountOf(d), doseUnitOf(d)) : null}
+                  onSil={api ? () => api.removeMed(d.id) : null}/>
                 {/* Ne kadar aldığın burada giriliyor — eskiden yalnızca
                     Dozlar ekranında vardı, Bugün'de sadece işaretleme vardı. */}
                 {alindi && api && (
@@ -380,6 +381,14 @@ function TodayVitals({ lunara, api, onNav }) {
               </React.Fragment>
             );
           })}
+          {/* Doz değiştiyse silmek değil düzenlemek gerekir; yol bir dokunuş uzakta. */}
+          <button onClick={() => onNav && onNav('doses')} style={{
+            marginTop: 12, alignSelf: 'flex-start', padding: 0, background: 'transparent',
+            border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+            fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--sans)',
+          }}>
+            {t('Edit plan', 'Programı düzenle')} <Icon d={ICONS.arrow} size={11}/>
+          </button>
         </div>
       )}
     </>
@@ -508,43 +517,59 @@ function EdToday({ lunara, api, onNav }) {
   );
 }
 
-function DoseRow({ dose, last, taken, onToggle }) {
+/* Doz satırı. Eskiden satırın tamamı tek bir <button>'dı; içine ikinci bir
+   buton konamadığı için silme buraya sığmıyordu ve yalnızca rejim ekranında
+   duruyordu. Artık dış kapsayıcı div, dokunulan alan hâlâ satırın kendisi.
+
+   Buradaki silme ilacı PROGRAMDAN kaldırır — yalnızca bugünkü kaydı değil.
+   Etiket bunu açıkça söylüyor, çünkü "Bugün" ekranında dururken sadece
+   bugünü siliyormuş gibi okunabilir. Bugünkü işareti geri almak için
+   satıra tekrar dokunmak yeterli. */
+function DoseRow({ dose, last, taken, onToggle, onSil }) {
   const isTaken = !!taken;
   return (
-    <button onClick={onToggle || undefined} style={{
-      display: 'grid', gridTemplateColumns: '46px 1fr auto', gap: 14, alignItems: 'center',
-      padding: '14px 0', borderBottom: last ? 'none' : '1px solid var(--line-soft)',
-      textAlign: 'left', width: '100%', background: 'transparent',
-      cursor: onToggle ? 'pointer' : 'default',
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 4,
+      borderBottom: last ? 'none' : '1px solid var(--line-soft)',
     }}>
-      <div style={{
-        width: 46, height: 46, borderRadius: 14,
-        background: isTaken ? 'var(--accent)' : 'var(--bone)',
-        color: isTaken ? 'var(--ivory)' : 'var(--muted)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: isTaken ? 'none' : 'inset 0 0 0 1px var(--line)',
-        transition: 'all 180ms ease',
+      <button onClick={onToggle || undefined} style={{
+        display: 'grid', gridTemplateColumns: '46px 1fr auto', gap: 14, alignItems: 'center',
+        padding: '14px 0', textAlign: 'left', width: '100%', background: 'transparent',
+        border: 'none', cursor: onToggle ? 'pointer' : 'default',
       }}>
-        <Icon d={isTaken ? ICONS.check : ICONS.clock} size={18} sw={isTaken ? 2 : 1.5}/>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span style={{ fontFamily: 'var(--serif)', fontSize: 18, letterSpacing: '-0.01em' }}>{t(dose.name, dose.nameTr || dose.name)}</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-2)' }}>{dose.dose}</span>
+        <div style={{
+          width: 46, height: 46, borderRadius: 14,
+          background: isTaken ? 'var(--accent)' : 'var(--bone)',
+          color: isTaken ? 'var(--ivory)' : 'var(--muted)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: isTaken ? 'none' : 'inset 0 0 0 1px var(--line)',
+          transition: 'all 180ms ease',
+        }}>
+          <Icon d={isTaken ? ICONS.check : ICONS.clock} size={18} sw={isTaken ? 2 : 1.5}/>
         </div>
-        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t(dose.detail || '', dose.detailTr || dose.detail || '')}</span>
-      </div>
-      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={{ fontSize: 12.5, color: isTaken ? 'var(--muted)' : 'var(--ink)', fontWeight: isTaken ? 400 : 600 }}>
-          {isTaken ? `${t('Taken', 'Alındı')} ${taken.at}` : dose.time}
-        </span>
-        <span className="eyebrow-mono" style={{ fontSize: 9.5, color: 'var(--muted-2)' }}>{whenLabel(dose.when).toUpperCase()}</span>
-      </div>
-    </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--serif)', fontSize: 18, letterSpacing: '-0.01em' }}>{t(dose.name, dose.nameTr || dose.name)}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-2)' }}>{dose.dose}</span>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t(dose.detail || '', dose.detailTr || dose.detail || '')}</span>
+        </div>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: 12.5, color: isTaken ? 'var(--muted)' : 'var(--ink)', fontWeight: isTaken ? 400 : 600 }}>
+            {isTaken ? `${t('Taken', 'Alındı')} ${taken.at}` : dose.time}
+          </span>
+          <span className="eyebrow-mono" style={{ fontSize: 9.5, color: 'var(--muted-2)' }}>{whenLabel(dose.when).toUpperCase()}</span>
+        </div>
+      </button>
+      {onSil && (
+        <SilBtn onSil={onSil}
+          label={t('Remove from plan', 'Programdan sil')}
+          confirmLabel={t('Tap again', 'Tekrar dokun')}/>
+      )}
+    </div>
   );
 }
 
-// ─── Symptom feeling ───────────────────────────────────────────
 function EdSymptomFeeling() {
   const picks = SYMPTOMS.slice(0, 4);
   return (
