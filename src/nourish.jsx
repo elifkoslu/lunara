@@ -2,7 +2,7 @@ import React from 'react';
 import { tx } from './dict';
 import { I18N, t } from './i18n';
 import { NourishGuideCard, PERIMENO_NOURISH, StageNourishView } from './nourish-stages';
-import { PHASE_TINT, ScreenHead, cycleDayFrom, cycleLenOf, phaseLabel, phaseOf, phaseRange } from './screens';
+import { PHASE_TINT, ScreenHead, cycleDayFrom, cycleLenOf, phaseBounds, phaseLabel, phaseOf, phaseRange, seedRange } from './screens';
 import { WaterCard } from './water';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, getTodayKey } from './shared';
 
@@ -380,7 +380,7 @@ function NourishScreen({ lunara, api, kind = 'eat' }) {
             </div>
 
             {/* Seed cycling — part of nutrition */}
-            <SeedCycle phaseKey={sel} liveKey={live} tint={tint}/>
+            <SeedCycle phaseKey={sel} liveKey={live} tint={tint} cycleLength={cycleLenOf(lunara)}/>
           </Card>
           )}
         </div>
@@ -419,8 +419,11 @@ const SEED_CYCLE = {
   },
 };
 
-function SeedCycle({ phaseKey, liveKey, tint }) {
+function SeedCycle({ phaseKey, liveKey, tint, cycleLength }) {
   const half = (phaseKey === 'menstrual' || phaseKey === 'follicular') ? 'first' : 'second';
+  /* Aralıklar sabit metin değil, döngü uzunluğundan türüyor: protokol
+     ovülasyona bağlı, ve ovülasyon 28 günlük olmayan döngülerde kayar. */
+  const b = phaseBounds(cycleLength);
   const g = SEED_CYCLE[half];
   const liveHalf = (liveKey === 'menstrual' || liveKey === 'follicular') ? 'first' : 'second';
   return (
@@ -435,7 +438,7 @@ function SeedCycle({ phaseKey, liveKey, tint }) {
         {half === liveHalf && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: '0.08em', color: 'var(--accent)' }}>● {t('NOW','ŞİMDİ')}</span>}
       </div>
       <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 23, margin: '8px 0 4px', letterSpacing: '-0.01em' }}>{tx(g.label)}</h3>
-      <div style={{ fontSize: 11.5, color: 'var(--muted)', fontFamily: 'var(--mono)', marginBottom: 16 }}>{tx(g.when)}</div>
+      <div style={{ fontSize: 11.5, color: 'var(--muted)', fontFamily: 'var(--mono)', marginBottom: 16 }}>{seedRange(half, cycleLength)}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
         {g.seeds.map((s, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, background: 'var(--bone)' }}>
@@ -453,13 +456,17 @@ function SeedCycle({ phaseKey, liveKey, tint }) {
       <p style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 14.5, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>{tx(g.why)}</p>
       {/* whole-cycle timeline */}
       <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
-        <div style={{ flex: 1 }}>
+        {/* Çubuk genişlikleri gerçek bölünmeyi yansıtıyor: 35 günlük bir
+            döngüde ilk yarı 21 gün, yani şeridin %60'ı. */}
+        <div style={{ flex: b.ov }}>
           <div style={{ height: 6, borderRadius: 6, background: half === 'first' ? 'var(--accent)' : 'var(--line)' }}/>
-          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6 }}>{t('FLAX + PUMPKIN · D1–14', 'KETEN + KABAK · G1–14')}</div>
+          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6 }}>
+            {t('FLAX + PUMPKIN', 'KETEN + KABAK')} · {t(`D1–${b.ov}`, `G1–${b.ov}`)}
+          </div>
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: b.L - b.ov }}>
           <div style={{ height: 6, borderRadius: 6, background: half === 'second' ? 'var(--accent)' : 'var(--line)' }}/>
-          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, textAlign: 'right' }}>{t('SESAME + SUNFLOWER · D15+', 'SUSAM + AY ÇEK. · G15+')}</div>
+          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, textAlign: 'right' }}>{t('SESAME + SUNFLOWER', 'SUSAM + AY ÇEK.')} · {t(`D${b.ov + 1}–${b.L}`, `G${b.ov + 1}–${b.L}`)}</div>
         </div>
       </div>
     </div>
