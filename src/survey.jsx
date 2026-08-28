@@ -14,10 +14,11 @@ import { STAGES } from './stages';
    Çoğu yol 2–3 soruda bitiyor: gebelik tek soru, düzenli döngü iki. */
 /* eslint-disable */
 
-/* Perimenopoz çıkanları yönlendireceğimiz uygulamanın adresi.
+/* Perimenopoz çıkanları yönlendirdiğimiz uygulama: Perim — yalnızca bu
+   dönem için, beş bölüme indirgenmiş.
    BOŞ BIRAKILIRSA yönlendirme bağlantısı gösterilmez, yalnızca öneri metni
    çıkar — çalışmayan bir bağlantı göstermektense hiç göstermemek iyi. */
-const WOMENTUM_URL = '';
+const PERIM_URL = 'https://perim-eliiiiiiiiiiiiiiifs-projects.vercel.app';
 
 const SORULAR = {
   durum: {
@@ -258,14 +259,14 @@ function SonucEkrani({ sonuc, onBasla, onGeri, onElleSec }) {
       {sonuc.womentum && (
         <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--accent-soft)', marginBottom: 18 }}>
           <p style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--ink)', margin: 0 }}>
-            {t('There is a companion app built just for this stage — Womentum, focused on perimenopause and hormone therapy. Lunara covers it too, so either works.',
-               'Tam bu dönem için ayrı bir uygulama var — Womentum, perimenopoz ve hormon tedavisine odaklı. Lunara da bu dönemi kapsıyor, ikisi de olur.')}
+            {t('There is a companion app built only for this stage — Perim, focused on perimenopause and hormone therapy. Lunara covers it too, so either works.',
+               'Tam bu dönem için ayrı bir uygulama var — Perim, perimenopoz ve hormon tedavisine odaklı. Lunara da bu dönemi kapsıyor, ikisi de olur.')}
           </p>
-          {WOMENTUM_URL && (
-            <a href={WOMENTUM_URL} style={{
+          {PERIM_URL && (
+            <a href={PERIM_URL} target="_blank" rel="noopener noreferrer" style={{
               display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
               fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none',
-            }}>{t('Open Womentum', 'Womentum’u aç')} <Icon d={ICONS.arrow} size={12}/></a>
+            }}>{t('Open Perim', 'Perim’i aç')} <Icon d={ICONS.arrow} size={12}/></a>
           )}
         </div>
       )}
@@ -293,4 +294,4 @@ function SonucEkrani({ sonuc, onBasla, onGeri, onElleSec }) {
   );
 }
 
-export { StageSurvey, SonucEkrani, WOMENTUM_URL };
+export { StageSurvey, SonucEkrani, PERIM_URL };
