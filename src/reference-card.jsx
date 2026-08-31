@@ -1,7 +1,7 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
 import { Card, labReadings } from './shared';
-import { cycleDayFrom, phaseLabel as uygulamaFazAdi, phaseOf as uygulamaFazi } from './screens';
+import { PHASE_TINT, cycleDayFrom, phaseLabel as uygulamaFazAdi, phaseOf as uygulamaFazi } from './screens';
 import { referenceFor, curveFor, bandFor } from './physiology';
 
 /* reference-card.jsx — "bugün normalde ne olurdu" kartı.
@@ -147,7 +147,7 @@ function ReferenceCard({ lunara, cycleDay, altBolum }) {
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted-2)', marginTop: 3 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span style={{ width: 12, height: 2, background: COLORS[v.key], flexShrink: 0 }}/>
-                {t('ovulatory', 'ovülatuar')} {v.low}–{v.high} {v.unit}
+                {ref.phaseLabel} {v.low}–{v.high} {v.unit}
               </span>
               {olculenler[v.key] && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--ink-2)' }}>
