@@ -782,7 +782,7 @@ function LabsScreen({ lunara, api }) {
             {lab.imported
               ? t('Imported from your e-Nabız report. Reference range comes from the reporting lab — discuss results with your clinician.',
                   'e-Nabız raporundan içe aktarıldı. Referans aralığı raporu veren laboratuvara aittir — sonuçları hekiminle değerlendir.')
-              : labNote(lab.key)}
+              : labNote(lab.key, reads)}
           </p>
         </Card>
       </div>
@@ -909,24 +909,53 @@ function AddLabForm({ onClose, onSave }) {
     </div>
   );
 }
-function labNote(key) {
-  const notes = {
-    e2: 'Estradiol has climbed steadily into the target window — symptom relief tends to follow this curve by two to three weeks.',
-    p4: 'Progesterone is in range and supports a stable luteal phase. Hold the bedtime dose.',
-    t: 'Total testosterone reached mid-range; pair this with the free-T reading for the full picture.',
-    ft: 'Free testosterone is the active fraction — trending toward target as SHBG falls.',
-    shbg: 'SHBG has dropped 34 points from baseline, freeing more active testosterone. This is the lever we have been watching.',
-    fsh: 'FSH is stable, consistent with intact ovarian signaling.',
-  };
-  const notesTr = {
-    e2: 'Estradiol istikrarlı şekilde hedef aralığa tırmandı — belirti rahatlaması bu eğriyi iki üç hafta gecikmeyle izler.',
-    p4: 'Progesteron aralıkta ve istikrarlı bir luteal faz sağlıyor. Yatmadan önceki dozu koru.',
-    t: 'Toplam testosteron orta aralığa ulaştı; tam tablo için serbest-T değeriyle birlikte değerlendir.',
-    ft: 'Serbest testosteron aktif fraksiyondur — SHBG düştükçe hedefe doğru ilerliyor.',
-    shbg: 'SHBG başlangıca göre 34 puan düştü, daha fazla aktif testosteron serbest kaldı. İzlediğimiz kaldıraç bu.',
-    fsh: 'FSH stabil, sağlam yumurtalık sinyaliyle uyumlu.',
-  };
-  return t(notes[key] || '', notesTr[key] || '');
+/* Analit hakkındaki sabit bilgi + kullanıcının kendi ölçümlerinden
+   hesaplanan eğilim.
+
+   Önceden burada örnek bir hastayı anlatan sabit cümleler vardı ve tek
+   ölçüm girilmişken "istikrarlı şekilde hedef aralığa tırmandı", hiç
+   başlangıç değeri yokken "SHBG başlangıca göre 34 puan düştü" diyordu.
+   Biri doğrudan doz talimatıydı ("yatmadan önceki dozu koru") — uygulama
+   bunu hiçbir koşulda söylememeli. Artık eğilim cümlesi ancak iki ve
+   üzeri ölçüm varken çıkıyor; tek ölçümde neden çıkmadığı yazıyor. */
+function labNote(key, reads) {
+  const tanim = {
+    e2: t('Estradiol swings more than any other hormone across the cycle, so a value only means something next to the cycle day the blood was drawn.',
+          'Estradiol döngü boyunca en çok oynayan hormondur; bir değer ancak kanın alındığı döngü günüyle birlikte anlam taşır.'),
+    p4: t('Progesterone rises only after ovulation, so a low result from a follicular-phase sample is expected, not a finding.',
+          'Progesteron ancak ovülasyondan sonra yükselir; folliküler fazda alınan örnekte düşük çıkması beklenen bir şeydir, bulgu değil.'),
+    t: t('Total testosterone is the bound and free fractions together — it can read normal while the active fraction is low if SHBG is high.',
+         'Toplam testosteron, bağlı ve serbest fraksiyonun toplamıdır; SHBG yüksekse toplam normal görünürken aktif kısım düşük olabilir.'),
+    ft: t('Free testosterone is the unbound, active fraction. Methods differ a lot between labs, so following it in the same lab is more reliable than comparing across them.',
+          'Serbest testosteron, proteine bağlı olmayan aktif fraksiyondur. Yöntemler laboratuvarlar arasında çok değişir; aynı laboratuvarda takip etmek karşılaştırmaktan güvenilirdir.'),
+    shbg: t('SHBG is the carrier protein that binds sex hormones — when it rises, less hormone stays free. Thyroid, estrogen and insulin status all move it.',
+            'SHBG, seks hormonlarını bağlayan taşıyıcı proteindir — yükseldiğinde serbest kalan hormon azalır. Tiroid, östrojen ve insülin durumu bu değeri oynatır.'),
+    fsh: t('FSH swings widely from cycle to cycle in perimenopause; a single high reading does not establish a stage on its own.',
+           'FSH perimenopozda döngüden döngüye çok oynar; tek bir yüksek değer tek başına evre belirlemez.'),
+  }[key] || '';
+
+  const n = (reads || []).length;
+  if (!n) return tanim;
+
+  if (n === 1) {
+    return [tanim, t('One reading is a point, not a trend — a second one is what makes the direction readable.',
+                     'Tek ölçüm bir nokta, eğilim değil — yönü okunur kılan ikinci ölçümdür.')]
+      .filter(Boolean).join(' ');
+  }
+
+  const ilk = reads[0].value, sonD = reads[n - 1].value;
+  const fark = sonD - ilk;
+  const oran = ilk ? Math.abs(fark) / Math.abs(ilk) : 0;
+  const yon = oran < 0.05
+    ? t(`Across ${n} readings the value has stayed about where it started (${ilk} → ${sonD}).`,
+        `${n} ölçüm boyunca değer başladığı yerde kaldı (${ilk} → ${sonD}).`)
+    : fark > 0
+      ? t(`Across ${n} readings it has risen from ${ilk} to ${sonD}.`,
+          `${n} ölçümde ${ilk} değerinden ${sonD} değerine yükseldi.`)
+      : t(`Across ${n} readings it has fallen from ${ilk} to ${sonD}.`,
+          `${n} ölçümde ${ilk} değerinden ${sonD} değerine düştü.`);
+
+  return [tanim, yon].filter(Boolean).join(' ');
 }
 
 /* ════════════════ CYCLE + MOON ════════════════ */
