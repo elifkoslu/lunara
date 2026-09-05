@@ -6,6 +6,7 @@ import { MoonDisc, PHASE_TINT, TakenAmount, bleedExpected, bledOn, cycleDayFrom,
 import { ReferenceCard } from './reference-card';
 import { symptomsFor } from './screen-content';
 import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SilBtn, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
+import { moonNote } from './moon-note';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
 /* eslint-disable */
@@ -23,7 +24,7 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
       {lunara && api && <TodayWorkoutCard lunara={lunara} api={api} onNav={onNav}/>}
       {lunara && <MonthSummary lunara={lunara} hasDoses={hasDoses}/>}
       {hasDoses && lunara && (lunara.labPanels || []).length > 0 && <EdLabsStrip lunara={lunara}/>}
-      <EdMoonToday/>
+      <EdMoonToday lunara={lunara}/>
     </div>
   );
 }
@@ -661,66 +662,46 @@ function EdLabsStrip({ lunara }) {
 // ─── Moon phase today + its possible effects ──────────────────
 // 8 phases: 0 New · 1 Waxing crescent · 2 First quarter · 3 Waxing gibbous
 //           4 Full · 5 Waning gibbous · 6 Last quarter · 7 Waning crescent
+/* Ay evresine bağlı başlıklar. Buradaki physEn/physTr ve emoEn/emoTr
+   alanları kaldırıldı: "enerji en düşük seviyede", "güç ve dayanıklılık
+   yükselir", "uyku hafifleyebilir" gibi cümlelerdi ve kartta alev ikonlu
+   "Fiziksel" başlığı altında fizyoloji diye sunuluyorlardı. Ay evresinin
+   bunları belirlediği gösterilmiş değil. Kartın metinleri artık
+   moon-note.jsx'ten geliyor: beden katmanı kullanıcının döngü gününden,
+   gelenek katmanı ayın evresinden ve gelenek olarak etiketli. */
 const MOON_FX = [
   { // New
-    titleEn: 'A time to begin', titleTr: 'Başlangıç zamanı',
-    physEn: 'Energy is at its lowest — the body wants rest and quiet. Appetite and sleep may run deeper.',
-    physTr: 'Enerji en düşük seviyede — beden dinlenme ve sessizlik ister. İştah ve uyku derinleşebilir.',
-    emoEn: 'Inward and reflective. A good moment to set intentions, journal, and plan gently.',
-    emoTr: 'İçe dönük ve düşünceli. Niyet belirlemek, günlük tutmak ve nazikçe plan yapmak için iyi an.' },
+    titleEn: 'A time to begin', titleTr: 'Başlangıç zamanı' },
   { // Waxing crescent
-    titleEn: 'Building momentum', titleTr: 'İvme kazanma',
-    physEn: 'Energy begins to rise. Motivation to move and start new routines returns.',
-    physTr: 'Enerji yükselmeye başlar. Hareket etme ve yeni rutinlere başlama isteği döner.',
-    emoEn: 'Hopeful and curious. Optimism grows — lean into small, concrete steps.',
-    emoTr: 'Umutlu ve meraklı. İyimserlik artar — küçük, somut adımlara yönel.' },
+    titleEn: 'Building momentum', titleTr: 'İvme kazanma' },
   { // First quarter
-    titleEn: 'Push through', titleTr: 'Engelleri aş',
-    physEn: 'Strength and stamina climb. The body responds well to challenge and effort.',
-    physTr: 'Güç ve dayanıklılık yükselir. Beden zorlanmaya ve çabaya iyi yanıt verir.',
-    emoEn: 'Determined, sometimes tense. Decisions and friction surface — channel it into action.',
-    emoTr: 'Kararlı, bazen gergin. Kararlar ve sürtüşmeler yüzeye çıkar — bunu eyleme dönüştür.' },
+    titleEn: 'Push through', titleTr: 'Engelleri aş' },
   { // Waxing gibbous
-    titleEn: 'Refine & focus', titleTr: 'İnce ayar & odak',
-    physEn: 'High, steady energy. Good for sustained work and detail-oriented tasks.',
-    physTr: 'Yüksek, istikrarlı enerji. Sürekli çalışma ve detay işleri için ideal.',
-    emoEn: 'Focused but can feel impatient. Trust the process; refine rather than restart.',
-    emoTr: 'Odaklı ama sabırsız hissedebilirsin. Sürece güven; yeniden başlamak yerine ince ayar yap.' },
+    titleEn: 'Refine & focus', titleTr: 'İnce ayar & odak' },
   { // Full
-    titleEn: 'Peak & release', titleTr: 'Zirve & boşalma',
-    physEn: 'Energy peaks; sleep can become lighter or restless. Senses feel heightened.',
-    physTr: 'Enerji zirvede; uyku hafifleyebilir veya huzursuzlaşabilir. Duyular keskinleşir.',
-    emoEn: 'Vivid emotions and heightened sensitivity. Connection and expression come easily.',
-    emoTr: 'Yoğun duygular ve artan hassasiyet. Bağ kurmak ve kendini ifade etmek kolaylaşır.' },
+    titleEn: 'Peak & release', titleTr: 'Zirve & boşalma' },
   { // Waning gibbous
-    titleEn: 'Give back & digest', titleTr: 'Paylaş & sindir',
-    physEn: 'Energy starts to ease. A natural window to recover and slow the intensity.',
-    physTr: 'Enerji azalmaya başlar. Toparlanmak ve yoğunluğu yavaşlatmak için doğal bir pencere.',
-    emoEn: 'Reflective and generous. A good time to share, teach, and process what happened.',
-    emoTr: 'Düşünceli ve cömert. Paylaşmak, öğretmek ve yaşananları sindirmek için iyi zaman.' },
+    titleEn: 'Give back & digest', titleTr: 'Paylaş & sindir' },
   { // Last quarter
-    titleEn: 'Let go', titleTr: 'Bırak',
-    physEn: 'Energy dips further. The body asks for lighter movement and more rest.',
-    physTr: 'Enerji daha da düşer. Beden daha hafif hareket ve daha çok dinlenme ister.',
-    emoEn: 'Releasing and re-evaluating. Clear what no longer serves you; forgive and simplify.',
-    emoTr: 'Bırakma ve yeniden değerlendirme. Sana hizmet etmeyeni bırak; affet ve sadeleştir.' },
+    titleEn: 'Let go', titleTr: 'Bırak' },
   { // Waning crescent
-    titleEn: 'Rest & restore', titleTr: 'Dinlen & onar',
-    physEn: 'Lowest energy before the cycle renews. Prioritise sleep, warmth, and gentleness.',
-    physTr: 'Döngü yenilenmeden önce en düşük enerji. Uykuya, sıcaklığa ve nazikliğe öncelik ver.',
-    emoEn: 'Quiet, dreamy, sensitive. Withdraw a little; restore before the next beginning.',
-    emoTr: 'Sakin, dalgın, hassas. Biraz geri çekil; yeni başlangıç öncesi kendini onar.' },
+    titleEn: 'Rest & restore', titleTr: 'Dinlen & onar' },
 ];
 function moonPhaseIndex(frac) {
   return Math.floor((frac * 8) + 0.5) % 8;
 }
 
-function EdMoonToday() {
+function EdMoonToday({ lunara }) {
   const lang = useLang();
   const today = TODAY_DATE;
   const moon = moonPhase(today);
   const fx = MOON_FX[moonPhaseIndex(moon.frac)];
   const illum = Math.round(moon.illum * 100);
+  /* Beden katmanı kullanıcının kendi döngü gününden gelir; ay evresinden
+     değil. Çapa kurulmamışsa hiç kurulmaz. */
+  const gun = lunara ? cycleDayFrom(lunara.periodStart, today, cycleLenOf(lunara)) : null;
+  const faz = phaseOf(gun, lunara ? cycleLenOf(lunara) : undefined);
+  const not = moonNote(moon.name, faz && faz.key);
   return (
     <Card pad={0} style={{ overflow: 'hidden' }}>
       <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '320px 1fr' }}>
@@ -746,17 +727,21 @@ function EdMoonToday() {
         </div>
         {/* Effects */}
         <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>{t('How this phase may feel', 'Bu faz nas\u0131l hissettirebilir')}</div>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>{t('Tonight, and where you are', 'Bu gece ve senin bulundu\u011fun yer')}</div>
           <h3 className="serif-display" style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 26, margin: '0 0 18px', letterSpacing: '-0.01em' }}>
             {t(fx.titleEn, fx.titleTr)}
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }} className="mb-2">
-            <FxBlock icon={ICONS.flame} label={t('Physical', 'Fiziksel')} text={t(fx.physEn, fx.physTr)}/>
-            <FxBlock icon={ICONS.spark} label={t('Emotional', 'Duygusal')} text={t(fx.emoEn, fx.emoTr)}/>
+          <div style={{ display: 'grid', gridTemplateColumns: not.beden ? '1fr 1fr' : '1fr', gap: 22 }} className="mb-2">
+            {not.beden && (
+              <FxBlock icon={ICONS.pulse}
+                label={`${t('In your body', 'Bedeninde')} · ${phaseLabel(faz)}`}
+                text={not.beden}/>
+            )}
+            <FxBlock icon={ICONS.spark} label={t('In tradition', 'Gelenekte')} text={not.gelenek}/>
           </div>
           <p style={{ fontSize: 11, color: 'var(--muted-2)', fontStyle: 'italic', fontFamily: 'var(--serif)', margin: '20px 0 0' }}>
-            {t('Lunar associations are reflective, not medical — notice what resonates for you.',
-               'Ay ile ilişkiler düşünsel niteliktedir, tıbbi değildir — sana neyin uyduğunu gözlemle.')}
+            {t('No reliable link between moon phase and the menstrual cycle has been shown. The tradition column is here for the stories, not to tell you how you should feel.',
+               'Ay evresiyle regl döngüsü arasında güvenilir bir bağ gösterilmiş değil. Gelenek sütunu anlatı için; ne hissetmen gerektiğini söylemek için değil.')}
           </p>
         </div>
       </div>
