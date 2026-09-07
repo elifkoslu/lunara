@@ -15,6 +15,7 @@ const REFERANS_EVRELERI = new Set(['cycle', 'ttc', 'menarche', 'perimeno']);
 import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SilBtn, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, labReadings, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
+import { LabTimeline, LabTimelineRows, labSeries } from './lab-timeline';
 
 /* screens.jsx — Lunara navigable screens (interactive, persistent) */
 /* eslint-disable */
@@ -708,6 +709,10 @@ function LabsScreen({ lunara, api }) {
   const drawDate = reads.length ? reads[reads.length - 1].date : null;
   const eff = effectiveRange(lab, drawDate, lunara);
   const range = eff.range;
+  /* Her ölçüm kendi tarihindeki aralığıyla eşleşiyor: referans döngü
+     gününe bağlı olduğu için tek bir aralığa vurmak yanıltıcı olurdu. */
+  const seri = labSeries(reads, (dd) => effectiveRange(lab, dd, lunara).range)
+    .map(r => ({ ...r, phaseLabel: effectiveRange(lab, r.date, lunara).phaseLabel }));
   const inRange = value != null && range != null && value >= range[0] && value <= range[1];
 
   const name = (l) => t(l.name, l.nameTr || l.name);
@@ -781,7 +786,20 @@ function LabsScreen({ lunara, api }) {
               }}>{inRange ? t('IN RANGE', 'ARALIKTA') : t('OUT OF RANGE', 'ARALIK DIŞI')}</span>
             )}
           </div>
-          {history.length > 0 && (
+          {/* Kendi verisi varsa her ölçüm kendi referans aralığıyla çizilir;
+              örnek veride aralık hesaplanamadığı için eski sparkline kalır. */}
+          {hasData && seri.length > 0 && (
+            <>
+              <div style={{ margin: '20px 0 0' }}>
+                <LabTimeline seri={seri} unit={lab.unit}/>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted-2)', fontFamily: 'var(--mono)', marginTop: 6 }}>
+                {dates.map((dd, i) => <span key={i}>{dd}</span>)}
+              </div>
+              <LabTimelineRows seri={seri} unit={lab.unit} fmtDate={fmtLabDate}/>
+            </>
+          )}
+          {!hasData && history.length > 0 && (
             <>
               <div style={{ margin: '20px 0 8px' }}>
                 <Sparkline data={history.length === 1 ? [history[0], history[0]] : history} color="var(--accent)" width={420} height={90}/>
