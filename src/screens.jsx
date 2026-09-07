@@ -16,6 +16,7 @@ import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SilBtn, SYMPTOMS, Spa
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
 import { LabTimeline, LabTimelineRows, labSeries } from './lab-timeline';
+import { useIsMobile } from './use-mobile';
 
 /* screens.jsx — Lunara navigable screens (interactive, persistent) */
 /* eslint-disable */
@@ -190,8 +191,9 @@ function MoonDisc({ size = 64, frac }) {
 
 // Section header used across screens
 function ScreenHead({ eyebrow, title, accent, right }) {
+  /* Dar ekranda başlık ile sağdaki eylem düğmeleri üst üste biniyordu. */
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
       <div>
         <div className="eyebrow" style={{ marginBottom: 6 }}>{eyebrow}</div>
         <h2 className="serif-display" style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 30, margin: 0, color: 'var(--ink)' }}>
@@ -686,6 +688,11 @@ function effectiveRange(lab, drawDate, lunara) {
 }
 
 function LabsScreen({ lunara, api }) {
+  /* Telefonda iki sütun alt alta yığılıyor: analit listesi uzun olduğunda
+     grafik listenin tamamının altında kalıyor ve kullanıcı seçtiği
+     tahlilin grafiğini görmek için bütün satırları geçmek zorunda
+     kalıyordu. Dar ekranda detay, seçilen satırın hemen altında açılıyor. */
+  const mobil = useIsMobile();
   const panels = (lunara && lunara.labPanels) || [];
   const hasData = panels.length > 0;
   const [adding, setAdding] = React.useState(false);
@@ -717,58 +724,10 @@ function LabsScreen({ lunara, api }) {
 
   const name = (l) => t(l.name, l.nameTr || l.name);
 
-  return (
-    <div style={wrap}>
-      <ScreenHead
-        eyebrow={hasData
-          ? t(`${panels.length} panel · last ${fmtLabDate(panels[0].date)}`, `${panels.length} panel · son ${fmtLabDate(panels[0].date)}`)
-          : t('SAMPLE DATA', 'ÖRNEK VERİ')}
-        title={t('Lab results', 'Tahlil sonuçları')}
-        right={<div style={{ display: 'flex', gap: 8 }}>
-          <Btn onClick={() => setImporting(true)}><Icon d={ICONS.vial} size={13} sw={1.6}/> {t('Import PDF', 'PDF’ten aktar')}</Btn>
-          <Btn primary onClick={() => setAdding(true)}><Icon d={ICONS.plus} size={13} sw={2}/> {t('Add results', 'Sonuç ekle')}</Btn>
-        </div>} />
-
-      {!hasData && (
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '-6px 0 16px', fontStyle: 'italic' }}>
-          {t('These are sample values. Tap “Add results” to enter your own.',
-             'Bunlar örnek değerlerdir. Kendi değerlerini girmek için “Sonuç ekle”ye dokun.')}
-        </p>
-      )}
-
-      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 20 }}>
-        {/* List */}
-        <Card pad={0} style={{ overflow: 'hidden' }}>
-          {shown.map((l, i) => {
-            const on = l.key === sel;
-            const v = hasData ? labCurrent(panels, l.key) : l.value;
-            const rd = hasData ? labReadings(panels, l.key) : [];
-            const e = effectiveRange(l, rd.length ? rd[rd.length - 1].date : null, lunara);
-            const rr = e.range;
-            return (
-              <button key={l.key} onClick={() => setSel(l.key)}
-                style={{
-                  width: '100%', textAlign: 'left', cursor: 'pointer',
-                  display: 'grid', gridTemplateColumns: '1fr auto 120px', gap: 14, alignItems: 'center',
-                  padding: '16px 22px', background: on ? 'var(--bone)' : 'transparent',
-                  borderBottom: i < shown.length - 1 ? '1px solid var(--line-soft)' : 'none',
-                  borderLeft: `3px solid ${on ? 'var(--accent)' : 'transparent'}`,
-                  transition: 'background 140ms ease',
-                }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{name(l)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{rr ? <>{t('ref', 'ref')} {rr[0]}–{rr[1]} {l.unit}{e.phaseLabel ? ' · ' + e.phaseLabel : ''}</> : l.unit}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-                  <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{v != null ? v : '—'}</span>
-                </div>
-                <div style={{ width: 120 }}>{v != null && rr && <RangeBar value={v} range={rr} target={l.target}/>}</div>
-              </button>
-            );
-          })}
-        </Card>
-        {/* Detail */}
-        <Card>
+  /* Detay gövdesi tek yerde: geniş ekranda sağ sütundaki kartın,
+     dar ekranda seçili satırın altındaki bloğun içeriği aynı. */
+  const detayIci = (
+    <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
             <div>
               <div className="eyebrow" style={{ marginBottom: 4 }}>{name(lab)}</div>
@@ -817,7 +776,72 @@ function LabsScreen({ lunara, api }) {
                   'e-Nabız raporundan içe aktarıldı. Referans aralığı raporu veren laboratuvara aittir — sonuçları hekiminle değerlendir.')
               : labNote(lab.key, reads)}
           </p>
+    </>
+  );
+
+  return (
+    <div style={wrap}>
+      <ScreenHead
+        eyebrow={hasData
+          ? t(`${panels.length} panel · last ${fmtLabDate(panels[0].date)}`, `${panels.length} panel · son ${fmtLabDate(panels[0].date)}`)
+          : t('SAMPLE DATA', 'ÖRNEK VERİ')}
+        title={t('Lab results', 'Tahlil sonuçları')}
+        right={<div style={{ display: 'flex', gap: 8 }}>
+          <Btn onClick={() => setImporting(true)}><Icon d={ICONS.vial} size={13} sw={1.6}/> {t('Import PDF', 'PDF’ten aktar')}</Btn>
+          <Btn primary onClick={() => setAdding(true)}><Icon d={ICONS.plus} size={13} sw={2}/> {t('Add results', 'Sonuç ekle')}</Btn>
+        </div>} />
+
+      {!hasData && (
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '-6px 0 16px', fontStyle: 'italic' }}>
+          {t('These are sample values. Tap “Add results” to enter your own.',
+             'Bunlar örnek değerlerdir. Kendi değerlerini girmek için “Sonuç ekle”ye dokun.')}
+        </p>
+      )}
+
+      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: mobil ? '1fr' : '1fr 1.1fr', gap: 20 }}>
+        {/* List */}
+        <Card pad={0} style={{ overflow: 'hidden' }}>
+          {shown.map((l, i) => {
+            const on = l.key === sel;
+            const v = hasData ? labCurrent(panels, l.key) : l.value;
+            const rd = hasData ? labReadings(panels, l.key) : [];
+            const e = effectiveRange(l, rd.length ? rd[rd.length - 1].date : null, lunara);
+            const rr = e.range;
+            return (
+              <React.Fragment key={l.key}>
+              <button onClick={() => setSel(l.key)}
+                aria-expanded={mobil ? on : undefined}
+                style={{
+                  width: '100%', textAlign: 'left', cursor: 'pointer',
+                  display: 'grid', gridTemplateColumns: '1fr auto 120px', gap: 14, alignItems: 'center',
+                  padding: '16px 22px', background: on ? 'var(--bone)' : 'transparent',
+                  borderBottom: i < shown.length - 1 ? '1px solid var(--line-soft)' : 'none',
+                  borderLeft: `3px solid ${on ? 'var(--accent)' : 'transparent'}`,
+                  transition: 'background 140ms ease',
+                }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{name(l)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{rr ? <>{t('ref', 'ref')} {rr[0]}–{rr[1]} {l.unit}{e.phaseLabel ? ' · ' + e.phaseLabel : ''}</> : l.unit}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>{v != null ? v : '—'}</span>
+                </div>
+                <div style={{ width: 120 }}>{v != null && rr && <RangeBar value={v} range={rr} target={l.target}/>}</div>
+              </button>
+              {/* Dar ekranda detay burada, tıklanan satırın hemen altında */}
+              {mobil && on && (
+                <div style={{ padding: '2px 20px 20px', background: 'var(--bone)',
+                  borderBottom: i < shown.length - 1 ? '1px solid var(--line-soft)' : 'none',
+                  borderLeft: '3px solid var(--accent)' }}>
+                  {detayIci}
+                </div>
+              )}
+              </React.Fragment>
+            );
+          })}
         </Card>
+        {/* Detail — geniş ekranda sağ sütun */}
+        {!mobil && <Card>{detayIci}</Card>}
       </div>
 
       {/* Entered panels */}
