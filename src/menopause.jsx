@@ -2,6 +2,7 @@ import React from 'react';
 import { t, useLang } from './i18n';
 import { Btn, wrap } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, medTaken, todaysDoses } from './shared';
+import { StageDateField } from './stage-date';
 import { StageBadge } from './stages';
 
 /* menopause.jsx — Lunara · Menopoz (Si) ana ekranı
@@ -162,6 +163,20 @@ function MenopauseHome({ lunara, api, onNav }) {
              'Yalnızca rehberlik — hormon tedavisi ve taramaları doktorun sana göre düzenler.')}
         </span>
       </div>
+
+      {/* Bu alanı yazan hiçbir yol yoktu: başlangıçtaki sabit '2024-03-01'
+          kaldırılınca süre "tarih girilmedi" olarak kalıyordu. Artık
+          kullanıcı kendi tarihini girebiliyor. */}
+      <Card>
+        <StageDateField
+          label={t('Last period', 'Son adet')}
+          hint={!(lunara.menopause && lunara.menopause.lastPeriod)
+            ? t('How long you have been period-free follows from this date.',
+                'Ne kadar süredir reglsiz olduğun bu tarihten hesaplanıyor.')
+            : undefined}
+          value={(lunara.menopause && lunara.menopause.lastPeriod) || null}
+          onChange={(iso) => api && api.setMenoLastPeriod(iso)}/>
+      </Card>
     </div>
   );
 }

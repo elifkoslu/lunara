@@ -430,15 +430,20 @@ function useLunara() {
       // TTC (gebe kalma) logs: 'YYYY-MM-DD' -> value
       ttc: { bbt: {}, lh: {}, intimacy: {}, ...(saved.ttc || {}) },
       // Pregnancy (gebelik): due date + logs
+      /* dueDate/weightKg sabit örnek değerlerdi ve dueDate'i yazan hiçbir
+         yer yoktu: gebelik ekranı ve hekime giden özet, kullanıcının
+         girmediği bir tarihten hafta ve trimester üretiyordu. Artık boş
+         başlıyorlar, tarihi kullanıcı StageDateField ile giriyor. */
       pregnancy: {
-        dueDate: '2026-10-08',   // ~24. hafta (bugün 2026-06-18)
-        weightKg: 68,
+        dueDate: null,
+        weightKg: null,
         kicks: {},               // 'YYYY-MM-DD' -> count
         ...(saved.pregnancy || {}),
       },
       // Postpartum (doğum sonrası): birth date + logs
+      /* birthDate de sabit örnekti, yazanı yoktu — aynı kusur. */
       postpartum: {
-        birthDate: '2026-06-04', // ~2. hafta
+        birthDate: null,
         feeds: {},               // 'YYYY-MM-DD' -> count
         mood: {},                // 'YYYY-MM-DD' -> 1..5
         epds: [],                // EPDS results [{ id, date, score, q10, answers }]
@@ -581,6 +586,11 @@ function useLunara() {
       return { ...s, ttc: { ...s.ttc, intimacy: im } };
     }),
     logWeight: (kg) => setState(s => ({ ...s, pregnancy: { ...s.pregnancy, weightKg: kg } })),
+    /* Evrelerin dayandığı tarihler. Bu üç alanı yazan hiçbir yol yoktu;
+       ekranlar sabit örnek tarihlerle çalışıyordu. */
+    setDueDate: (iso) => setState(s => ({ ...s, pregnancy: { ...s.pregnancy, dueDate: iso || null } })),
+    setBirthDate: (iso) => setState(s => ({ ...s, postpartum: { ...s.postpartum, birthDate: iso || null } })),
+    setMenoLastPeriod: (iso) => setState(s => ({ ...s, menopause: { ...s.menopause, lastPeriod: iso || null } })),
     addKick: (dateKey) => setState(s => ({ ...s, pregnancy: { ...s.pregnancy, kicks: { ...s.pregnancy.kicks, [dateKey]: (s.pregnancy.kicks[dateKey] || 0) + 1 } } })),
     resetKicks: (dateKey) => setState(s => {
       const k = { ...s.pregnancy.kicks }; delete k[dateKey];

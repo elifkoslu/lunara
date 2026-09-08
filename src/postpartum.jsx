@@ -2,6 +2,7 @@ import React from 'react';
 import { t, useLang } from './i18n';
 import { Btn, wrap } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
+import { StageDateField } from './stage-date';
 import { StageBadge } from './stages';
 
 /* postpartum.jsx — Lunara · Doğum sonrası (Sol) ana ekranı
@@ -94,7 +95,26 @@ function epdsDate(iso, lang) {
 
 function PostpartumHome({ lunara, api, onNav }) {
   useLang();
-  const pp = lunara.postpartum;
+  const pp = lunara.postpartum || {};
+
+  /* Doğum tarihi girilmeden kaçıncı haftada olunduğu hesaplanamaz.
+     Eskiden birthDate sabit bir örnek tarihti, o yüzden bu durum hiç
+     oluşmuyor ve ekran herkese aynı haftayı gösteriyordu. */
+  if (!pp.birthDate) {
+    return (
+      <div style={{ padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+        <Card>
+          <StageDateField
+            label={t('Birth date', 'Doğum tarihi')}
+            hint={t('Your recovery week and the guidance on this screen follow from this date.',
+                    'Kaçıncı haftada olduğun ve bu ekrandaki öneriler bu tarihten çıkıyor.')}
+            value={null}
+            onChange={(iso) => api && api.setBirthDate(iso)}/>
+        </Card>
+      </div>
+    );
+  }
+
   const { days, week } = ppWeeks(pp.birthDate);
   const rec = recoveryFor(week);
   const feedsToday = pp.feeds[TODAY_KEY] || 0;
@@ -237,6 +257,14 @@ function PostpartumHome({ lunara, api, onNav }) {
              'Destek, tıbbi tavsiye değil. Bir şey ters geliyorsa doktoruna veya ebene başvur.')}
         </span>
       </div>
+
+      {/* Tarih girildikten sonra da düzeltilebilsin */}
+      <Card>
+        <StageDateField
+          label={t('Birth date', 'Doğum tarihi')}
+          value={pp.birthDate}
+          onChange={(iso) => api && api.setBirthDate(iso)}/>
+      </Card>
     </div>
   );
 }

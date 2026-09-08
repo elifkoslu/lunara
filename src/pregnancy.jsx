@@ -2,6 +2,7 @@ import React from 'react';
 import { t, useLang } from './i18n';
 import { Btn, wrap } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
+import { StageDateField } from './stage-date';
 import { StageBadge } from './stages';
 
 /* pregnancy.jsx — Lunara · Gebelik (Fa) ana ekranı
@@ -107,7 +108,26 @@ function trimesterOf(week) {
 function PregnancyHome({ lunara, api, onNav }) {
   useLang();
   const lang = useLang();
-  const p = lunara.pregnancy;
+  const p = lunara.pregnancy || {};
+
+  /* Tarih girilmeden hafta, trimester ve kalan gün hesaplanamaz. Eskiden
+     dueDate sabit bir örnek tarihti, o yüzden bu durum hiç oluşmuyordu ve
+     ekran herkese aynı "24. hafta"yı gösteriyordu. */
+  if (!p.dueDate) {
+    return (
+      <div style={{ padding: '18px 36px 48px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+        <Card>
+          <StageDateField
+            label={t('Due date', 'Tahmini doğum tarihi')}
+            hint={t('Your weeks, trimester and the nutrition guidance all follow from this date.',
+                    'Gebelik haftan, trimesterin ve beslenme önerileri bu tarihten çıkıyor.')}
+            value={null} max={undefined}
+            onChange={(iso) => api && api.setDueDate(iso)}/>
+        </Card>
+      </div>
+    );
+  }
+
   const { week, daysLeft } = pregnancyWeek(p.dueDate);
   const ms = milestoneFor(week);
   const tri = trimesterOf(week);
@@ -185,6 +205,20 @@ function PregnancyHome({ lunara, api, onNav }) {
         {/* Weight */}
         <Card>
           <div className="eyebrow" style={{ marginBottom: 14 }}>{t('Weight', 'Kilo')}</div>
+          {/* Kilo eskiden sabit 68 ile başlıyordu, yani adımlayıcı hep bir
+              sayı buluyordu. Örnek değer kaldırıldı: kullanıcı kendi
+              başlangıç kilosunu girene kadar adımlayacak bir şey yok. */}
+          {p.weightKg == null ? (
+            <input type="number" step="0.1" min="20" max="300" inputMode="decimal"
+              aria-label={t('Weight in kg', 'Kilo (kg)')}
+              placeholder={t('Enter your weight (kg)', 'Kilonu gir (kg)')}
+              onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) api.logWeight(+v.toFixed(1)); }}
+              style={{
+                border: '1px solid var(--line)', borderRadius: 10, padding: '12px 14px',
+                fontFamily: 'var(--sans)', fontSize: 15, color: 'var(--ink)',
+                background: 'var(--card)', outline: 'none', width: '100%', boxSizing: 'border-box',
+              }}/>
+          ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button onClick={() => api.logWeight(+(p.weightKg - 0.1).toFixed(1))} style={stepperBtn}>−</button>
             <div style={{ textAlign: 'center', minWidth: 110 }}>
@@ -193,6 +227,7 @@ function PregnancyHome({ lunara, api, onNav }) {
             </div>
             <button onClick={() => api.logWeight(+(p.weightKg + 0.1).toFixed(1))} style={stepperBtn}>+</button>
           </div>
+          )}
           <p style={{ fontSize: 12.8, color: 'var(--muted)', lineHeight: 1.5, margin: '16px 0 0' }}>
             {t('Gradual, steady gain is healthy. Your doctor tracks the right range for you.',
                'Kademeli ve istikrarlı artış sağlıklıdır. Sana uygun aralığı doktorun izler.')}
@@ -219,6 +254,14 @@ function PregnancyHome({ lunara, api, onNav }) {
           {t('A general rhythm — your clinician sets your actual schedule.',
              'Genel bir düzendir — gerçek programını hekimin belirler.')}
         </p>
+      </Card>
+
+      {/* Tarih girildikten sonra da düzeltilebilsin */}
+      <Card>
+        <StageDateField
+          label={t('Due date', 'Tahmini doğum tarihi')}
+          value={p.dueDate} max={undefined}
+          onChange={(iso) => api && api.setDueDate(iso)}/>
       </Card>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', color: 'var(--muted-2)', fontSize: 12 }}>
