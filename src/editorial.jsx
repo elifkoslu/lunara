@@ -7,6 +7,7 @@ import { ReferenceCard } from './reference-card';
 import { symptomsFor } from './screen-content';
 import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SilBtn, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
 import { moonNote } from './moon-note';
+import { BackupReminder } from './backup-reminder';
 
 /* editorial.jsx — Aesthetic A: warm bone + maroon, magazine */
 /* eslint-disable */
@@ -25,6 +26,9 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
       {lunara && <MonthSummary lunara={lunara} hasDoses={hasDoses}/>}
       {hasDoses && lunara && (lunara.labPanels || []).length > 0 && <EdLabsStrip lunara={lunara}/>}
       <EdMoonToday lunara={lunara}/>
+      {/* Veri yalnız bu cihazda; kalıcılık istensin istenmesin tek gerçek
+          güvence dışa aktarılmış bir dosya. Korunacak veri yoksa çıkmaz. */}
+      <BackupReminder lunara={lunara} onNav={onNav}/>
     </div>
   );
 }
