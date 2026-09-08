@@ -445,7 +445,12 @@ function useLunara() {
         ...(saved.postpartum || {}),
       },
       // Menopause (menopoz): son regl tarihi
-      menopause: { lastPeriod: '2024-03-01', ...(saved.menopause || {}) },
+      /* Burada sabit bir '2024-03-01' duruyordu ve bu alanı yazan hiçbir
+         ekran yok. Doktor özeti "mp.lastPeriod || periodStart" diye
+         okuduğu için takvimden gelen gerçek tarihe hiç düşmüyordu:
+         kullanıcı son adetini işaretlese bile hekime giden belgede Mart
+         2024 ve "30 ay" yazıyordu — klinik olarak postmenopoz sinyali. */
+      menopause: { ...(saved.menopause || {}) },
       // User-entered lab panels: [{ id, date, readings:[{key,name,nameTr,unit,value}] }]
       labPanels: saved.labPanels || [],
     };

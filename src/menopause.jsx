@@ -9,8 +9,14 @@ import { StageBadge } from './stages';
    screens.jsx, shared.jsx (todaysDoses, medTaken), stages.jsx (StageBadge) sonrası. */
 /* eslint-disable */
 
+/* Tarih yoksa süre de yok. Eskiden menopause.lastPeriod başlangıç
+   durumunda sabit '2024-03-01' geldiği için bu fonksiyon hep bir sayı
+   üretiyordu; o örnek tarih kaldırılınca iso undefined olabiliyor ve
+   geçersiz tarihten "NaN ay" çıkardı. */
 function yearsSince(iso, today = TODAY_DATE) {
+  if (!iso) return null;
   const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
   const months = (today.getFullYear() - d.getFullYear()) * 12 + (today.getMonth() - d.getMonth());
   return { years: Math.floor(months / 12), months: months % 12, totalMonths: months };
 }
@@ -25,12 +31,13 @@ const MENO_SYMPTOMS = [
 
 function MenopauseHome({ lunara, api, onNav }) {
   useLang();
-  const since = yearsSince(lunara.menopause.lastPeriod);
-  const postmeno = since.totalMonths >= 12;
+  const since = yearsSince(lunara.menopause && lunara.menopause.lastPeriod);
+  const postmeno = !!since && since.totalMonths >= 12;
   const { meds } = todaysDoses(lunara);
   const takenCount = meds.filter(d => medTaken(lunara, d.id)).length;
   const todayLog = lunara.symptomLog[TODAY_KEY] || {};
-  const durStr = since.years >= 1
+  const durStr = !since ? t('date not entered', 'tarih girilmedi')
+    : since.years >= 1
     ? t(`${since.years} year${since.years>1?'s':''}${since.months?` ${since.months} mo`:''}`, `${since.years} yıl${since.months?` ${since.months} ay`:''}`)
     : t(`${since.totalMonths} months`, `${since.totalMonths} ay`);
 
