@@ -11,201 +11,176 @@ import { donguUzunluklari, reglBaslangiclari, sonrakiReglTahmini } from './menar
 /* eslint-disable */
 
 // Plain-language phase explainers for first cycles
+/* Menarş metinleri — 11–15 yaş için.
+
+   Üslup: abla gibi konuşan, kısa cümleli, samimi. Başlıklar kızın kendine
+   soracağı sorular. Zorlama argo yok — bu yaş, yetişkinin "gençler gibi
+   konuşmaya çalışmasını" hemen sezer. Her kart kısa ve yeterli: bir
+   bakışta okunacak kadar.
+
+   Rakamlar ve güvenlik eşikleri önceki metinlerle aynı (21–45 gün, 7 gün,
+   15–16 yaş, 3 ay, pedi saatte bir değiştirmek). Ağrı eşiği "okula
+   gidemeyecek kadar" olarak somutlaştı — ergenlerde değerlendirme için
+   kullanılan ölçüt bu. İlaç önerisi yok. */
+
 const MENARCHE_PHASES = {
-  menstrual:  { en: 'Your period', tr: 'Regl dönemin',
-    bodyEn: 'The lining of your uterus is shedding — this is your period. Cramps, tiredness or a low mood are common. Rest, warmth and water help.',
-    bodyTr: 'Rahim iç zarı dökülüyor — buna regl denir. Kramp, yorgunluk ya da moralsizlik normaldir. Dinlenmek, sıcaklık ve su iyi gelir.' },
-  follicular: { en: 'Building up', tr: 'Toparlanma',
-    bodyEn: 'Your body is getting ready for the month ahead. Energy and mood usually lift — a good time for sport, friends and new things.',
-    bodyTr: 'Bedenin önündeki aya hazırlanıyor. Enerji ve moral genelde yükselir — spor, arkadaşlar ve yeni şeyler için iyi zaman.' },
-  ovulation:  { en: 'Mid-point', tr: 'Orta nokta',
-    bodyEn: 'Around the middle of your cycle an egg may be released. You might feel confident and chatty, or notice a little clear discharge — all normal.',
-    bodyTr: 'Döngünün ortasında bir yumurta serbest kalabilir. Kendine güvenli ve konuşkan hissedebilir ya da hafif berrak akıntı fark edebilirsin — hepsi normal.' },
-  luteal:     { en: 'Winding down', tr: 'Yavaşlama',
-    bodyEn: 'Before your next period you may feel more sensitive, hungry or tired. Be gentle with yourself — it passes.',
-    bodyTr: 'Bir sonraki reglinden önce daha hassas, aç ya da yorgun hissedebilirsin. Kendine nazik ol — geçer.' },
+  menstrual:  { en: 'Period days', tr: 'Regl günlerin',
+    bodyEn: 'Your uterus is renewing its lining — that’s your period. Cramps or tiredness can happen. Something warm, water and rest help.',
+    bodyTr: 'Rahmin iç duvarını yeniliyor, regl bu. Kramp ya da yorgunluk olabilir. Sıcak bir şey, su ve biraz dinlenmek iyi gelir.' },
+  follicular: { en: 'Energy’s rising', tr: 'Enerji yükseliyor',
+    bodyEn: 'Your body is getting ready for a new month. Most people feel better these days.',
+    bodyTr: 'Bedenin yeni aya hazırlanıyor. Çoğu kişi bu günlerde kendini daha iyi hisseder.' },
+  ovulation:  { en: 'Right in the middle', tr: 'Tam ortası',
+    bodyEn: 'An egg may be released. You might notice clear, slippery discharge — that’s normal.',
+    bodyTr: 'Bir yumurta serbest kalabilir. Berrak, kaygan bir akıntı görebilirsin, bu normal.' },
+  luteal:     { en: 'Slow-down days', tr: 'Yavaşlama günleri',
+    bodyEn: 'Before your period you might feel touchy, hungry or tired. That’s hormones, not you.',
+    bodyTr: 'Reglden önce daha alıngan, aç ya da yorgun olabilirsin. Sebebi hormonlar, sen değilsin.' },
 };
 
 const FEEL_CHIPS = [
-  { key: 'happy',  en: 'Good',    tr: 'İyi',      icon: ICONS.spark },
-  { key: 'tired',  en: 'Tired',   tr: 'Yorgun',   icon: ICONS.moon },
-  { key: 'cramps', en: 'Cramps',  tr: 'Kramp',    icon: ICONS.flame },
-  { key: 'sad',    en: 'Low',     tr: 'Moralsiz', icon: ICONS.drop },
-  { key: 'energy', en: 'Energetic', tr: 'Enerjik', icon: ICONS.pulse },
+  { key: 'happy',  en: 'Good',           tr: 'İyiyim',        icon: ICONS.spark },
+  { key: 'tired',  en: 'Tired',          tr: 'Yorgunum',      icon: ICONS.moon },
+  { key: 'cramps', en: 'Cramps',         tr: 'Krampım var',   icon: ICONS.flame },
+  { key: 'sad',    en: 'Low',            tr: 'Moralim bozuk', icon: ICONS.drop },
+  { key: 'energy', en: 'Full of energy', tr: 'Enerji doluyum', icon: ICONS.pulse },
 ];
 
 const LEARN_CARDS = [
-  { tagEn: 'BASICS', tagTr: 'TEMELLER',
-    titleEn: 'What is a cycle?', titleTr: 'Döngü nedir?',
-    teaserEn: 'A monthly rhythm where your body prepares, then resets.',
-    teaserTr: 'Bedeninin hazırlanıp sonra sıfırlandığı aylık bir ritim.',
+  { tagEn: 'BASICS', tagTr: 'BAŞLANGIÇ',
+    titleEn: 'What’s a cycle?', titleTr: 'Döngü ne demek?',
+    teaserEn: 'Every month your body gets ready, then resets.',
+    teaserTr: 'Bedenin her ay hazırlanıp sıfırlanıyor. Olay bu.',
     bodyEn: [
-      'A cycle is the time from the first day of one period to the first day of the next. In the early years it often varies between 21 and 45 days, and being irregular is completely normal.',
-      'The cycle has four phases: your period (bleeding), building up, the mid-point (an egg may be released), and winding down. Your energy, mood and body can shift a little in each one.',
-      'Over time you get to know your own rhythm — it’s like learning to read the signals your body sends you.',
+      'A cycle is the time from the first day of one period to the first day of the next.',
+      'In the first years it can be anywhere from 21 to 45 days. Being different each month is totally normal.',
     ],
     bodyTr: [
-      'Döngü, bir reglin ilk gününden bir sonraki reglin ilk gününe kadar geçen süredir. İlk yıllarda çoğu zaman 21–45 gün arasında değişir ve düzensiz olması tamamen normaldir.',
-      'Döngü dört evreye ayrılır: regl (kanama), toparlanma, orta nokta (yumurtlama olabilir) ve yavaşlama. Her evrede enerjin, ruh halin ve bedenin biraz değişebilir.',
-      'Zamanla kendi ritmini tanırsın — bu, bedeninin sana gönderdiği işaretleri okumayı öğrenmek gibidir.',
+      'Döngü, bir reglin ilk gününden bir sonrakinin ilk gününe kadar geçen süre.',
+      'İlk yıllarda 21 ile 45 gün arasında değişebilir. Her ay farklı olması tamamen normal.',
     ] },
-  { tagEn: 'NORMAL', tagTr: 'NORMAL',
-    titleEn: 'What’s normal?', titleTr: 'Neler normal?',
-    teaserEn: 'Irregularity, spotting and cramps are common in the first years.',
-    teaserTr: 'İlk yıllarda düzensizlik, lekelenme ve krampler yaygındır.',
-    bodyEn: [
-      'For the first few years cycles can be irregular — 25 days one month, 40 the next. This is because your hormones are still settling, and it usually isn’t something to worry about.',
-      'Light spotting, clear or whitish discharge, cramps, bloating and mood changes are all normal.',
-      'Everyone’s body is different and “normal” is a wide range. Knowing your own pattern helps you understand what’s usual for you.',
-    ],
-    bodyTr: [
-      'İlk birkaç yıl döngüler düzensiz olabilir — bir ay 25, diğer ay 40 gün. Bu, hormonların henüz dengelenmesinden kaynaklanır ve genellikle endişe verici değildir.',
-      'Hafif lekelenme, berrak ya da beyazımsı akıntı, kramp, şişkinlik ve ruh hali değişimleri normaldir.',
-      'Herkesin bedeni farklıdır ve “normal” geniş bir aralıktır. Kendi düzenini bilmek, senin için neyin olağan olduğunu anlamanı sağlar.',
-    ] },
+  { tagEn: 'IS IT NORMAL?', tagTr: 'NORMAL Mİ?',
+    titleEn: 'Is this normal?', titleTr: 'Bu normal mi?',
+    teaserEn: 'Most likely, yes.',
+    teaserTr: 'Büyük ihtimalle evet.',
+    bodyEn: ['In the first years, all of these are common:'],
+    bodyTr: ['İlk yıllarda bunların hepsi olağan:'],
+    bulletsEn: ['A cycle that’s 25 days one month and 40 the next', 'Light spotting', 'White or clear discharge', 'Cramps and bloating', 'Mood that changes out of nowhere'],
+    bulletsTr: ['Bir ay 25, öbür ay 40 gün süren döngü', 'Hafif lekelenme', 'Beyaz ya da berrak akıntı', 'Kramp ve şişkinlik', 'Birden değişen ruh hali'],
+    footEn: 'Your hormones are still settling in. Don’t stress about it.',
+    footTr: 'Hormonların hâlâ yerine oturuyor. Kafana takma.' },
   { tagEn: 'PRODUCTS', tagTr: 'ÜRÜNLER',
-    titleEn: 'Pads, tampons & cups', titleTr: 'Ped, tampon ve kap',
-    teaserEn: 'Pick whatever feels most comfortable — there’s no right or wrong.',
-    teaserTr: 'Sana en rahat geleni seçebilirsin — doğru ya da yanlış yok.',
-    bodyEn: [
-      'Pads are worn outside the body and are the easiest way to start. Tampons and menstrual cups are used inside; you can move to these whenever you feel ready.',
-      'Change a pad every 4–6 hours and a tampon every 4–8 hours. Don’t leave a tampon in overnight.',
-    ],
-    bodyTr: [
-      'Ped dıştan kullanılır ve başlamak için en kolay seçenektir. Tampon ve adet kabı içeriden kullanılır; bunlara hazır hissettiğinde geçebilirsin.',
-      'Pedi 4–6 saatte bir, tamponu 4–8 saatte bir değiştir. Tamponu gece boyunca takılı bırakma.',
-    ],
-    bulletsEn: ['Pad: outside, easiest start', 'Tampon: inside, handy for sport & swimming', 'Cup: reusable and economical'],
-    bulletsTr: ['Ped: dıştan, en kolay başlangıç', 'Tampon: içeriden, spor ve yüzme için pratik', 'Adet kabı: yeniden kullanılabilir ve ekonomik'] },
-  { tagEn: 'RELIEF', tagTr: 'RAHATLAMA',
-    titleEn: 'Easing cramps', titleTr: 'Krampleri hafifletmek',
-    teaserEn: 'Warmth, gentle movement and water usually help.',
-    teaserTr: 'Sıcaklık, hareket ve su çoğu zaman yardımcı olur.',
-    bodyEn: [
-      'A warm water bottle on your tummy or lower back relaxes the muscles. A short walk and gentle stretching boost circulation and can ease the ache.',
-      'Drinking plenty of water and eating regularly help with bloating and tiredness.',
-      'If the pain is strong enough to stop your day, talk to a trusted adult — a doctor can suggest a suitable pain reliever if needed.',
-    ],
-    bodyTr: [
-      'Karnına ya da beline sıcak su torbası koymak kasları gevşetir. Kısa bir yürüyüş ve hafif esneme kan dolaşımını artırarak ağrıyı azaltabilir.',
-      'Bol su içmek ve düzenli beslenmek şişkinliği ve yorgunluğu hafifletir.',
-      'Ağrı gününü durduracak kadar şiddetliyse güvendiğin bir yetişkinle konuş; gerekirse doktor uygun bir ağrı kesici önerebilir.',
-    ],
-    bulletsEn: ['Warm bottle or warm shower', 'Light movement and stretching', 'Water and balanced meals'],
-    bulletsTr: ['Sıcak su torbası ya da ılık duş', 'Hafif hareket ve esneme', 'Su ve dengeli beslenme'] },
+    titleEn: 'Pad or tampon?', titleTr: 'Ped mi, tampon mu?',
+    teaserEn: 'Whatever’s comfy. No right or wrong.',
+    teaserTr: 'Hangisi rahatsa o. Doğrusu yanlışı yok.',
+    bodyEn: ['Pads are the easiest way to start. Try the others when you feel ready — no rush.'],
+    bodyTr: ['Başlamak için en kolayı ped. Diğerlerini hazır hissettiğinde denersin, acele yok.'],
+    bulletsEn: ['Pad: sticks to your underwear, change every 4–6 hours', 'Tampon: goes inside, change every 4–8 hours, never leave it in overnight', 'Cup: wash and reuse'],
+    bulletsTr: ['Ped: iç çamaşırına yapışır, 4–6 saatte bir değiştir', 'Tampon: içeriden kullanılır, 4–8 saatte bir değiştir, gece takılı bırakma', 'Regl kabı: yıkanıp tekrar kullanılır'] },
+  { tagEn: 'CRAMPS', tagTr: 'KRAMP',
+    titleEn: 'Cramps? Try this.', titleTr: 'Kramp girdi, ne yapsam?',
+    teaserEn: 'Warmth, movement and water usually help.',
+    teaserTr: 'Sıcaklık, hareket ve su genelde iş görür.',
+    bodyEn: ['Try these:'],
+    bodyTr: ['Bunları dene:'],
+    bulletsEn: ['A hot water bottle on your tummy, or a warm shower', 'A short walk or some gentle stretching', 'Plenty of water, and don’t skip meals'],
+    bulletsTr: ['Karnına sıcak su torbası ya da ılık bir duş', 'Kısa bir yürüyüş ya da hafif esneme', 'Bol su, öğün atlamamak'],
+    footEn: 'If the pain keeps you home from school, tell an adult. A doctor can find what works for you.',
+    footTr: 'Ağrı yüzünden okula gidemiyorsan bir büyüğüne söyle. Doktor sana uygun bir çözüm bulabilir.' },
   { tagEn: 'TRACKING', tagTr: 'TAKİP',
-    titleEn: 'Tracking your cycle', titleTr: 'Döngünü takip etmek',
-    teaserEn: 'Noting your period and how you feel teaches you your pattern.',
-    teaserTr: 'Reglini ve nasıl hissettiğini not etmek düzenini öğretir.',
+    titleEn: 'Why keep track?', titleTr: 'Neden not almalı?',
+    teaserEn: 'So you can guess when your period’s coming.',
+    teaserTr: 'Reglinin ne zaman geleceğini tahmin edebilmek için.',
     bodyEn: [
-      'Marking the day each period starts lets you see your cycle length over time. Lunara counts this for you.',
-      'Noting how you feel each day — energy, mood, cramps — helps you understand what happens in each phase.',
-      'After a few months you can predict roughly when your next period will come, which helps you feel prepared.',
+      'On the day your period starts, tap “My period started”. Lunara counts the rest.',
+      'After a few months you’ll roughly know when the next one is due. No more surprises.',
     ],
     bodyTr: [
-      'Her reglin başladığı günü işaretlemek, zamanla döngü uzunluğunu görmeni sağlar. Lunara bunu senin için sayar.',
-      'Nasıl hissettiğini (enerji, ruh hali, kramp) günlük not etmek, hangi evrede neler yaşadığını anlamana yardım eder.',
-      'Birkaç ay sonra bir sonraki reglinin yaklaşık ne zaman geleceğini tahmin edebilirsin — bu da hazırlıklı olmanı sağlar.',
+      'Reglin başladığı gün “Reglim başladı”ya dokun, gerisini Lunara sayar.',
+      'Birkaç ay sonra bir sonrakini aşağı yukarı bilirsin. Hazırlıksız yakalanmazsın.',
     ] },
-  { tagEn: 'ASK', tagTr: 'DANIŞ',
-    titleEn: 'When to ask for help', titleTr: 'Ne zaman yardım istemeli',
-    teaserEn: 'Some signs are worth checking with an adult or doctor.',
-    teaserTr: 'Bazı işaretler için bir yetişkin ya da doktora danışmak iyidir.',
-    bodyEn: ['It’s important to talk to a trusted adult or doctor if you notice any of these:'],
-    bodyTr: ['Aşağıdaki durumlarda güvendiğin bir yetişkin ya da doktorla konuşmak önemlidir:'],
+  /* tagEn 'ASK' değişmemeli: ritim kartındaki "3 aydan uzun" uyarısı bu
+     kartı tagEn ile buluyor. */
+  { tagEn: 'ASK', tagTr: 'YARDIM',
+    titleEn: 'When to tell an adult?', titleTr: 'Ne zaman bir büyüğe söylemeli?',
+    teaserEn: 'Always tell someone if this happens.',
+    teaserTr: 'Şu durumlarda mutlaka anlat.',
+    bodyEn: ['If any of these happen, tell an adult you trust or a doctor:'],
+    bodyTr: ['Bunlardan biri olursa güvendiğin bir yetişkine ya da doktora söyle:'],
     bulletsEn: [
-      'Bleeding heavy enough to soak a pad or tampon every hour',
-      'A period lasting more than 7 days',
-      'Pain strong enough to stop your day',
+      'Bleeding so heavy you change a pad every hour',
+      'A period that lasts more than 7 days',
+      'Pain so bad you can’t go to school',
       'No period at all by age 15–16',
-      'Periods stopping for more than 3 months (when not pregnant)',
+      'Your period not coming for more than 3 months (when not pregnant)',
     ],
     bulletsTr: [
-      'Pedi/tamponu saatte bir değiştirecek kadar yoğun kanama',
+      'Pedi saatte bir değiştirecek kadar çok kanama',
       '7 günden uzun süren regl',
-      'Gününü durduran şiddetli ağrı',
-      '15–16 yaşına kadar hiç regl olmaması',
-      'Reglin 3 aydan uzun süre durması (gebelik dışında)',
+      'Okula gidemeyeceğin kadar ağrı',
+      '15–16 yaşına kadar hiç regl olmamak',
+      'Reglin 3 aydan uzun süre gelmemesi (gebelik dışında)',
     ],
-    footEn: 'Asking for help is nothing to be embarrassed about — it’s part of understanding your body.',
-    footTr: 'Yardım istemek utanılacak bir şey değildir — bedenini anlamanın bir parçasıdır.' },
-  /* Aşağıdaki dört kart menarş bölümünü genişletirken eklendi. Tıbbi iddia
-     taşıyan cümleler bilerek genel ve yaygın kabul görmüş olanlarla sınırlı;
-     ilaç önerisi yok — ağrı kesici gibi konular yetişkin ve hekim kararı. */
+    footEn: 'Asking for help is nothing to be embarrassed about.',
+    footTr: 'Yardım istemek utanılacak bir şey değil.' },
   { tagEn: 'BODY', tagTr: 'BEDEN',
-    titleEn: 'Your body is changing', titleTr: 'Bedenin değişiyor',
-    teaserEn: 'What happens in puberty — and why all of it is normal.',
-    teaserTr: 'Ergenlikte neler olur — ve neden hepsi normaldir.',
+    titleEn: 'What’s happening to my body?', titleTr: 'Bedenimde neler oluyor?',
+    teaserEn: 'Puberty can feel weird — everyone goes through it.',
+    teaserTr: 'Ergenlik garip gelebilir, ama herkes yaşıyor.',
     bodyEn: [
-      'Puberty usually starts somewhere between 8 and 13 and takes a few years. Everyone moves at their own pace — starting before or after your friends is normal.',
-      'For most girls the first change is breast development; the first period usually comes around two years later. A few months to a year before it, you may notice white or clear discharge in your underwear — a sign your body is getting ready.',
-      'You may grow quickly, notice hair under your arms and between your legs, a change in how sweat smells, or some spots. All of this means your hormones are doing their job.',
+      'Puberty usually starts between 8 and 13. Starting before or after your friends is normal.',
+      'Your first period usually comes about two years after your breasts start to grow. A few months before, you may see white discharge — your body is getting ready.',
     ],
     bodyTr: [
-      'Ergenlik genellikle 8 ile 13 yaş arasında bir yerde başlar ve birkaç yıl sürer. Herkes kendi hızında ilerler — arkadaşlarından önce ya da sonra başlaman normaldir.',
-      'Çoğu kızda ilk değişiklik göğüs gelişimidir; ilk regl genellikle bundan iki yıl kadar sonra gelir. Ondan birkaç ay ile bir yıl önce iç çamaşırında beyaz ya da berrak bir akıntı fark edebilirsin — bedeninin hazırlandığının işareti.',
-      'Boyun hızla uzayabilir, koltuk altında ve bacak arasında tüylenme başlar, terinin kokusu değişir, sivilce çıkabilir. Bunların hepsi hormonlarının işini yaptığını gösterir.',
-    ] },
+      'Ergenlik genelde 8–13 yaş arasında başlar. Arkadaşlarından önce ya da sonra başlaman normal.',
+      'İlk regl çoğu zaman göğüsler gelişmeye başladıktan iki yıl kadar sonra gelir. Ondan birkaç ay önce beyaz bir akıntı görebilirsin, bedenin hazırlanıyor demek.',
+    ],
+    bulletsEn: ['You grow taller fast', 'Hair appears under your arms and between your legs', 'Sweat smells different, and spots can show up'],
+    bulletsTr: ['Boyun hızla uzar', 'Koltuk altında ve bacak arasında tüy çıkar', 'Terinin kokusu değişir, sivilce çıkabilir'] },
   { tagEn: 'BE READY', tagTr: 'HAZIRLIK',
-    titleEn: 'Being prepared', titleTr: 'Hazırlıklı olmak',
-    teaserEn: 'A small kit in your bag makes surprises easier.',
-    teaserTr: 'Çantandaki küçük bir kese, sürprizleri kolaylaştırır.',
-    bodyEn: [
-      'A first period often arrives without warning and is usually light — sometimes it shows up as a brownish mark rather than red.',
-      'Keeping a small pouch in your school bag makes things easier:',
-    ],
-    bodyTr: [
-      'İlk regl çoğu zaman habersiz gelir ve genellikle az olur — bazen kırmızı değil, kahverengimsi bir leke olarak görünür.',
-      'Okul çantanda küçük bir kese taşımak işini kolaylaştırır:',
-    ],
-    bulletsEn: [
-      'A few pads (or a tampon or cup, if you are used to one)',
-      'Spare underwear',
-      'Wet wipes and a small bag',
-    ],
-    bulletsTr: [
-      'Birkaç ped (ya da alıştıysan tampon veya regl kabı)',
-      'Yedek bir iç çamaşırı',
-      'Islak mendil ve küçük bir poşet',
-    ],
-    footEn: 'If you get caught out at school, you can tell a teacher, the school nurse or a friend you trust — it happens a lot, and nobody finds it strange.',
-    footTr: 'Okulda hazırlıksız yakalanırsan öğretmenine, okul hemşiresine ya da güvendiğin bir arkadaşına söyleyebilirsin — bu çok sık olur ve kimse garipsemez.' },
+    titleEn: 'Your secret bag kit', titleTr: 'Çantandaki gizli kit',
+    teaserEn: 'A tiny pouch saves a big panic.',
+    teaserTr: 'Küçük bir kese, büyük bir panikten kurtarır.',
+    bodyEn: ['Your first period can come without warning, and it’s usually light — sometimes just a brown mark. Keep these in your bag:'],
+    bodyTr: ['İlk regl habersiz gelir ve genelde az olur, bazen sadece kahverengi bir leke gibi görünür. Çantanda şunlar olsun:'],
+    bulletsEn: ['A few pads', 'Spare underwear', 'Wet wipes and a small bag'],
+    bulletsTr: ['Birkaç ped', 'Yedek iç çamaşırı', 'Islak mendil ve küçük bir poşet'],
+    footEn: 'Caught out at school? Tell a teacher or the school nurse. It happens all the time.',
+    footTr: 'Okulda hazırlıksız mı yakalandın? Öğretmenine ya da okul hemşiresine söyle. Çok sık olur.' },
   { tagEn: 'MOVE', tagTr: 'HAREKET',
-    titleEn: 'Sport and periods', titleTr: 'Spor ve regl',
-    teaserEn: 'Moving during your period is fine — it can even ease cramps.',
-    teaserTr: 'Regldeyken hareket etmek serbest — hatta krampa iyi gelebilir.',
+    titleEn: 'Sport on my period?', titleTr: 'Regldeyken spor olur mu?',
+    teaserEn: 'Yes! It can even help with cramps.',
+    teaserTr: 'Olur! Krampa iyi bile gelebilir.',
     bodyEn: [
-      'You can do sport, join PE and dance while you have your period. Gentle movement eases cramps for many people.',
-      'Swimming is possible too — for that you need a tampon or a cup, because a pad does not work in water.',
-      'On days you feel very tired or sore, slowing down is completely fine. Listen to your body.',
+      'PE, dance, running — all fine. Gentle movement can ease cramps.',
+      'For swimming you need a tampon or a cup, because pads don’t work in water. If you’re really tired, slow down and listen to your body.',
     ],
     bodyTr: [
-      'Reglin olduğu günlerde spor yapabilir, beden eğitimi dersine katılabilir, dans edebilirsin. Hafif hareket birçok kişide krampları azaltır.',
-      'Yüzmek de mümkün — bunun için tampon ya da regl kabı gerekir, çünkü ped suda işe yaramaz.',
-      'Kendini çok yorgun ya da ağrılı hissettiğin günlerde temponu düşürmek de tamamen normal. Bedenini dinle.',
+      'Beden eğitimi, dans, koşu, hepsi serbest. Hafif hareket krampları azaltabilir.',
+      'Yüzmek için tampon ya da regl kabı gerekir, çünkü ped suda işe yaramaz. Çok yorgunsan yavaşla, bedenini dinle.',
     ] },
   { tagEn: 'FACTS', tagTr: 'GERÇEKLER',
-    titleEn: 'Myths vs facts', titleTr: 'Doğru bilinen yanlışlar',
-    teaserEn: 'Things people say about periods that are not true.',
-    teaserTr: 'Regl hakkında sık duyulan ama doğru olmayan şeyler.',
-    bodyEn: ['You may have heard these — none of them is true:'],
-    bodyTr: ['Bunları duymuş olabilirsin — hiçbiri doğru değil:'],
+    titleEn: 'Don’t believe everything', titleTr: 'Duyduğun her şeye inanma',
+    teaserEn: 'Five period myths.',
+    teaserTr: 'Regl hakkında beş yanlış bilgi.',
+    bodyEn: ['None of these are true:'],
+    bodyTr: ['Hepsi yanlış:'],
     bulletsEn: [
-      '“You shouldn’t shower on your period.” — False. Showering feels clean and comfortable, and warm water can ease cramps.',
-      '“Every cycle is 28 days.” — False. Especially in the first years, 21–45 days is normal.',
-      '“You can’t do sport on your period.” — False. Movement often helps.',
-      '“Period blood is dirty.” — False. It is made of the uterine lining and blood — a healthy body at work.',
-      '“Everyone can tell you’re on your period.” — False. Nobody knows unless you tell them.',
+      '“No showers on your period.” You can — it even helps.',
+      '“Every cycle is 28 days.” Nope, 21–45 days is normal.',
+      '“No sport on your period.” You can do sport.',
+      '“Period blood is dirty.” It isn’t — it means your body is working well.',
+      '“Everyone can tell.” Nobody knows unless you tell them.',
     ],
     bulletsTr: [
-      '“Regldeyken duş alınmaz.” — Yanlış. Duş almak temiz ve rahat hissettirir, ılık su krampa da iyi gelebilir.',
-      '“Herkesin döngüsü 28 gündür.” — Yanlış. Özellikle ilk yıllarda 21–45 gün arası normaldir.',
-      '“Regldeyken spor yapılmaz.” — Yanlış. Hareket çoğu zaman iyi gelir.',
-      '“Regl kanı kirlidir.” — Yanlış. Rahim iç zarından ve kandan oluşur; bedenin sağlıklı bir işleyişidir.',
-      '“Regl olduğunu herkes anlar.” — Yanlış. Sen söylemedikçe kimse bilmez.',
+      '“Regldeyken duş alınmaz.” Alınır, hatta iyi gelir.',
+      '“Herkesin döngüsü 28 gün.” Değil, 21–45 gün arası normal.',
+      '“Regldeyken spor yapılmaz.” Yapılır.',
+      '“Regl kanı kirlidir.” Değil, bedenin sağlıklı çalışıyor demek.',
+      '“Regl olduğunu herkes anlar.” Sen söylemedikçe kimse bilmez.',
     ],
-    footEn: 'If something is on your mind, don’t hesitate to ask — asking questions is the best way to get to know your body.',
-    footTr: 'Aklına takılan bir şey olursa sormaktan çekinme — soru sormak, bedenini tanımanın en iyi yolu.' },
+    footEn: 'Something on your mind? Just ask.',
+    footTr: 'Aklına takılan bir şey mi var? Sor, çekinme.' },
 ];
 
 function MenarcheHome({ lunara, api, onNav }) {
@@ -238,12 +213,12 @@ function MenarcheHome({ lunara, api, onNav }) {
               <span className="eyebrow">{t('Welcome', 'Hoş geldin')}</span>
             </div>
             <h2 className="serif-display" style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontSize: 34, lineHeight: 1.12, margin: '0 0 14px', letterSpacing: '-0.02em' }}>
-              {t(<>Hi {lunara.profile.name} — your body is finding its <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>rhythm</em>.</>,
-                 <>Merhaba {lunara.profile.name} — bedenin kendi <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>ritmini</em> buluyor.</>)}
+              {t(<>Hey {lunara.profile.name}! Your body is finding its <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>rhythm</em>.</>,
+                 <>Selam {lunara.profile.name}! Bedenin kendi <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>ritmini</em> buluyor.</>)}
             </h2>
             <p style={{ fontFamily: 'var(--serif)', fontSize: 16, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>
-              {t('There’s nothing to get “right”. Lunara is here to help you understand what’s happening — at your own pace.',
-                 '“Doğru” yapman gereken bir şey yok. Lunara, olanları kendi hızında anlamana yardım etmek için burada.')}
+              {t('No tests here. Lunara helps you understand your body, at your own pace.',
+                 'Burada sınav yok. Lunara, bedeninde neler olduğunu kendi hızında anlaman için burada.')}
             </p>
           </div>
           {/* Soft visual panel */}
@@ -275,18 +250,18 @@ function MenarcheHome({ lunara, api, onNav }) {
           <p style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.55, color: 'var(--ink-2)', margin: '0 0 18px' }}>
             {info
               ? t(info.bodyEn, info.bodyTr)
-              : t('Tell us when your last period started and this page will follow your month with you.',
-                  'Son reglinin ne zaman başladığını söyle, bu sayfa ayını seninle birlikte takip etsin.')}
+              : t('When your period starts, tap the button below and this page will follow your month with you.',
+                  'Reglin başlayınca aşağıdaki düğmeye dokun, bu sayfa ayını seninle takip etsin.')}
           </p>
           {justStarted ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--signal-good)', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
-              <Icon d={ICONS.check} size={14} stroke="var(--signal-good)" sw={2}/> {t('Period logged ✓', 'Regl kaydedildi ✓')}
+              <Icon d={ICONS.check} size={14} stroke="var(--signal-good)" sw={2}/> {t('Saved ✓', 'Kaydettim ✓')}
             </span>
           ) : confirming ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{t('Reset cycle to day 1?', 'Döngüyü 1. güne sıfırla?')}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{t('Did your period start today?', 'Reglin bugün mü başladı?')}</span>
               <Btn primary onClick={handlePeriodStart}>{t('Yes', 'Evet')}</Btn>
-              <Btn onClick={() => setConfirming(false)}>{t('Cancel', 'İptal')}</Btn>
+              <Btn onClick={() => setConfirming(false)}>{t('Not yet', 'Vazgeç')}</Btn>
             </div>
           ) : (
             <Btn primary onClick={() => setConfirming(true)}>
@@ -318,8 +293,8 @@ function MenarcheHome({ lunara, api, onNav }) {
             })}
           </div>
           <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '16px 0 0' }}>
-            {t('Noticing how you feel each day helps you learn your own pattern. No wrong answers.',
-               'Her gün nasıl hissettiğini fark etmek kendi düzenini öğrenmene yardım eder. Yanlış cevap yok.')}
+            {t('You can pick more than one. No wrong answers.',
+               'Birden fazla seçebilirsin. Yanlış cevap yok.')}
           </p>
         </Card>
       </div>
@@ -353,8 +328,8 @@ function MenarcheHome({ lunara, api, onNav }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', color: 'var(--muted-2)', fontSize: 12 }}>
         <Icon d={ICONS.heart} size={14} stroke="var(--muted-2)"/>
         <span style={{ fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
-          {t('Everyone’s rhythm is different — and yours is exactly right for you.',
-             'Herkesin ritmi farklıdır — ve seninki tam sana göre.')}
+          {t('Everyone’s rhythm is different. Yours is just right for you.',
+             'Herkesin ritmi farklı. Seninki de tam sana göre.')}
         </span>
       </div>
 
@@ -381,35 +356,35 @@ function RitimKarti({ lunara, onYardim }) {
       <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Your rhythm', 'Ritmin')}</div>
       {!tah ? (
         <p style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>
-          {t('When your period comes, tap “My period started”. Your rhythm will start building up here.',
-             'Reglin geldiğinde “Reglim başladı”ya dokun. Ritmin burada birikmeye başlar.')}
+          {t('When your period comes, tap “My period started”. In a few months you’ll see your rhythm here.',
+             'Reglin gelince “Reglim başladı”ya dokun. Birkaç ay sonra ritmini burada görürsün.')}
         </p>
       ) : (<>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>{t('Next period, roughly', 'Sonraki regl, yaklaşık')}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>{t('Your next period, most likely', 'Sonraki reglin büyük ihtimalle')}</div>
         <div style={{ fontFamily: 'var(--serif)', fontSize: 24, letterSpacing: '-0.01em', marginBottom: 6 }}>
           {fmt(tah.enErken)} – {fmt(tah.enGec)}
         </div>
         <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: '0 0 14px' }}>
           {tah.kaynak === 'gozlem'
-            ? t(`Based on your last cycles: ${tah.min}–${tah.max} days.`, `Son döngülerine göre: ${tah.min}–${tah.max} gün.`)
-            : t(`Not many records yet — in the first years ${tah.min}–${tah.max} days is typical, so this is a wide guess.`,
-                `Henüz az kayıt var — ilk yıllarda ${tah.min}–${tah.max} gün tipiktir, bu yüzden geniş bir tahmin.`)}
+            ? t(`Your last cycles were ${tah.min}–${tah.max} days, so this is based on that.`, `Son döngülerin ${tah.min}–${tah.max} gün sürdü, tahmin buna göre.`)
+            : t(`Not many records yet. In the first years a cycle can be ${tah.min}–${tah.max} days, so the window is wide.`,
+                `Henüz az kayıt var. İlk yıllarda döngü ${tah.min}–${tah.max} gün arası değişebildiği için aralık geniş.`)}
         </p>
         {tah.uzunAra ? (
           <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--accent-soft)', marginBottom: 14 }}>
             <p style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.5, margin: '0 0 8px' }}>
-              {t(`It has been ${tah.gecenGun} days since your last period. When it has been more than 3 months, it is good to talk to a trusted adult or a doctor.`,
-                 `Son reglinden bu yana ${tah.gecenGun} gün geçti. 3 aydan uzun sürdüğünde güvendiğin bir yetişkinle ya da doktorla konuşmak iyi olur.`)}
+              {t(`It’s been ${tah.gecenGun} days since your last period. If it’s been more than 3 months, tell an adult you trust.`,
+                 `Son reglinden bu yana ${tah.gecenGun} gün geçti. 3 aydan uzun olduysa güvendiğin bir yetişkine söyle.`)}
             </p>
             <button onClick={onYardim} style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer',
               fontSize: 12.5, fontWeight: 600, color: 'var(--accent)', fontFamily: 'var(--sans)' }}>
-              {t('When to ask for help →', 'Ne zaman yardım istemeli →')}
+              {t('When to tell an adult? →', 'Ne zaman bir büyüğe söylemeli? →')}
             </button>
           </div>
         ) : tah.aralikGecti ? (
           <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: '0 0 14px', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
-            {t('The guessed window has passed — in the first years this is very common.',
-               'Tahmini aralık geçti — ilk yıllarda bu çok yaygındır.')}
+            {t('Guess was off? Don’t worry, that happens a lot in the first years.',
+               'Tahmin tutmadı mı? Dert etme, ilk yıllarda çok sık olur.')}
           </p>
         ) : null}
         <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', letterSpacing: '0.04em', marginBottom: 6 }}>
@@ -454,8 +429,8 @@ function SonGunlerDuygu({ lunara }) {
       <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Your last 7 days', 'Son 7 günün')}</div>
       {hicYok ? (
         <p style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>
-          {t('Pick how you feel each day above — after a few days your pattern shows up here.',
-             'Her gün yukarıdan nasıl hissettiğini seç — birkaç gün sonra düzenin burada görünmeye başlar.')}
+          {t('Pick how you feel each day above. After a few days your pattern shows up here.',
+             'Her gün yukarıdan nasıl hissettiğini seç. Birkaç gün sonra düzenin burada görünür.')}
         </p>
       ) : gunler.map(g => (
         <div key={g.key} style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: 10, alignItems: 'center',
@@ -545,7 +520,7 @@ function CycleAwarenessDial({ day, phaseKey, size = 168 }) {
         {bekliyor ? (
           <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.3,
             color: 'var(--ink-2)', textAlign: 'center', maxWidth: size - 56 }}>
-            {t('Waiting for your first period', 'İlk reglini bekliyorsun')}
+            {t('The count starts with your period', 'Sayaç reglinle başlar')}
           </span>
         ) : (<>
           <span className="eyebrow" style={{ fontSize: 9.5 }}>{t('DAY', 'GÜN')}</span>
