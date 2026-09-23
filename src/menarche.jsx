@@ -3,6 +3,7 @@ import { I18N, t, useLang } from './i18n';
 import { Btn, ScreenHead, cycleDayFrom, cycleLenOf, phaseOf, wrap } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, getTodayKey } from './shared';
 import { StageBadge } from './stages';
+import { donguUzunluklari, reglBaslangiclari, sonrakiReglTahmini } from './menarche-rhythm';
 
 /* menarche.jsx — Lunara · Menarş (Do) ana ekranı
    Genç kullanıcı için döngü farkındalığı: nazik, eğitici, yargısız.
@@ -128,6 +129,83 @@ const LEARN_CARDS = [
     ],
     footEn: 'Asking for help is nothing to be embarrassed about — it’s part of understanding your body.',
     footTr: 'Yardım istemek utanılacak bir şey değildir — bedenini anlamanın bir parçasıdır.' },
+  /* Aşağıdaki dört kart menarş bölümünü genişletirken eklendi. Tıbbi iddia
+     taşıyan cümleler bilerek genel ve yaygın kabul görmüş olanlarla sınırlı;
+     ilaç önerisi yok — ağrı kesici gibi konular yetişkin ve hekim kararı. */
+  { tagEn: 'BODY', tagTr: 'BEDEN',
+    titleEn: 'Your body is changing', titleTr: 'Bedenin değişiyor',
+    teaserEn: 'What happens in puberty — and why all of it is normal.',
+    teaserTr: 'Ergenlikte neler olur — ve neden hepsi normaldir.',
+    bodyEn: [
+      'Puberty usually starts somewhere between 8 and 13 and takes a few years. Everyone moves at their own pace — starting before or after your friends is normal.',
+      'For most girls the first change is breast development; the first period usually comes around two years later. A few months to a year before it, you may notice white or clear discharge in your underwear — a sign your body is getting ready.',
+      'You may grow quickly, notice hair under your arms and between your legs, a change in how sweat smells, or some spots. All of this means your hormones are doing their job.',
+    ],
+    bodyTr: [
+      'Ergenlik genellikle 8 ile 13 yaş arasında bir yerde başlar ve birkaç yıl sürer. Herkes kendi hızında ilerler — arkadaşlarından önce ya da sonra başlaman normaldir.',
+      'Çoğu kızda ilk değişiklik göğüs gelişimidir; ilk regl genellikle bundan iki yıl kadar sonra gelir. Ondan birkaç ay ile bir yıl önce iç çamaşırında beyaz ya da berrak bir akıntı fark edebilirsin — bedeninin hazırlandığının işareti.',
+      'Boyun hızla uzayabilir, koltuk altında ve bacak arasında tüylenme başlar, terinin kokusu değişir, sivilce çıkabilir. Bunların hepsi hormonlarının işini yaptığını gösterir.',
+    ] },
+  { tagEn: 'BE READY', tagTr: 'HAZIRLIK',
+    titleEn: 'Being prepared', titleTr: 'Hazırlıklı olmak',
+    teaserEn: 'A small kit in your bag makes surprises easier.',
+    teaserTr: 'Çantandaki küçük bir kese, sürprizleri kolaylaştırır.',
+    bodyEn: [
+      'A first period often arrives without warning and is usually light — sometimes it shows up as a brownish mark rather than red.',
+      'Keeping a small pouch in your school bag makes things easier:',
+    ],
+    bodyTr: [
+      'İlk regl çoğu zaman habersiz gelir ve genellikle az olur — bazen kırmızı değil, kahverengimsi bir leke olarak görünür.',
+      'Okul çantanda küçük bir kese taşımak işini kolaylaştırır:',
+    ],
+    bulletsEn: [
+      'A few pads (or a tampon or cup, if you are used to one)',
+      'Spare underwear',
+      'Wet wipes and a small bag',
+    ],
+    bulletsTr: [
+      'Birkaç ped (ya da alıştıysan tampon veya regl kabı)',
+      'Yedek bir iç çamaşırı',
+      'Islak mendil ve küçük bir poşet',
+    ],
+    footEn: 'If you get caught out at school, you can tell a teacher, the school nurse or a friend you trust — it happens a lot, and nobody finds it strange.',
+    footTr: 'Okulda hazırlıksız yakalanırsan öğretmenine, okul hemşiresine ya da güvendiğin bir arkadaşına söyleyebilirsin — bu çok sık olur ve kimse garipsemez.' },
+  { tagEn: 'MOVE', tagTr: 'HAREKET',
+    titleEn: 'Sport and periods', titleTr: 'Spor ve regl',
+    teaserEn: 'Moving during your period is fine — it can even ease cramps.',
+    teaserTr: 'Regldeyken hareket etmek serbest — hatta krampa iyi gelebilir.',
+    bodyEn: [
+      'You can do sport, join PE and dance while you have your period. Gentle movement eases cramps for many people.',
+      'Swimming is possible too — for that you need a tampon or a cup, because a pad does not work in water.',
+      'On days you feel very tired or sore, slowing down is completely fine. Listen to your body.',
+    ],
+    bodyTr: [
+      'Reglin olduğu günlerde spor yapabilir, beden eğitimi dersine katılabilir, dans edebilirsin. Hafif hareket birçok kişide krampları azaltır.',
+      'Yüzmek de mümkün — bunun için tampon ya da regl kabı gerekir, çünkü ped suda işe yaramaz.',
+      'Kendini çok yorgun ya da ağrılı hissettiğin günlerde temponu düşürmek de tamamen normal. Bedenini dinle.',
+    ] },
+  { tagEn: 'FACTS', tagTr: 'GERÇEKLER',
+    titleEn: 'Myths vs facts', titleTr: 'Doğru bilinen yanlışlar',
+    teaserEn: 'Things people say about periods that are not true.',
+    teaserTr: 'Regl hakkında sık duyulan ama doğru olmayan şeyler.',
+    bodyEn: ['You may have heard these — none of them is true:'],
+    bodyTr: ['Bunları duymuş olabilirsin — hiçbiri doğru değil:'],
+    bulletsEn: [
+      '“You shouldn’t shower on your period.” — False. Showering feels clean and comfortable, and warm water can ease cramps.',
+      '“Every cycle is 28 days.” — False. Especially in the first years, 21–45 days is normal.',
+      '“You can’t do sport on your period.” — False. Movement often helps.',
+      '“Period blood is dirty.” — False. It is made of the uterine lining and blood — a healthy body at work.',
+      '“Everyone can tell you’re on your period.” — False. Nobody knows unless you tell them.',
+    ],
+    bulletsTr: [
+      '“Regldeyken duş alınmaz.” — Yanlış. Duş almak temiz ve rahat hissettirir, ılık su krampa da iyi gelebilir.',
+      '“Herkesin döngüsü 28 gündür.” — Yanlış. Özellikle ilk yıllarda 21–45 gün arası normaldir.',
+      '“Regldeyken spor yapılmaz.” — Yanlış. Hareket çoğu zaman iyi gelir.',
+      '“Regl kanı kirlidir.” — Yanlış. Rahim iç zarından ve kandan oluşur; bedenin sağlıklı bir işleyişidir.',
+      '“Regl olduğunu herkes anlar.” — Yanlış. Sen söylemedikçe kimse bilmez.',
+    ],
+    footEn: 'If something is on your mind, don’t hesitate to ask — asking questions is the best way to get to know your body.',
+    footTr: 'Aklına takılan bir şey olursa sormaktan çekinme — soru sormak, bedenini tanımanın en iyi yolu.' },
 ];
 
 function MenarcheHome({ lunara, api, onNav }) {
@@ -174,7 +252,11 @@ function MenarcheHome({ lunara, api, onNav }) {
             background: 'linear-gradient(155deg, var(--accent-soft) 0%, var(--card) 70%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <CycleAwarenessDial day={day} phaseKey={ph.key}/>
+            {/* ph, döngü çapası yokken null. Eskiden burada ph.key okunuyordu ve
+                henüz reglini işaretlememiş her kullanıcı — menarş bölümünün asıl
+                kitlesi — "Bir şeyler ters gitti" ekranına düşüyordu. "Reglim
+                başladı" düğmesi de çöken ekranın içinde olduğu için çıkış yoktu. */}
+            <CycleAwarenessDial day={day} phaseKey={ph ? ph.key : null}/>
           </div>
         </div>
       </Card>
@@ -242,6 +324,13 @@ function MenarcheHome({ lunara, api, onNav }) {
         </Card>
       </div>
 
+      {/* Ritim ve son günler — okuma kartları "zamanla kendi ritmini
+          tanırsın" diyordu ama ekranda ritmi gösteren bir şey yoktu. */}
+      <div className="mb-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
+        <RitimKarti lunara={lunara} onYardim={() => setReader(LEARN_CARDS.find(c => c.tagEn === 'ASK'))}/>
+        <SonGunlerDuygu lunara={lunara}/>
+      </div>
+
       {/* Learn */}
       <div>
         <div className="eyebrow" style={{ marginBottom: 14 }}>{t('LEARN', 'ÖĞREN')}</div>
@@ -271,6 +360,120 @@ function MenarcheHome({ lunara, api, onNav }) {
 
       {reader && <LearnReader topic={reader} onClose={() => setReader(null)}/>}
     </div>
+  );
+}
+
+
+/* Regl geçmişi ve sonraki reglin gelebileceği aralık. Hesaplar
+   menarche-rhythm.js'te; burada yalnızca çiziliyor. */
+function RitimKarti({ lunara, onYardim }) {
+  const lang = useLang();
+  const bas = reglBaslangiclari(lunara.periodDays);
+  const uz = donguUzunluklari(bas);
+  const tah = sonrakiReglTahmini(bas, getTodayKey());
+  const fmt = (iso) => new Date(iso + 'T00:00:00')
+    .toLocaleDateString(lang === 'tr' ? 'tr' : 'en', { day: 'numeric', month: 'short' });
+  // En yeni üstte, en fazla altı regl
+  const liste = bas.map((b, i) => ({ b, uz: i > 0 ? uz[i - 1] : null })).reverse().slice(0, 6);
+
+  return (
+    <Card>
+      <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Your rhythm', 'Ritmin')}</div>
+      {!tah ? (
+        <p style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>
+          {t('When your period comes, tap “My period started”. Your rhythm will start building up here.',
+             'Reglin geldiğinde “Reglim başladı”ya dokun. Ritmin burada birikmeye başlar.')}
+        </p>
+      ) : (<>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>{t('Next period, roughly', 'Sonraki regl, yaklaşık')}</div>
+        <div style={{ fontFamily: 'var(--serif)', fontSize: 24, letterSpacing: '-0.01em', marginBottom: 6 }}>
+          {fmt(tah.enErken)} – {fmt(tah.enGec)}
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: '0 0 14px' }}>
+          {tah.kaynak === 'gozlem'
+            ? t(`Based on your last cycles: ${tah.min}–${tah.max} days.`, `Son döngülerine göre: ${tah.min}–${tah.max} gün.`)
+            : t(`Not many records yet — in the first years ${tah.min}–${tah.max} days is typical, so this is a wide guess.`,
+                `Henüz az kayıt var — ilk yıllarda ${tah.min}–${tah.max} gün tipiktir, bu yüzden geniş bir tahmin.`)}
+        </p>
+        {tah.uzunAra ? (
+          <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--accent-soft)', marginBottom: 14 }}>
+            <p style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.5, margin: '0 0 8px' }}>
+              {t(`It has been ${tah.gecenGun} days since your last period. When it has been more than 3 months, it is good to talk to a trusted adult or a doctor.`,
+                 `Son reglinden bu yana ${tah.gecenGun} gün geçti. 3 aydan uzun sürdüğünde güvendiğin bir yetişkinle ya da doktorla konuşmak iyi olur.`)}
+            </p>
+            <button onClick={onYardim} style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer',
+              fontSize: 12.5, fontWeight: 600, color: 'var(--accent)', fontFamily: 'var(--sans)' }}>
+              {t('When to ask for help →', 'Ne zaman yardım istemeli →')}
+            </button>
+          </div>
+        ) : tah.aralikGecti ? (
+          <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: '0 0 14px', fontStyle: 'italic', fontFamily: 'var(--serif)' }}>
+            {t('The guessed window has passed — in the first years this is very common.',
+               'Tahmini aralık geçti — ilk yıllarda bu çok yaygındır.')}
+          </p>
+        ) : null}
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', letterSpacing: '0.04em', marginBottom: 6 }}>
+          {t('PAST PERIODS', 'GEÇMİŞ REGLLER')}
+        </div>
+        {liste.map(({ b, uz: g }) => (
+          <div key={b} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13,
+            padding: '6px 0', borderBottom: '1px solid var(--line-soft)' }}>
+            <span>{fmt(b)}</span>
+            <span style={{ color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 12 }}>
+              {g != null ? t(`${g} days`, `${g} gün`) : '—'}
+            </span>
+          </div>
+        ))}
+      </>)}
+    </Card>
+  );
+}
+
+/* Son yedi günün duyguları. Duygular yalnızca bugün için giriliyordu ve
+   geriye dönük hiçbir yerde görünmüyordu; örüntü ancak yan yana görünce
+   fark ediliyor. */
+function SonGunlerDuygu({ lunara }) {
+  const lang = useLang();
+  const log = lunara.symptomLog || {};
+  const gunler = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(TODAY_DATE); d.setDate(d.getDate() - i);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const kayit = log[key] || {};
+    gunler.push({
+      key,
+      etiket: i === 0 ? t('Today', 'Bugün') : i === 1 ? t('Yesterday', 'Dün')
+        : d.toLocaleDateString(lang === 'tr' ? 'tr' : 'en', { weekday: 'short', day: 'numeric' }),
+      duygular: FEEL_CHIPS.filter(c => (kayit[c.key] || 0) > 0),
+    });
+  }
+  const hicYok = gunler.every(g => g.duygular.length === 0);
+
+  return (
+    <Card>
+      <div className="eyebrow" style={{ marginBottom: 12 }}>{t('Your last 7 days', 'Son 7 günün')}</div>
+      {hicYok ? (
+        <p style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>
+          {t('Pick how you feel each day above — after a few days your pattern shows up here.',
+             'Her gün yukarıdan nasıl hissettiğini seç — birkaç gün sonra düzenin burada görünmeye başlar.')}
+        </p>
+      ) : gunler.map(g => (
+        <div key={g.key} style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: 10, alignItems: 'center',
+          padding: '6px 0', borderBottom: '1px solid var(--line-soft)' }}>
+          <span style={{ fontSize: 11.5, fontFamily: 'var(--mono)', color: 'var(--muted)' }}>{g.etiket}</span>
+          <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+            {g.duygular.length === 0
+              ? <span style={{ fontSize: 11.5, color: 'var(--muted-2)' }}>—</span>
+              : g.duygular.map(c => (
+                <span key={c.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5,
+                  padding: '3px 8px', borderRadius: 999, background: 'var(--bone)', color: 'var(--ink-2)' }}>
+                  <Icon d={c.icon} size={11}/> {t(c.en, c.tr)}
+                </span>
+              ))}
+          </span>
+        </div>
+      ))}
+    </Card>
   );
 }
 
@@ -328,7 +531,9 @@ function CycleAwarenessDial({ day, phaseKey, size = 168 }) {
   const r = (size - 30) / 2;
   const c = 2 * Math.PI * r;
   const approxLen = 28;
-  const frac = Math.min(1, (day - 1) / approxLen);
+  // Gün yoksa (çapa kurulmamış) halka boş kalır, ortada bekleme yazısı
+  const bekliyor = day == null;
+  const frac = bekliyor ? 0 : Math.min(1, (day - 1) / approxLen);
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
@@ -337,8 +542,15 @@ function CycleAwarenessDial({ day, phaseKey, size = 168 }) {
           strokeDasharray={`${frac * c} ${c}`} strokeLinecap="round" opacity="0.85"/>
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-        <span className="eyebrow" style={{ fontSize: 9.5 }}>{t('DAY', 'GÜN')}</span>
-        <span style={{ fontFamily: 'var(--serif)', fontSize: 46, lineHeight: 0.9, letterSpacing: '-0.03em' }}>{day}</span>
+        {bekliyor ? (
+          <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.3,
+            color: 'var(--ink-2)', textAlign: 'center', maxWidth: size - 56 }}>
+            {t('Waiting for your first period', 'İlk reglini bekliyorsun')}
+          </span>
+        ) : (<>
+          <span className="eyebrow" style={{ fontSize: 9.5 }}>{t('DAY', 'GÜN')}</span>
+          <span style={{ fontFamily: 'var(--serif)', fontSize: 46, lineHeight: 0.9, letterSpacing: '-0.03em' }}>{day}</span>
+        </>)}
       </div>
     </div>
   );
