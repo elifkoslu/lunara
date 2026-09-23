@@ -19,6 +19,7 @@ import { TtcHome } from './ttc';
 import { PregnancyHome } from './pregnancy';
 import { PostpartumHome } from './postpartum';
 import { MenopauseHome } from './menopause';
+import { bildirimGoster } from './notify';
 
 export default function App() {
   const [active, setActive] = React.useState('home');
@@ -75,7 +76,7 @@ export default function App() {
         if (m.time === hm && !taken && !fired[m.id + hm]) {
           fired[m.id + hm] = true;
           try {
-            new Notification('Lunara', {
+            bildirimGoster('Lunara', {
               body: (I18N.lang === 'tr' ? 'Doz zamanı: ' : 'Dose due: ') + t(m.name, m.nameTr || m.name) + ' · ' + m.dose,
               icon: '/icon-192.png', tag: 'dose-' + m.id,
             });
@@ -107,7 +108,7 @@ export default function App() {
       if (gun.count >= beklenen) return;
       atilan[hm] = true;
       try {
-        new Notification(BRAND, {
+        bildirimGoster(BRAND, {
           body: I18N.lang === 'tr' ? 'Su içme zamanı' : 'Time for water',
           icon: '/icon-192.png', tag: 'water',
         });
@@ -131,7 +132,7 @@ export default function App() {
       if (hm === time && firedDay !== dayKey) {
         firedDay = dayKey;
         try {
-          new Notification('Lunara', {
+          bildirimGoster('Lunara', {
             body: I18N.lang === 'tr' ? 'Günlük check-in zamanı — nasıl hissediyorsun? 🌙' : 'Time for your daily check-in — how do you feel? 🌙',
             icon: '/icon-192.png', tag: 'daily-checkin',
           });
