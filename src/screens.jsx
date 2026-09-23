@@ -22,6 +22,8 @@ import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
 import { LabTimeline, LabTimelineRows, labSeries } from './lab-timeline';
 import { useIsMobile } from './use-mobile';
+import { moonNote } from './moon-note';
+import { MENARCHE_PHASES } from './menarche-phases';
 
 /* screens.jsx — Lunara navigable screens (interactive, persistent) */
 /* eslint-disable */
@@ -1087,10 +1089,38 @@ function CycleScreen({ lunara, api }) {
               <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>{Math.round(moon.illum * 100)}% {t('illuminated', 'aydınlık')} · {t('day', 'gün')} {Math.round(moon.age)} / {t('lunar month', 'ay devri')}</div>
             </div>
           </div>
-          <p style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 14.5, lineHeight: 1.55, color: 'var(--ink-2)', margin: '8px 0 0' }}>
-            {t('Many track how mood and sleep shift with the lunar month alongside their cycle. Lunara keeps both in view.',
-               'Birçok kişi ruh hali ve uykunun, döngüyle birlikte ay devrine göre nasıl değiştiğini izler. Lunara ikisini de göz önünde tutar.')}
-          </p>
+          {/* Burada eskiden "ruh hali ve uyku ay devrine göre değişir" ima eden
+              genel bir cümle vardı ve evrenin ne anlama geldiği hiç yazmıyordu.
+              Ayın bedene etkisi gösterilmiş değil; bu yüzden ana sayfadaki ay
+              kartıyla aynı iki katman: "Bedeninde" kullanıcının kendi döngü
+              gününden (menarşta genç diliyle), "Gelenekte" ayın evresinden ve
+              gelenek olarak etiketli. */}
+          {(() => {
+            const not = moonNote(moon.name, ph && ph.key);
+            const genc = lunara.stage === 'menarche' && ph ? MENARCHE_PHASES[ph.key] : null;
+            const beden = genc ? t(genc.bodyEn, genc.bodyTr) : not.beden;
+            const fazAdi = genc ? t(genc.en, genc.tr) : (ph ? phaseLabel(ph) : '');
+            const baslik = { fontSize: 9.5, marginBottom: 4 };
+            const metin = { fontSize: 13, lineHeight: 1.5, color: 'var(--ink-2)', margin: 0 };
+            return (
+              <div style={{ display: 'grid', gap: 12, marginTop: 10 }}>
+                {beden && (
+                  <div>
+                    <div className="eyebrow" style={baslik}>{t('IN YOUR BODY', 'BEDENİNDE')}{fazAdi ? ` · ${fazAdi}` : ''}</div>
+                    <p style={metin}>{beden}</p>
+                  </div>
+                )}
+                <div>
+                  <div className="eyebrow" style={baslik}>{t('IN TRADITION', 'GELENEKTE')}</div>
+                  <p style={metin}>{not.gelenek}</p>
+                </div>
+                <p style={{ fontSize: 11, lineHeight: 1.45, color: 'var(--muted)', margin: 0 }}>
+                  {t('No link between the moon and your body has been shown. The tradition part is here for the stories, not to tell you how to feel.',
+                     'Ayın bedene bir etkisi olduğu gösterilmiş değil. Gelenek kısmı anlatı için; ne hissetmen gerektiğini söylemek için değil.')}
+                </p>
+              </div>
+            );
+          })()}
         </Card>
       </div>
       <CycleMonth lunara={lunara} api={api} length={L}/>
