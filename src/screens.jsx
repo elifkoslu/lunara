@@ -10,8 +10,13 @@ import { useMonthView, MonthNav, WeekdayRow } from './month-grid';
 import { ReferenceCard } from './reference-card';
 
 /* Referans eğrisi ovülatuar bir döngüyü anlatır; döngüsü olmayan evrelerde
-   gösterilmesi yanıltıcı olur. */
-const REFERANS_EVRELERI = new Set(['cycle', 'ttc', 'menarche', 'perimeno']);
+   gösterilmesi yanıltıcı olur.
+
+   Menarş da bilerek dışarıda. İlk yıllardaki döngülerin çoğunda yumurtlama
+   olmaz, yani "ovülatuar bir döngünün 15. günü" eğrisi bu kullanıcının
+   bedenini anlatmıyor. pg/mL cinsinden hormon düzeyleri 11–15 yaşındaki
+   bir kızın işine yaramıyor da; menarş ekranı döngüyü sade dille anlatıyor. */
+const REFERANS_EVRELERI = new Set(['cycle', 'ttc', 'perimeno']);
 import { Card, DateNav, ICONS, Icon, LABS, Logo, RangeBar, SilBtn, SYMPTOMS, Sparkline, SymptomTrack, TODAY_DATE, TODAY_KEY, activeMeds, getTodayKey, labCurrent, labHistory, labReadings, medTaken, nowHM, regimenDay, todaysDoses, whenLabel } from './shared';
 import { STAGES } from './stages';
 import { SupplementsPanel } from './supplements';
