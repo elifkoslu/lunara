@@ -277,7 +277,11 @@ function StageNourishView({ stageKey, lunara, kind = 'eat' }) {
       <div>
         {isMove ? <NourishGuideCard kind="move" g={g.move}/> : <NourishGuideCard kind="eat" g={g.eat}/>}
       </div>
-      {!isMove && <StageSeedCycle stageKey={stageKey}/>}
+      {/* Menarşta tohum döngüsü yok: protokol döngünün iki yarısına bağlı
+          (ovülasyon öncesi/sonrası), ama ilk yıllardaki döngüler düzensiz ve
+          çoğunda yumurtlama olmuyor. 11–15 yaş için bir beslenme protokolü de
+          fazla — menarş beslenme ekranı genel, sade önerilerle kalıyor. */}
+      {!isMove && stageKey !== 'menarche' && <StageSeedCycle stageKey={stageKey}/>}
       <NourishFooter/>
     </div>
   );
@@ -295,7 +299,7 @@ function NourishFooter() {
 /* ── Tohum döngüsü — tüm evreler için (SeedCycle + SEED_CYCLE nourish.jsx'ten gelir) ── */
 function StageSeedCycle({ stageKey }) {
   // Gebelik ve doğum sonrasında 28-günlük sinyal olmadığından "her gün" notu eklenir
-  const hasActiveCycle = stageKey === 'menarche' || stageKey === 'cycle' || stageKey === 'ttc' || stageKey === 'perimeno';
+  const hasActiveCycle = stageKey === 'cycle' || stageKey === 'ttc' || stageKey === 'perimeno';
   // Seçim yapılabilir yarı: tüm evreler "ikinci yarı" ile başlatılır (progesterone vurgusu)
   const [half, setHalf] = React.useState('second');
   if (typeof SEED_CYCLE === 'undefined') return null;
