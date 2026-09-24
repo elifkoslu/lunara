@@ -21,6 +21,13 @@ import { PostpartumHome } from './postpartum';
 import { MenopauseHome } from './menopause';
 import { bildirimGoster } from './notify';
 
+/* Su hatırlatması bildirim başlığı olarak BRAND kullanıyor ama bu sabit
+   Lunara'da hiç tanımlanmamıştı (Perim ve Womentum'da var). Tanımsız bir
+   ad ReferenceError atar; çağrı try/catch içinde olduğu için hata sessizce
+   yutuluyor ve su hatırlatması hiçbir cihazda, masaüstünde bile, hiç
+   gösterilmiyordu. */
+const BRAND = 'Lunara';
+
 export default function App() {
   const [active, setActive] = React.useState('home');
   const [logDate, setLogDate] = React.useState(getTodayKey());
