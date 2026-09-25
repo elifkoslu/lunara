@@ -5,7 +5,7 @@ import { MonthNav, WeekdayRow, useMonthView } from './month-grid';
 import { MoonDisc, PHASE_TINT, TakenAmount, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, doseAmountOf, doseUnitOf, hasCycleAnchor, moonName, moonPhase, phaseLabel, phaseOf, rateLabel } from './screens';
 import { ReferenceCard } from './reference-card';
 import { symptomsFor } from './screen-content';
-import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SilBtn, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel } from './shared';
+import { Card, ICONS, Icon, LABS, RangeBar, SYMPTOMS, SilBtn, SymptomTrack, TODAY_DATE, TODAY_KEY, labCurrent, medTaken, nowHM, todaysDoses, whenLabel, KANAMA_ANAHTARLARI, gunlukLog } from './shared';
 import { moonNote } from './moon-note';
 import { BackupReminder } from './backup-reminder';
 
@@ -46,7 +46,7 @@ function MonthSummary({ lunara, hasDoses = true }) {
     const d = new Date(today); d.setDate(d.getDate() - i);
     keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
   }
-  const symLog = lunara.symptomLog || {};
+  const symLog = gunlukLog(lunara);
   const doseLog = lunara.doseLog || {};
   const tracked = keys.filter(k => symLog[k] && Object.keys(symLog[k]).length > 0).length;
   const entries = keys.reduce((s, k) => s + (symLog[k] ? Object.values(symLog[k]).filter(v => v > 0).length : 0), 0);
@@ -409,7 +409,7 @@ function TodayVitals({ lunara, api, onNav }) {
 function TodaySymptoms({ lunara, api, onNav }) {
   useLang();
   const syms = symptomsFor(lunara.stage);
-  const bugun = (lunara.symptomLog || {})[TODAY_KEY] || {};
+  const bugun = gunlukLog(lunara)[TODAY_KEY] || {};  // kanama periodDays'ten
   const girilen = syms.filter(s => bugun[s.key] != null).length;
 
   return (
@@ -442,7 +442,7 @@ function TodaySymptoms({ lunara, api, onNav }) {
                 {[0, 1, 2, 3].map(v => {
                   const on = val === v;
                   return (
-                    <button key={v} onClick={() => api && api.logSymptom(TODAY_KEY, s.key, v)}
+                    <button key={v} onClick={() => api && (KANAMA_ANAHTARLARI.includes(s.key) ? api.setFlow(TODAY_KEY, v) : api.logSymptom(TODAY_KEY, s.key, v))}
                       aria-pressed={on}
                       aria-label={`${t(s.label, s.labelTr)} · ${rateLabel(v)}`}
                       style={{
