@@ -1,7 +1,7 @@
 import React from 'react';
 import { I18N, t, useLang } from './i18n';
 import { Btn, ScreenHead, wrap } from './screens';
-import { Card, ICONS, Icon, LS_KEY, SilBtn } from './shared';
+import { Card, ICONS, Icon, LS_KEY, SilBtn, getTodayKey } from './shared';
 import { STAGES, stageName } from './stages';
 import { bildirimGoster } from './notify';
 
@@ -28,6 +28,8 @@ const YEDEK_SEMASI = {
   symptomLog:  nesneMi,
   notes:       diziMi,
   workoutLog:  nesneMi,
+  // su kaydı yedeğe yazılıyordu ama burada yoktu: geri yüklemede kayboluyordu
+  waterLog:    nesneMi,
   supplements: diziMi,
   suppLog:     nesneMi,
   doseLog:     nesneMi,
@@ -540,7 +542,7 @@ function exportData(lunara) {
     const blob = new Blob([JSON.stringify(lunara, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'lunara-data.json';
+    a.href = url; a.download = 'lunara-yedek-' + getTodayKey() + '.json';
     document.body.appendChild(a); a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
