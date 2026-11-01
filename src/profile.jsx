@@ -4,7 +4,7 @@ import { Btn, ScreenHead, wrap } from './screens';
 import { Card, ICONS, Icon, LS_KEY, SilBtn, getTodayKey } from './shared';
 import { STAGES, stageName } from './stages';
 import { bildirimGoster } from './notify';
-import { FeedbackCard } from './feedback';
+import { FeedbackCard, GERI_BILDIRIM_ADRESI } from './feedback';
 
 /* profile.jsx — Lunara profil & ayarlar ekranı */
 /* eslint-disable */
@@ -588,55 +588,58 @@ function PrivacyModal({ onClose }) {
         {/* Content */}
         <div style={{ overflowY: 'auto', padding: '22px 28px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* KVKK vurgusu */}
+          {/* KVKK vurgusu. Metin yalnızca kodun gerçekten yaptığını söylüyor:
+              sunucu yok, hesap yok, dış bağlantı yok (CSP connect-src 'self',
+              yazı tipleri uygulamanın kendi dosyaları). Tek istisna kullanıcının
+              kendi e-posta uygulamasından gönderdiği geri bildirim. */}
           <div style={{ padding: '14px 18px', borderRadius: 12, background: 'var(--bone)', border: '1px solid var(--line-soft)' }}>
             <div className="eyebrow" style={{ marginBottom: 8, color: 'var(--accent)' }}>KVKK — 6698 SAYILI KANUN</div>
             <p style={{ fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0 }}>
               {t(
-                'Lunara processes your health data in accordance with Turkish Law No. 6698 on Protection of Personal Data (KVKK) and EU GDPR.',
-                'Lunara, sağlık verilerini 6698 Sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve AB GDPR kapsamında işlemektedir.'
+                'Your health data stays on your device. The developer does not receive, see or store it. The only exception is a problem report or suggestion that you choose to send by email.',
+                'Sağlık verilerin cihazında kalır. Geliştirici bu verileri almaz, görmez ve saklamaz. Tek istisna, kendi isteğinle e-postayla gönderdiğin bir sorun bildirimi ya da öneridir.'
               )}
             </p>
           </div>
 
-          <PrivSection title={t('What data we collect', 'Hangi verileri topluyoruz')} items={[
-            t('Cycle and symptom logs you enter manually', 'Manuel girdiğin döngü ve belirti kayıtları'),
-            t('Dose and supplement records', 'Doz ve takviye kayıtları'),
-            t('Profile info (name, age — optional)', 'Profil bilgileri (isim, yaş — isteğe bağlı)'),
-            t('Language and display preferences', 'Dil ve görüntüleme tercihleri'),
+          <PrivSection title={t('What the app stores on your device', 'Uygulamanın cihazında sakladıkları')} items={[
+            t('Period, bleeding and symptom logs, and notes you write', 'Regl, kanama ve belirti kayıtların, yazdığın notlar'),
+            t('Medication plans, dose and supplement records', 'İlaç programları, doz ve takviye kayıtları'),
+            t('Lab results you entered, and water logs', 'Girdiğin tahlil sonuçları ve su kayıtları'),
+            t('Life-stage records you enter (e.g. temperature and LH tests, due date, kick counts, feeding and mood logs, EPDS answers)', 'Evrene özel girdiğin kayıtlar (ör. bazal ısı ve LH testleri, tahmini doğum tarihi, tekme sayımı, emzirme ve ruh hali kayıtları, EPDS yanıtları)'),
+            t('Profile info you choose to enter (name, age, email — all optional), language and reminder settings', 'Girmeyi seçtiğin profil bilgileri (ad, yaş, e-posta — hepsi isteğe bağlı), dil ve hatırlatma ayarları'),
           ]}/>
 
           <PrivSection title={t('Where your data lives', 'Veriler nerede saklanır')} items={[
-            t('All data is stored locally on your device only (localStorage)', 'Tüm veriler yalnızca cihazında saklanır (localStorage)'),
-            t('Nothing is sent to our servers — we have no account system', 'Sunucularımıza hiçbir şey gönderilmez — hesap sistemimiz yoktur'),
-            t('If you report a problem or send a suggestion, your own email app sends it to the developer after you confirm. It contains what you wrote, your email address and technical details (app version, life stage, language, browser) — no health entries',
-              'Sorun bildirir ya da öneri gönderirsen, onayladıktan sonra kendi e-posta uygulaman geliştiriciye bir e-posta gönderir. İçinde yazdığın metin, e-posta adresin ve teknik bilgiler (uygulama sürümü, yaşam evresi, dil, tarayıcı) bulunur — sağlık kayıtların bulunmaz'),
-            t('AI chat messages go to Anthropic\'s API only when you send a message; no logs are kept by Lunara', 'AI sohbet mesajları yalnızca mesaj gönderdiğinde Anthropic API\'ye iletilir; Lunara kayıt tutmaz'),
+            t('Only in this browser on this device (localStorage). There is no account and no Lunara server.', 'Yalnızca bu cihazdaki tarayıcıda (localStorage). Hesap da Lunara sunucusu da yoktur.'),
+            t('The app sends your entries nowhere and connects to no other services. Fonts are part of the app; nothing is loaded from Google or anyone else.', 'Uygulama kayıtlarını hiçbir yere göndermez ve başka servislere bağlanmaz. Yazı tipleri uygulamanın içindedir; Google ya da başka bir servisten bir şey yüklenmez.'),
+            t('The app files are hosted on Vercel. Like any website host, Vercel may keep standard access logs (such as IP address and time) when the app is downloaded or updated. Your entries are never part of these requests.', 'Uygulama dosyaları Vercel’de barındırılır. Her web sitesinde olduğu gibi Vercel, uygulama indirilirken ya da güncellenirken standart erişim kayıtları (IP adresi ve zaman gibi) tutabilir. Girdiğin kayıtlar bu isteklerin hiçbirinde yer almaz.'),
+            t('Backup files and calendar files you export are saved where you choose; what happens to them is up to you.', 'Dışa aktardığın yedek ve takvim dosyaları senin seçtiğin yere kaydedilir; onlarla ne yapılacağına sen karar verirsin.'),
+            t('If you report a problem or send a suggestion, your own email app sends it to the developer after you confirm. It contains what you wrote, your email address and technical details (app version, life stage, language, browser) — no health entries.',
+              'Sorun bildirir ya da öneri gönderirsen, onayladıktan sonra kendi e-posta uygulaman geliştiriciye bir e-posta gönderir. İçinde yazdığın metin, e-posta adresin ve teknik bilgiler (uygulama sürümü, yaşam evresi, dil, tarayıcı) bulunur — sağlık kayıtların bulunmaz.'),
           ]}/>
 
           <PrivSection title={t('Your KVKK rights', 'KVKK kapsamındaki haklarınız')} items={[
-            t('Right to know whether your data is processed (Article 11/a)', 'Verilerinin işlenip işlenmediğini öğrenme hakkı (Md. 11/a)'),
-            t('Right to request information about processing (Article 11/b)', 'İşleme ile ilgili bilgi talep etme hakkı (Md. 11/b)'),
-            t('Right to request erasure — use "Export & delete my data" in settings', 'Silinmesini talep etme hakkı — ayarlarda "Verilerimi dışa aktar" kullan'),
-            t('Right to object to processing (Article 11/e)', 'İşlemeye itiraz etme hakkı (Md. 11/e)'),
+            t('See what you have entered, by type: Profile → My entries', 'Girdiklerini türüne göre görmek: Profil → Girdilerim'),
+            t('Get a copy: Profile → Export my data', 'Bir kopyasını almak: Profil → Verilerimi dışa aktar'),
+            t('Delete: one type at a time in My entries, or everything with Profile → Delete all my data. Deletion is immediate and cannot be undone.', 'Silmek: Girdilerim’den türe göre, ya da hepsini Profil → Tüm verilerimi sil ile. Silme hemen olur ve geri alınamaz.'),
+            t('For an email you sent us (Article 11): you can ask what we hold, ask for it to be deleted or object, by writing to the address below.', 'Bize gönderdiğin bir e-posta için (Md. 11): elimizde ne olduğunu öğrenmek, silinmesini istemek ya da itiraz etmek için aşağıdaki adrese yazabilirsin.'),
           ]}/>
 
           <PrivSection title={t('Health data (special category)', 'Sağlık verileri (özel kategori)')} items={[
-            t('Health and reproductive data is classified as "special category personal data" under KVKK Article 6', 'Sağlık ve üreme verileri KVKK Md. 6 uyarınca "özel nitelikli kişisel veri" sayılır'),
-            t('Your explicit consent is required — by using Lunara you consent to local processing of your health data', 'Açık rızan gereklidir — Lunara\'yı kullanarak sağlık verilerinin yerel işlenmesine onay vermiş sayılırsın'),
-            t('No data is shared with third parties', 'Hiçbir veri üçüncü taraflarla paylaşılmaz'),
+            t('Health and reproductive data is "special category personal data" under KVKK Article 6.', 'Sağlık ve üreme verileri KVKK Md. 6 uyarınca "özel nitelikli kişisel veri" sayılır.'),
+            t('Lunara stores it only on your device. It is not transferred to the developer or shared with third parties.', 'Lunara bu verileri yalnızca cihazında saklar. Geliştiriciye aktarılmaz, üçüncü taraflarla paylaşılmaz.'),
           ]}/>
 
           <PrivSection title={t('Cookies & tracking', 'Çerezler & izleme')} items={[
-            t('Lunara uses no cookies, no analytics, no advertising trackers', 'Lunara çerez, analitik veya reklam izleyici kullanmaz'),
-            t('The only external connection is Google Fonts (font loading on first use)', 'Tek harici bağlantı ilk kullanımda yazı tipi yükleyen Google Fonts\'tur'),
+            t('Lunara uses no cookies, no analytics and no advertising trackers.', 'Lunara çerez, analitik ya da reklam izleyici kullanmaz.'),
           ]}/>
 
           <div style={{ paddingTop: 16, borderTop: '1px solid var(--line-soft)', fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.6, fontFamily: 'var(--serif)', fontStyle: 'italic' }}>
             {t(
-              'Last updated: June 2026. This is a prototype application. For questions about your data, contact: privacy@lunara.app',
-              'Son güncelleme: Haziran 2026. Bu bir prototip uygulamadır. Verileriniz hakkında sorularınız için: privacy@lunara.app'
-            )}
+              'Last updated: November 2026. Lunara is a personal tracking tool, not a medical device. For questions about your data: ',
+              'Son güncelleme: Kasım 2026. Lunara kişisel bir takip aracıdır, tıbbi cihaz değildir. Verilerinle ilgili sorular için: '
+            )}<span style={{ fontFamily: 'var(--mono)', fontStyle: 'normal', userSelect: 'all' }}>{GERI_BILDIRIM_ADRESI}</span>
           </div>
         </div>
 

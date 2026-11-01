@@ -44,3 +44,17 @@ describe('geri bildirim bağlantısı', () => {
     expect(readFileSync(new URL('./profile.jsx', import.meta.url), 'utf8')).toMatch(/<FeedbackCard lunara=\{lunara\}\/>/);
   });
 });
+
+describe('gizlilik metni kodla uyumlu', () => {
+  const kaynak = readFileSync(new URL('./profile.jsx', import.meta.url), 'utf8');
+  const metin = kaynak.slice(kaynak.indexOf('function PrivacyModal'), kaynak.indexOf('function PrivSection'));
+  it('olmayan şeyleri söylemiyor', () => {
+    expect(metin).not.toMatch(/Anthropic|lunara\.app|ilk kullanımda yazı tipi yükleyen Google Fonts|Export & delete/);
+  });
+  it('iletişim adresi geri bildirim adresiyle aynı', () => {
+    expect(metin).toMatch(/\{GERI_BILDIRIM_ADRESI\}/);
+  });
+  it('geri bildirim e-postası anlatılıyor', () => {
+    expect(metin).toMatch(/e-posta uygulaman geliştiriciye bir e-posta gönderir/);
+  });
+});

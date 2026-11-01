@@ -77,7 +77,7 @@ Their code, the per-stage menu definitions and any data already saved are kept. 
 | Offline and install | `vite-plugin-pwa` (Workbox service worker, web app manifest) |
 | PDF parsing | `pdfjs-dist` (runs in the browser; used by the Labs import, currently switched off) |
 | Data storage | Browser `localStorage`. There is no database and no backend. |
-| Tests / lint | Vitest (252 tests in 25 files), oxlint |
+| Tests / lint | Vitest (255 tests in 25 files), oxlint |
 | Hosting | Vercel (static hosting). Every push to GitHub deploys automatically. |
 | Security headers | Strict Content-Security-Policy (no outside network connections allowed), HSTS, X-Frame-Options and others, set in `vercel.json` |
 | Fonts | Manrope, Spectral and JetBrains Mono, all served by the app itself |
