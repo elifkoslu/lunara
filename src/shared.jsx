@@ -1,4 +1,5 @@
 import React from 'react';
+import { bolumAcik } from './features';
 import { I18N, LangToggle, t } from './i18n';
 import { cycleDayFrom, wrap } from './screens';
 import { STAGES, StageChip } from './stages';
@@ -174,7 +175,7 @@ function navItemsFor(stage) {
   // per-stage nav (defaults to full list)
   const STAGE_NAV = (typeof STAGES !== 'undefined' && STAGES[stage] && STAGES[stage].nav)
     || ['home','symptoms','doses','cycle','move','nourish','labs','care'];
-  return STAGE_NAV.map(k => ({ k, ...reg[k] }));
+  return STAGE_NAV.filter(bolumAcik).map(k => ({ k, ...reg[k] }));
 }
 
 function SideRail({ active = 'home', onNav, profile, stage = 'cycle' }) {

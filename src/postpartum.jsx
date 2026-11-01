@@ -4,6 +4,7 @@ import { Btn, wrap } from './screens';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY } from './shared';
 import { StageDateField } from './stage-date';
 import { StageBadge } from './stages';
+import { bolumAcik } from './features';
 
 /* postpartum.jsx — Lunara · Doğum sonrası (Sol) ana ekranı
    İyileşme, ruh hali (PPD destekleyici), emzirme ve uyku.
@@ -192,7 +193,7 @@ function PostpartumHome({ lunara, api, onNav }) {
                      'İlk haftalarda hüzün yaygındır. Ruh halini her gün fark etmek, dikkat gerektireni sana ve ekibine gösterir.')}
             </span>
           </div>
-          {lowMood && (
+          {lowMood && bolumAcik('care') && (
             <button onClick={() => onNav && onNav('care')} style={{ marginTop: 10, fontSize: 12.5, color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               {t('Message your care team', 'Destek ekibine yaz')} <Icon d={ICONS.arrow} size={13} stroke="var(--accent)"/>
             </button>
@@ -312,7 +313,7 @@ function EpdsScreener({ lunara, api, onNav }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
         <Btn primary onClick={() => setOpen(true)}>{last ? t('Take again', 'Yeniden değerlendir') : t('Start screening', 'Taramaya başla')}</Btn>
-        {flagged && (
+        {flagged && bolumAcik('care') && (
           <button onClick={() => onNav && onNav('care')} style={{ fontSize: 12.5, color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
             {t('Message your care team', 'Destek ekibine yaz')} <Icon d={ICONS.arrow} size={13} stroke="var(--accent)"/>
           </button>

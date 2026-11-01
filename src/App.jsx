@@ -12,6 +12,7 @@ import {
   SymptomsScreen, DosesScreen, CycleScreen, LabsScreen, CareScreen,
 } from './screens';
 import { NourishScreen } from './nourish';
+import { bolumAcik } from './features';
 import { ProfileScreen, PrivacyModal } from './profile';
 import { waterSettings, waterDay } from './water';
 import { MenarcheHome } from './menarche';
@@ -154,7 +155,7 @@ export default function App() {
   const showOnboarding = !lunara.onboarded || active === 'onboarding';
 
   const screenEl = (() => {
-    switch (active) {
+    switch (bolumAcik(active) ? active : 'home') {
       case 'symptoms': return <SymptomsScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
       case 'doses':    return <DosesScreen lunara={lunara} api={api} logDate={logDate} setLogDate={setLogDate} />;
       case 'cycle':    return <CycleScreen lunara={lunara} api={api} />;

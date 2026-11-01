@@ -2,6 +2,7 @@ import React from 'react';
 import { tx } from './dict';
 import { I18N, t } from './i18n';
 import { NourishGuideCard, PERIMENO_NOURISH, StageNourishView } from './nourish-stages';
+import { bolumAcik } from './features';
 import { PHASE_TINT, ScreenHead, cycleDayFrom, cycleLenOf, phaseBounds, phaseLabel, phaseOf, phaseRange, seedRange } from './screens';
 import { WaterCard } from './water';
 import { Card, ICONS, Icon, TODAY_DATE, TODAY_KEY, getTodayKey } from './shared';
@@ -570,7 +571,7 @@ function TodayWorkoutCard({ lunara, api, onNav }) {
           }}>
           <Icon d={ICONS.check} size={14} sw={2}/> {allDone ? t('Completed today','Bugün tamamlandı') : t('Mark all complete','Tümünü tamamla')}
         </button>
-        {onNav && (
+        {onNav && bolumAcik('nourish') && (
           <button onClick={() => onNav('nourish')} style={{ fontSize: 12.5, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
             {t('Full plan','Tam plan')} <Icon d={ICONS.arrow} size={12}/>
           </button>

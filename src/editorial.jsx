@@ -1,6 +1,7 @@
 import React from 'react';
 import { t, useLang } from './i18n';
 import { TodayWorkoutCard } from './nourish';
+import { bolumAcik } from './features';
 import { MonthNav, WeekdayRow, useMonthView } from './month-grid';
 import { MoonDisc, PHASE_TINT, TakenAmount, bleedExpected, bledOn, cycleDayFrom, cycleLenOf, doseAmountOf, doseUnitOf, hasCycleAnchor, moonName, moonPhase, phaseLabel, phaseOf, rateLabel } from './screens';
 import { ReferenceCard } from './reference-card';
@@ -22,9 +23,9 @@ function DashboardEditorial({ lunara, api, onNav, hasDoses = true }) {
       <EdHero lunara={lunara} hasDoses={hasDoses} onNav={onNav}/>
       {lunara && hasDoses && <TodayVitals lunara={lunara} api={api} onNav={onNav}/>}
       {lunara && <TodaySymptoms lunara={lunara} api={api} onNav={onNav}/>}
-      {lunara && api && <TodayWorkoutCard lunara={lunara} api={api} onNav={onNav}/>}
+      {lunara && api && bolumAcik('move') && <TodayWorkoutCard lunara={lunara} api={api} onNav={onNav}/>}
       {lunara && <MonthSummary lunara={lunara} hasDoses={hasDoses}/>}
-      {hasDoses && lunara && (lunara.labPanels || []).length > 0 && <EdLabsStrip lunara={lunara}/>}
+      {hasDoses && bolumAcik('labs') && lunara && (lunara.labPanels || []).length > 0 && <EdLabsStrip lunara={lunara}/>}
       <EdMoonToday lunara={lunara}/>
       {/* Veri yalnız bu cihazda; kalıcılık istensin istenmesin tek gerçek
           güvence dışa aktarılmış bir dosya. Korunacak veri yoksa çıkmaz. */}
@@ -293,7 +294,7 @@ function EdHero({ lunara, hasDoses = true, onNav }) {
               <PillButton primary onClick={() => onNav && onNav('symptoms')}>
                 <Icon d={ICONS.plus} size={14} sw={2}/> {t('Log how you feel', 'Nasıl hissettiğini kaydet')}
               </PillButton>
-              <PillButton onClick={() => onNav && onNav(hasDoses ? 'labs' : 'cycle')}>
+              <PillButton onClick={() => onNav && onNav(hasDoses && bolumAcik('labs') ? 'labs' : 'cycle')}>
                 {t('View full report', 'Tam raporu gör')} <Icon d={ICONS.arrow} size={13}/>
               </PillButton>
             </>

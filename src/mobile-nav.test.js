@@ -60,7 +60,8 @@ describe('mobileNav', () => {
   it('bar dolduğunda taşanlar Daha içine iner', () => {
     const { tabs, more } = mobileNav('perimeno');   // en kalabalık evre
     expect(tabs).toHaveLength(BAR_SLOTS);
-    expect(more.length).toBeGreaterThan(1);
+    // bölüm sayısı features.js'teki kapalı listeye göre değişiyor; Profil her zaman Daha'da
+    expect(more.map(i => i.k)).toEqual(navItemsFor('perimeno').map(i => i.k).slice(BAR_SLOTS).concat(['profile']));
   });
 
   it('bilinmeyen evrede çökmez, tam listeye düşer', () => {
