@@ -319,7 +319,7 @@ function DosesScreen({ lunara, api, logDate, setLogDate }) {
   const adh30 = sch30 > 0 ? Math.round((tak30 / sch30) * 100) : null;
   return (
     <div style={wrap}>
-      <ScreenHead eyebrow={t(`REGIMEN · DAY ${day} OF ${cycLen}`, `REJİM · ${cycLen} GÜNÜN ${day}. GÜNÜ`)} title={isToday ? t("Today's doses", 'Bugünün dozları') : t('Doses', 'Dozlar')}
+      <ScreenHead eyebrow={t(`REGIMEN · DAY ${day} OF ${cycLen}`, `REJİM · ${cycLen} GÜNÜN ${day}. GÜNÜ`)} title={isToday ? t("Today's medications", 'Bugünün ilaçları') : t('Medications', 'İlaçlar')}
         right={<Btn primary={editing || noRegimen} onClick={() => setEditing(e => !e)}>
           <Icon d={editing ? ICONS.check : (noRegimen ? ICONS.plus : ICONS.cog)} size={14} sw={editing ? 2 : 1.6}/> {editing ? t('Done', 'Bitti') : (noRegimen ? t('Add medication', 'İlaç ekle') : t('Edit schedule', 'Programı düzenle'))}
         </Btn>} />

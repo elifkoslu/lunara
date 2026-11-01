@@ -115,7 +115,7 @@ function MenopauseHome({ lunara, api, onNav }) {
           {meds.length === 0 ? (
             <p style={{ fontFamily: 'var(--serif)', fontSize: 15, fontStyle: 'italic', color: 'var(--muted)', lineHeight: 1.55, margin: '2px 0 14px' }}>
               {t('If you use hormone therapy, add your plan under Doses to track it here.',
-                 'Hormon tedavisi kullanıyorsan programını Dozlar bölümüne ekle, burada takip edelim.')}
+                 'Hormon tedavisi kullanıyorsan programını İlaçlar bölümüne ekle, burada takip edelim.')}
             </p>
           ) : (
             <>
@@ -130,7 +130,7 @@ function MenopauseHome({ lunara, api, onNav }) {
             </>
           )}
           <Btn primary onClick={() => onNav && onNav('doses')}>
-            <Icon d={ICONS.pill} size={14}/> {meds.length === 0 ? t('Add medication', 'İlaç ekle') : t('Open doses', 'Dozları aç')}
+            <Icon d={ICONS.pill} size={14}/> {meds.length === 0 ? t('Add medication', 'İlaç ekle') : t('Open medications', 'İlaçları aç')}
           </Btn>
         </Card>
       </div>

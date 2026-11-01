@@ -165,7 +165,7 @@ function navItemsFor(stage) {
   const reg = {
     home:     { icon: ICONS.home,  label: t('Today', 'Bugün') },
     symptoms: { icon: ICONS.pulse, label: t('Symptoms', 'Belirtiler') },
-    doses:    { icon: ICONS.pill,  label: t('Doses', 'Dozlar') },
+    doses:    { icon: ICONS.pill,  label: t('Medications', 'İlaçlar') },
     cycle:    { icon: ICONS.moon,  label: t('Cycle & moon', 'Döngü & ay') },
     move:     { icon: ICONS.pulse, label: t('Movement', 'Hareket') },
     nourish:  { icon: ICONS.leaf,  label: t('Nutrition', 'Beslenme') },

@@ -13,7 +13,7 @@ const NAV_META = {
   home:     { icon: ICONS.home,  en: 'Today',     tr: 'Bugün',      subEn: 'Your day at a glance',    subTr: 'Günün özeti' },
   symptoms: { icon: ICONS.pulse, en: 'Symptoms',  tr: 'Belirtiler', subEn: 'Log how you feel',        subTr: 'Nasıl hissettiğini kaydet' },
   cycle:    { icon: ICONS.moon,  en: 'Cycle',     tr: 'Döngü',      subEn: 'Calendar & phases',       subTr: 'Takvim & fazlar' },
-  doses:    { icon: ICONS.pill,  en: 'Doses',     tr: 'Dozlar',     subEn: 'Today’s regimen',         subTr: 'Bugünün rejimi' },
+  doses:    { icon: ICONS.pill,  en: 'Medications', tr: 'İlaçlar',     subEn: 'Today’s regimen',         subTr: 'Bugünün rejimi' },
   move:     { icon: ICONS.pulse, en: 'Move',      tr: 'Hareket',    subEn: 'Movement for your phase', subTr: 'Fazına göre hareket' },
   nourish:  { icon: ICONS.leaf,  en: 'Nutrition', tr: 'Beslenme',   subEn: 'Cycle-phase eating',      subTr: 'Döngü fazına göre beslenme' },
   labs:     { icon: ICONS.vial,  en: 'Labs',      tr: 'Tahliller',  subEn: 'Results & trends',        subTr: 'Sonuçlar & eğilimler' },
