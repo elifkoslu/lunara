@@ -113,7 +113,7 @@ Lunara is a single-page web app with no server.
 
 - **Live** since 14 July 2026 at https://lunara-inky.vercel.app.
 - **Users:** a small, informal group. Usability feedback from a few people led to a simplification pass in August 2026 (see `SADELESTIRME-LOG.md`, in Turkish). The app collects no analytics, so there are no user counts.
-- **Size:** about 12,500 lines of application code and 2,000 lines of tests, in 69 source files. 67 commits.
+- **Size:** about 12,500 lines of application code and 2,000 lines of tests, in 69 source files. 69 commits.
 - **Spin-offs:** three focused apps share this codebase's foundation:
   - Womentum and Perim (perimenopause and hormone therapy),
   - Unnie (first periods, for ages 11–15).
@@ -123,7 +123,7 @@ Lunara is a single-page web app with no server.
 
 The code was written with AI:
 - The interface started as a prototype made in **Claude Design** (Anthropic), which was turned into this Vite project.
-- From then on, **Claude Code** (Claude, Anthropic) wrote the features, fixes and tests. 66 of the 67 commits are marked as co-authored by Claude.
+- From then on, **Claude Code** (Claude, Anthropic) wrote the features, fixes and tests. 68 of the 69 commits are marked as co-authored by Claude.
 
 The author worked as product owner:
 - defined what to build and why,
