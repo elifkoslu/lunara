@@ -41,6 +41,7 @@ Lunara puts these stages in one app, keeps the data on the device, and only show
 - **Medications.** Medication plans can repeat in cycles, and doses are logged as taken. A reference card shows the typical hormone levels for the current cycle day.
 - **Doctor summary.** A printable summary of recent cycles, symptoms and medications, tailored to the current stage. Lab results recorded before the Labs section was switched off (see below) are still included.
 - **Daily support.** Water and daily check-in reminders through notifications, and a JSON backup the user can export and restore.
+- **Report a problem or wish.** A short form in Profile. Sending opens the user's own email app with the message ready; the user sends it. Only the text and a technical line (version, stage, language, browser) are included, never health entries.
 
 ### Temporarily switched off
 
@@ -76,7 +77,7 @@ Their code, the per-stage menu definitions and any data already saved are kept. 
 | Offline and install | `vite-plugin-pwa` (Workbox service worker, web app manifest) |
 | PDF parsing | `pdfjs-dist` (runs in the browser; used by the Labs import, currently switched off) |
 | Data storage | Browser `localStorage`. There is no database and no backend. |
-| Tests / lint | Vitest (246 tests in 24 files), oxlint |
+| Tests / lint | Vitest (252 tests in 25 files), oxlint |
 | Hosting | Vercel (static hosting). Every push to GitHub deploys automatically. |
 | Security headers | Strict Content-Security-Policy (no outside network connections allowed), HSTS, X-Frame-Options and others, set in `vercel.json` |
 | Fonts | Manrope, Spectral and JetBrains Mono, all served by the app itself |
@@ -113,7 +114,7 @@ Lunara is a single-page web app with no server.
 
 - **Live** since 14 July 2026 at https://lunara-inky.vercel.app.
 - **Users:** a small, informal group. Usability feedback from a few people led to a simplification pass in August 2026 (see `SADELESTIRME-LOG.md`, in Turkish). The app collects no analytics, so there are no user counts.
-- **Size:** about 12,500 lines of application code and 2,000 lines of tests, in 69 source files. 69 commits.
+- **Size:** about 12,600 lines of application code and 2,100 lines of tests, in 71 source files. 70 commits.
 - **Spin-offs:** three focused apps share this codebase's foundation:
   - Womentum and Perim (perimenopause and hormone therapy),
   - Unnie (first periods, for ages 11–15).
@@ -123,7 +124,7 @@ Lunara is a single-page web app with no server.
 
 The code was written with AI:
 - The interface started as a prototype made in **Claude Design** (Anthropic), which was turned into this Vite project.
-- From then on, **Claude Code** (Claude, Anthropic) wrote the features, fixes and tests. 68 of the 69 commits are marked as co-authored by Claude.
+- From then on, **Claude Code** (Claude, Anthropic) wrote the features, fixes and tests. 69 of the 70 commits are marked as co-authored by Claude.
 
 The author worked as product owner:
 - defined what to build and why,

@@ -4,6 +4,7 @@ import { Btn, ScreenHead, wrap } from './screens';
 import { Card, ICONS, Icon, LS_KEY, SilBtn, getTodayKey } from './shared';
 import { STAGES, stageName } from './stages';
 import { bildirimGoster } from './notify';
+import { FeedbackCard } from './feedback';
 
 /* profile.jsx — Lunara profil & ayarlar ekranı */
 /* eslint-disable */
@@ -251,6 +252,9 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
 
           {/* Girilen her şeyin tek yerden görünüp silinebildiği yer */}
           <MyEntries lunara={lunara} api={api}/>
+
+          {/* Hata ve öneriler e-postayla — sunucu yok, gönderimi kullanıcı onaylar */}
+          <FeedbackCard lunara={lunara}/>
 
           {/* Data & account */}
           <Card>
@@ -605,6 +609,8 @@ function PrivacyModal({ onClose }) {
           <PrivSection title={t('Where your data lives', 'Veriler nerede saklanır')} items={[
             t('All data is stored locally on your device only (localStorage)', 'Tüm veriler yalnızca cihazında saklanır (localStorage)'),
             t('Nothing is sent to our servers — we have no account system', 'Sunucularımıza hiçbir şey gönderilmez — hesap sistemimiz yoktur'),
+            t('If you report a problem or send a suggestion, your own email app sends it to the developer after you confirm. It contains what you wrote, your email address and technical details (app version, life stage, language, browser) — no health entries',
+              'Sorun bildirir ya da öneri gönderirsen, onayladıktan sonra kendi e-posta uygulaman geliştiriciye bir e-posta gönderir. İçinde yazdığın metin, e-posta adresin ve teknik bilgiler (uygulama sürümü, yaşam evresi, dil, tarayıcı) bulunur — sağlık kayıtların bulunmaz'),
             t('AI chat messages go to Anthropic\'s API only when you send a message; no logs are kept by Lunara', 'AI sohbet mesajları yalnızca mesaj gönderdiğinde Anthropic API\'ye iletilir; Lunara kayıt tutmaz'),
           ]}/>
 
