@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { I18N, t } from './i18n';
 import { LABS, TODAY_DATE, activeMeds, getTodayKey, medSchedule, regimenDay, gunlukLog } from './shared';
 import { symptomsFor } from './screen-content';
+import { bolumAcik } from './features';
 
 /* doctor-summary.jsx — a one-page summary the user can print / save as PDF
    or copy, to bring to a BHRT consultation. All computed on-device. */
@@ -179,13 +180,16 @@ function summaryText(lunara) {
     L.push(t('DOSE CHANGES', 'DOZ DEĞİŞİKLİKLERİ'));
     titration.forEach(x => L.push(`• ${fmt(x.date, lang)} — ${x.med} ${x.from || '—'} → ${x.to || '—'}${x.reason ? ` (${x.reason})` : ''}${x.note ? ` — ${x.note}` : ''}`));
   }
-  L.push('');
-  L.push(t('LATEST LABS', 'SON TAHLİLLER') + (latestPanel ? ` · ${fmt(latestPanel.date, lang)}` : ''));
-  if (latestPanel) latestPanel.readings.forEach(r => {
-    const oor = r.range && (r.value < r.range[0] || r.value > r.range[1]);
-    L.push(`• ${t(r.name, r.nameTr || r.name)}: ${r.value} ${r.unit || ''}${r.range ? ` (ref ${r.range[0]}–${r.range[1]})` : ''}${oor ? ' ⚠' : ''}`);
-  });
-  else L.push(t('(none)', '(yok)'));
+  // Tahliller kapalıyken kullanıcı tahlil giremiyor; boş başlık göstermeyiz.
+  if (latestPanel || bolumAcik('labs')) {
+    L.push('');
+    L.push(t('LATEST LABS', 'SON TAHLİLLER') + (latestPanel ? ` · ${fmt(latestPanel.date, lang)}` : ''));
+    if (latestPanel) latestPanel.readings.forEach(r => {
+      const oor = r.range && (r.value < r.range[0] || r.value > r.range[1]);
+      L.push(`• ${t(r.name, r.nameTr || r.name)}: ${r.value} ${r.unit || ''}${r.range ? ` (ref ${r.range[0]}–${r.range[1]})` : ''}${oor ? ' ⚠' : ''}`);
+    });
+    else L.push(t('(none)', '(yok)'));
+  }
   L.push('');
   L.push(t('SYMPTOMS · last 30 days', 'BELİRTİLER · son 30 gün'));
   if (symptomSummary.length) symptomSummary.forEach(s => L.push(`• ${t(s.label, s.labelTr)}: ${s.days}/30 ${t('days', 'gün')} · ${t('avg', 'ort')} ${s.avg.toFixed(1)}/3`));
@@ -299,7 +303,8 @@ function DoctorSummary({ lunara, onClose }) {
           </section>
           )}
 
-          {/* Labs */}
+          {/* Labs — tahliller kapalıyken yalnız önceden girilmiş panel varsa */}
+          {(latestPanel || bolumAcik('labs')) && (
           <section style={{ marginBottom: 22 }}>
             <h2 style={h2}>{t('Latest labs', 'Son tahliller')}{latestPanel ? ` · ${fmt(latestPanel.date, lang)}` : ''}</h2>
             {latestPanel ? latestPanel.readings.map((r, i) => {
@@ -316,6 +321,7 @@ function DoctorSummary({ lunara, onClose }) {
               );
             }) : <div style={{ fontSize: 12.5, color: MUT, fontStyle: 'italic' }}>{t('No labs entered.', 'Tahlil girilmedi.')}</div>}
           </section>
+          )}
 
           {/* Symptoms */}
           <section style={{ marginBottom: 20 }}>

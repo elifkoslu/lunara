@@ -5,6 +5,7 @@ import { Card, ICONS, Icon, LS_KEY, SilBtn, getTodayKey } from './shared';
 import { STAGES, stageName } from './stages';
 import { bildirimGoster } from './notify';
 import { FeedbackCard, GERI_BILDIRIM_ADRESI } from './feedback';
+import { DoctorSummary } from './doctor-summary';
 
 /* profile.jsx — Lunara profil & ayarlar ekranı */
 /* eslint-disable */
@@ -250,6 +251,10 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
           {/* Notifications & reminders */}
           <NotificationSettings lunara={lunara} api={api}/>
 
+          {/* Doktora özet eskiden yalnız Destek ekibi ekranından açılıyordu;
+              o bölüm kapanınca özete giden yol da kapanmıştı. */}
+          <DoctorSummaryCard lunara={lunara}/>
+
           {/* Girilen her şeyin tek yerden görünüp silinebildiği yer */}
           <MyEntries lunara={lunara} api={api}/>
 
@@ -335,6 +340,22 @@ function ProfileScreen({ lunara, api, onNav, onOpenPrivacy }) {
 }
 
 // Notifications & reminders — permission status, enable/test, toggles, daily time.
+function DoctorSummaryCard({ lunara }) {
+  const [acik, setAcik] = React.useState(false);
+  return (
+    <Card>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>{t('Before your visit', 'Görüşmeden önce')}</div>
+      <div style={{ fontFamily: 'var(--serif)', fontSize: 19, lineHeight: 1.25, marginBottom: 6 }}>{t('Doctor summary', 'Doktora özet')}</div>
+      <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 12px' }}>
+        {t('Your cycles, symptoms and medications on one page — print it or save as PDF to take along.',
+           'Döngülerin, belirtilerin ve ilaçların tek sayfada — yanında götürmek için yazdır ya da PDF kaydet.')}
+      </p>
+      <Btn primary onClick={() => setAcik(true)}>{t('Open summary', 'Özeti oluştur')} <Icon d={ICONS.arrow} size={13}/></Btn>
+      {acik && <DoctorSummary lunara={lunara} onClose={() => setAcik(false)}/>}
+    </Card>
+  );
+}
+
 function NotificationSettings({ lunara, api }) {
   const lang = useLang();
   const p = lunara.profile;

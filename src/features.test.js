@@ -4,6 +4,7 @@ import { KAPALI_BOLUMLER, bolumAcik } from './features.js';
 import { mobileNav } from './mobile.jsx';
 import { navItemsFor } from './shared.jsx';
 import { STAGES } from './stages.jsx';
+import { summaryText } from './doctor-summary.jsx';
 
 /* Hareket, Beslenme, Tahliller ve Destek ekibi şimdilik kapalı. Kodları
    duruyor; features.js'teki listeden çıkarınca geri geliyorlar. */
@@ -31,6 +32,22 @@ describe('kapalı bölümler', () => {
 
   it('evre tanımları değişmedi — açınca eski yerlerine dönüyorlar', () => {
     expect(STAGES.perimeno.nav).toEqual(['home', 'symptoms', 'doses', 'cycle', 'move', 'nourish', 'labs', 'care']);
+  });
+
+  it('doktora özet Destek ekibi kapalıyken de açılabiliyor', () => {
+    // Tek giriş CareScreen'deydi; bölüm kapanınca özet ulaşılmaz olmuştu.
+    const profil = kaynak('profile.jsx');
+    expect(profil).toMatch(/<DoctorSummaryCard lunara=\{lunara\}\/>/);
+    expect(profil).toMatch(/<DoctorSummary lunara=\{lunara\}/);
+  });
+
+  it('tahliller kapalıyken özette boş tahlil başlığı yok, eski panel varsa görünüyor', () => {
+    const bos = summaryText({ stage: 'cycle', symptomLog: {}, periodDays: {} });
+    expect(bos).not.toMatch(/SON TAHLİLLER|LATEST LABS/);
+    const panelli = summaryText({ stage: 'cycle', symptomLog: {}, periodDays: {},
+      labPanels: [{ date: '2026-10-01', readings: [{ name: 'Ferritin', value: 40, unit: 'ng/mL' }] }] });
+    expect(panelli).toMatch(/SON TAHLİLLER|LATEST LABS/);
+    expect(panelli).toMatch(/Ferritin/);
   });
 
   it('doğrudan açılmaya çalışılırsa Bugün ekranı', () => {
