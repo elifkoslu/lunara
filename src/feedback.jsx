@@ -12,7 +12,7 @@ import { Card } from './shared';
    (sürüm, evre, dil, ekran, tarayıcı) — sağlık kaydı eklenmiyor ve
    kullanıcı e-postada her şeyi gönderilmeden önce görüyor. */
 
-const GERI_BILDIRIM_ADRESI = 'elvatansever@gmail.com';
+const GERI_BILDIRIM_ADRESI = 'elfkoslu@gmail.com';
 // mailto bağlantıları bazı e-posta uygulamalarında ~2000 karakterde kesiliyor.
 const MAKS_UZUNLUK = 1500;
 const SURUM = typeof __LUNARA_SURUM__ !== 'undefined' ? __LUNARA_SURUM__ : 'dev';
