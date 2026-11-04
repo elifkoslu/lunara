@@ -2,9 +2,9 @@
 
 A private women's health tracker that changes with the user's life stage: first periods, regular cycles, trying to conceive, pregnancy, postpartum, perimenopause and menopause. Everything is kept on the user's own phone.
 
-**Live:** https://lunara-inky.vercel.app (Turkish / English). The app installs to the phone's home screen from the browser.
+**Live:** https://lunara.root-box.org (Turkish / English). The app installs to the phone's home screen from the browser.
 
-<!-- Screenshot: home screen for the "regular cycle" stage (phone width) → docs/screenshots/home.png -->
+<img src="docs/screenshots/home.png" alt="Lunara home screen: cycle calendar and today's phase" width="300">
 
 ---
 
@@ -39,7 +39,7 @@ Lunara puts these stages in one app, keeps the data on the device, and only show
   - postpartum: feeding and mood logs, plus the EPDS postnatal depression screening questionnaire,
   - first periods: a guide written for teenagers.
 - **Medications.** Medication plans can repeat in cycles, and doses are logged as taken. A reference card shows the typical hormone levels for the current cycle day.
-- **Doctor summary.** A printable summary of recent cycles, symptoms and medications, tailored to the current stage. Lab results recorded before the Labs section was switched off (see below) are still included.
+- **Doctor summary.** A printable summary of recent cycles, symptoms and medications, tailored to the current stage, opened from Profile. Lab results recorded before the Labs section was switched off (see below) are still included; with no lab results the section is left out.
 - **Daily support.** Water and daily check-in reminders through notifications, and a JSON backup the user can export and restore.
 - **Report a problem or wish.** A short form in Profile. Sending opens the user's own email app with the message ready; the user sends it. Only the text and a technical line (version, stage, language, browser) are included, never health entries.
 
@@ -77,7 +77,7 @@ Their code, the per-stage menu definitions and any data already saved are kept. 
 | Offline and install | `vite-plugin-pwa` (Workbox service worker, web app manifest) |
 | PDF parsing | `pdfjs-dist` (runs in the browser; used by the Labs import, currently switched off) |
 | Data storage | Browser `localStorage`. There is no database and no backend. |
-| Tests / lint | Vitest (255 tests in 25 files), oxlint |
+| Tests / lint | Vitest (257 tests in 25 files), oxlint |
 | Hosting | Vercel (static hosting). Every push to GitHub deploys automatically. |
 | Security headers | Strict Content-Security-Policy (no outside network connections allowed), HSTS, X-Frame-Options and others, set in `vercel.json` |
 | Fonts | Manrope, Spectral and JetBrains Mono, all served by the app itself |
@@ -112,12 +112,12 @@ Lunara is a single-page web app with no server.
 
 ## Status
 
-- **Live** since 14 July 2026 at https://lunara-inky.vercel.app.
+- **Live** since 14 July 2026 at https://lunara.root-box.org (also https://lunara-inky.vercel.app).
 - **Users:** a small, informal group. Usability feedback from a few people led to a simplification pass in August 2026 (see `SADELESTIRME-LOG.md`, in Turkish). The app collects no analytics, so there are no user counts.
 - **Size:** about 12,600 lines of application code and 2,100 lines of tests, in 71 source files, about 70 commits.
-- **Spin-offs:** three focused apps share this codebase's foundation:
-  - Womentum and Perim (perimenopause and hormone therapy),
-  - Unnie (first periods, for ages 11–15).
+- **Spin-offs:** focused apps share this codebase's foundation:
+  - **Perim**, a perimenopause and BHRT (cyclic hormone therapy) tracker, published as its own project,
+  - Womentum (perimenopause) and Unnie (first periods, for ages 11–15), kept private.
 - **Hosting:** Vercel's free Hobby plan, which is for non-commercial use.
 
 ## How it was built
@@ -134,10 +134,11 @@ The author worked as product owner:
 
 ## Screenshots
 
-<!-- Replace with real screenshots taken with demo data (see "Development" below). -->
-| Home | Symptoms | Stage screen | Doctor summary |
+Phone width, "regular cycle" stage, filled with fictional demo data.
+
+| Home | Symptoms | Cycle | Doctor summary |
 |---|---|---|---|
-| ![Home](docs/screenshots/home.png) | ![Symptoms](docs/screenshots/symptoms.png) | ![Stage](docs/screenshots/stage.png) | ![Doctor summary](docs/screenshots/doctor-summary.png) |
+| ![Home](docs/screenshots/home.png) | ![Symptoms](docs/screenshots/symptoms.png) | ![Cycle](docs/screenshots/cycle.png) | ![Doctor summary](docs/screenshots/summary.png) |
 
 ## Roadmap (not built yet)
 
@@ -160,3 +161,5 @@ The app ships with no sample data. To take screenshots, open it in a fresh brows
 ---
 
 *Lunara is a personal tracking tool, not a medical device. It does not diagnose and does not recommend treatment.*
+
+© 2026 Elif Köslü. The code is shared for portfolio review; all rights reserved.
